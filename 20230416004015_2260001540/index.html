@@ -22,20 +22,21 @@
     var CONFIG = {"hostname":"caijizhuo.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="什么是内存泄漏？ 内存泄漏（Memory Leak）是指程序中已动态分配的堆内存由于某种原因程序未释放或 无法释放，造成系统内存的浪费，导致程序运行速度减慢甚至系统崩溃等严重后果。 valgrid工具 (1) 简介： Valgrind 是一套 Linux 下，开放源代码（GPL V2）的仿真调试工具的集合。Valgrind 由 内核（core）以及基于内核的其他调试工具组成。内核类似于一个框架（f">
+  <meta name="description" content="锁 锁是用来防止不同线程访问同一个共享资源时发生数据竞争风险，保证访问的先后顺序而达到数据的一致性访问。本文介绍的 lock_guard 和 unique_lock，都是对 std::mutex 进行封装，实现 RAII 的效果。这两种锁本质差不多，而 unique_lock 的功能比 lock_guard 多一些。 lock_guard lock_guard 用来管理一个 std::mutext">
 <meta property="og:type" content="article">
-<meta property="og:title" content="内存泄露定位">
-<meta property="og:url" content="https://caijizhuo.github.io/20221208021019_25309/index.html">
+<meta property="og:title" content="lock_guard和unique_lock">
+<meta property="og:url" content="https://caijizhuo.github.io/20230416004015_2260001540/index.html">
 <meta property="og:site_name" content="caijizhuo">
-<meta property="og:description" content="什么是内存泄漏？ 内存泄漏（Memory Leak）是指程序中已动态分配的堆内存由于某种原因程序未释放或 无法释放，造成系统内存的浪费，导致程序运行速度减慢甚至系统崩溃等严重后果。 valgrid工具 (1) 简介： Valgrind 是一套 Linux 下，开放源代码（GPL V2）的仿真调试工具的集合。Valgrind 由 内核（core）以及基于内核的其他调试工具组成。内核类似于一个框架（f">
+<meta property="og:description" content="锁 锁是用来防止不同线程访问同一个共享资源时发生数据竞争风险，保证访问的先后顺序而达到数据的一致性访问。本文介绍的 lock_guard 和 unique_lock，都是对 std::mutex 进行封装，实现 RAII 的效果。这两种锁本质差不多，而 unique_lock 的功能比 lock_guard 多一些。 lock_guard lock_guard 用来管理一个 std::mutext">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2022-12-07T18:10:19.000Z">
-<meta property="article:modified_time" content="2023-04-17T01:19:24.963Z">
+<meta property="article:published_time" content="2023-04-15T16:40:15.000Z">
+<meta property="article:modified_time" content="2023-04-17T01:32:33.766Z">
 <meta property="article:author" content="caijizhuo">
-<meta property="article:tag" content="linux">
+<meta property="article:tag" content="cpp">
+<meta property="article:tag" content="concurrent">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="https://caijizhuo.github.io/20221208021019_25309/">
+<link rel="canonical" href="https://caijizhuo.github.io/20230416004015_2260001540/">
 
 
 <script id="page-configurations">
@@ -48,7 +49,7 @@
   };
 </script>
 
-  <title>内存泄露定位 | caijizhuo</title>
+  <title>lock_guard和unique_lock | caijizhuo</title>
   
 
 
@@ -198,7 +199,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20221208021019_25309/">
+    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20230416004015_2260001540/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/portrait.jpg">
@@ -211,7 +212,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          内存泄露定位
+          lock_guard和unique_lock
         </h1>
 
         <div class="post-meta">
@@ -221,14 +222,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2022-12-08 02:10:19" itemprop="dateCreated datePublished" datetime="2022-12-08T02:10:19+08:00">2022-12-08</time>
+              <time title="创建时间：2023-04-16 00:40:15" itemprop="dateCreated datePublished" datetime="2023-04-16T00:40:15+08:00">2023-04-16</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-04-17 09:19:24" itemprop="dateModified" datetime="2023-04-17T09:19:24+08:00">2023-04-17</time>
+                <time title="修改时间：2023-04-17 09:32:33" itemprop="dateModified" datetime="2023-04-17T09:32:33+08:00">2023-04-17</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -236,7 +237,11 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/tools/" itemprop="url" rel="index"><span itemprop="name">tools</span></a>
+                  <a href="/categories/cpp/" itemprop="url" rel="index"><span itemprop="name">cpp</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/concurrent-programming/" itemprop="url" rel="index"><span itemprop="name">concurrent-programming</span></a>
                 </span>
             </span>
 
@@ -258,39 +263,70 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h1>什么是内存泄漏？</h1>
-<p>内存泄漏（Memory Leak）是指程序中已动态分配的堆内存由于某种原因程序未释放或<br>
-无法释放，造成系统内存的浪费，导致程序运行速度减慢甚至系统崩溃等严重后果。</p>
-<h1>valgrid工具</h1>
-<p>(1) 简介：<br>
-Valgrind 是一套 Linux 下，开放源代码（GPL V2）的仿真调试工具的集合。Valgrind 由<br>
-内核（core）以及基于内核的其他调试工具组成。内核类似于一个框架（framework），它模<br>
-拟了一个 CPU 环境，并提供服务给其他工具；而其他工具则类似于插件 (plug-in)，利用内<br>
-核提供的服务完成各种特定的内存调试任务。最常用的工具为 Memcheck，用来检测程序中<br>
-出现的内存问题，所有对内存的读写都会被检测到，一切对 malloc()/free()/new/delete 的调用<br>
-都会被捕获。所以，它能检测以下问题：<br>
-• 对未初始化内存的使用；<br>
-• 读/写释放后的内存块；<br>
-• 读/写超出 malloc 分配的内存块；<br>
-• 读/写不适当的栈中内存块；<br>
-• 内存泄漏，指向一块内存的指针永远丢失；<br>
-• 不正确的 malloc/free 或 new/delete 匹配；<br>
-• memcpy()相关函数中的 dst 和 src 指针重叠。<br>
-(2) 使用示例：<br>
-valgrind --log-file=report.log --tool=memcheck --leak-check=full --show-leak-kinds=all ./benc<br>
-hmark arg1 arg2 …<br>
-(3) 输出日志解读：<br>
-• 报告中会指示出发生泄漏的函数和文件位置；<br>
-• 最后会给出一个总结，标明了泄漏的内存总量；<br>
-• definitely lost: 铁定丢失，一般来说存在明显的泄漏；<br>
-• indirectly lost: 间接丢失，当使用了含有指针成员的类或结构时可能会报这个错误；<br>
-• possibly lost: 可能丢失；<br>
-• 只能定位到内存最初被申请的位置，不能定位到是哪里泄漏</p>
-<h1>AddressSantizer</h1>
-<p>(1) 简介：<br>
-AddressSanitizer（ASan）是一个快速的内存错误检测工具。它包括一个编译器 instrumentation 模块和一个提供 malloc()/free()替代项的运行时库。<br>
-(2) 使用：<br>
-编译和链接选项中加入-fsanitize=address -fno-omit-frame-pointer 即可。可以通过 readelf <a target="_blank" rel="noopener" href="http://xn--h6qv61aqxhhxp.so">工具查看.so</a> 的依赖库中是否包含 ASan 来确认编译是否成功。</p>
+        <h1>锁</h1>
+<p>锁是用来防止不同线程访问同一个共享资源时发生数据竞争风险，保证访问的先后顺序而达到数据的一致性访问。本文介绍的 lock_guard 和 unique_lock，都是对 std::mutex 进行封装，实现 RAII 的效果。这两种锁本质差不多，而 unique_lock 的功能比 lock_guard 多一些。</p>
+<h1>lock_guard</h1>
+<p>lock_guard 用来管理一个 std::mutext 类型的对象，定义一个 lock_guard 对象同时调用构造函数，对 std::mutex 进行上锁，退出作用域时析构，从而进行解锁。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">std::lock_guard&lt;std::mutex&gt; <span class="title">lock</span><span class="params">(mutex_name)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>特点如下：</p>
+<ol>
+<li>创建即加锁，退出作用域自动解锁，避免忘记解锁。</li>
+<li>无需手工解锁。不能中途解锁。</li>
+<li>无法复制。</li>
+<li>并不管理 std::mutex 的生命周期，如果在作用域内的时候 std::mutex 被释放了，那就会出现空指针错误。<br>
+使用示例：</li>
+</ol>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;thread&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;mutex&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"> </span><br><span class="line"><span class="type">int</span> g_i = <span class="number">0</span>;</span><br><span class="line">std::mutex g_i_mutex;  </span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">safe_increment</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="type">const</span> std::lock_guard&lt;std::mutex&gt; <span class="title">lock</span><span class="params">(g_i_mutex)</span></span>;</span><br><span class="line">    ++g_i;</span><br><span class="line">    std::cout &lt;&lt; std::this_thread::<span class="built_in">get_id</span>() &lt;&lt; <span class="string">&quot;: &quot;</span> &lt;&lt; g_i &lt;&lt; std::endl;</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;start: &quot;</span> &lt;&lt; g_i &lt;&lt; <span class="string">&#x27;\n&#x27;</span>;</span><br><span class="line">    <span class="function">std::thread <span class="title">t1</span><span class="params">(safe_increment)</span></span>;</span><br><span class="line">    <span class="function">std::thread <span class="title">t2</span><span class="params">(safe_increment)</span></span>;</span><br><span class="line">    t1.<span class="built_in">join</span>();</span><br><span class="line">    t2.<span class="built_in">join</span>();</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;end: &quot;</span> &lt;&lt; g_i &lt;&lt; <span class="string">&#x27;\n&#x27;</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>输出：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # ./a.out </span><br><span class="line">start: 0</span><br><span class="line">140365627524864: 1</span><br><span class="line">140365619132160: 2</span><br><span class="line">end: 2</span><br></pre></td></tr></table></figure>
+<h1>unique_lock</h1>
+<p>虽然 lock_guard 挺好用的，但是有个很大的缺陷，在定义 lock_guard 的地方会调用构造函数加锁，在离开定义域的话 lock_guard 就会被销毁，调用析构函数解锁。这就产生了一个问题，如果这个定义域范围很大的话，那么锁的粒度就很大，很大程序上会影响效率。<br>
+所以为了解决 lock_guard 锁的<strong>粒度过大</strong>的问题，unique_lock 就出现了。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">方法</th>
+<th style="text-align:left">说明</th>
+<th style="text-align:left">详细说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>explicit unique_lock(mutex_type&amp; m);</code></td>
+<td style="text-align:left">加锁</td>
+<td style="text-align:left">新创建的 unique_lock 对象，管理 Mutex 对象 m，并尝试调用 m.lock() 对 Mutex 对象进行上锁，如果此时另外某个 unique_lock 对象已经管理了该 Mutex 对象 m，则当前线程将<strong>会被阻塞</strong>。</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>unique_lock(mutex_type&amp; m, try_to_lock_t tag);</code></td>
+<td style="text-align:left">尝试加锁</td>
+<td style="text-align:left">try-locking 初始化新创建的 unique_lock 对象，管理 Mutex 对象 m，并尝试调用 m.try_lock() 对 Mutex 对象进行上锁，但如果上锁不成功，并<strong>不会阻塞</strong>当前线程。</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>unique_lock(mutex_type&amp; m, defer_lock_t tag) noexcept;</code></td>
+<td style="text-align:left">延迟加锁</td>
+<td style="text-align:left">初始化新创建的 unique_lock 对象，管理 Mutex 对象 m，但是在初始化的时候并<strong>不锁住</strong> Mutex 对象。 m 应该是一个没有当前线程锁住的 Mutex 对象。</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>unique_lock(mutex_type&amp; m, adopt_lock_t tag);</code></td>
+<td style="text-align:left">递归加锁</td>
+<td style="text-align:left">初始化新创建的 unique_lock 对象管理 Mutex 对象 m， m 应该是一个<strong>已经被当前线程锁住</strong>的 Mutex 对象。(并且当前新创建的 unique_lock 对象拥有对锁(Lock)的所有权)。</td>
+</tr>
+</tbody>
+</table>
+<p>特点如下：</p>
+<ol>
+<li>创建时可以不锁定（通过指定第二个参数为 std::defer_lock），而在需要时再锁定。</li>
+<li>可以随时加锁解锁（调用 lock 或者 unlock 成员函数）。</li>
+<li>作用域规则同 lock_grard，析构的时候会判断当前锁的状态来决定是否解锁，如果当前状态已经是解锁状态了，那么就不会再次解锁，而如果当前状态是加锁状态，就会自动调用unique.unlock()来解锁。</li>
+<li>不可复制，可移动</li>
+<li>条件变量需要该类型的锁作为参数（此时必须使用 unique_lock）</li>
+</ol>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">condition_variable cv;</span><br><span class="line">cv.<span class="built_in">wait</span>(unique_lock);  <span class="comment">// 会做两件事1：使线程进入等待状态 2:unique_lock.unlock 把mtx给释放掉</span></span><br></pre></td></tr></table></figure>
+<p>unique_lock 示例：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;mutex&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;thread&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;chrono&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"> </span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">Box</span> &#123;</span><br><span class="line">    <span class="function"><span class="keyword">explicit</span> <span class="title">Box</span><span class="params">(<span class="type">int</span> num)</span> : num_things&#123;</span>num&#125; &#123;&#125;</span><br><span class="line">    <span class="type">int</span> num_things;</span><br><span class="line">    std::mutex m;</span><br><span class="line">&#125;;</span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">transfer</span><span class="params">(Box &amp;from, Box &amp;to, <span class="type">int</span> num)</span> </span>&#123;</span><br><span class="line">    <span class="function">std::unique_lock&lt;std::mutex&gt; <span class="title">lock1</span><span class="params">(from.m, std::defer_lock)</span></span>;</span><br><span class="line">    <span class="function">std::unique_lock&lt;std::mutex&gt; <span class="title">lock2</span><span class="params">(to.m, std::defer_lock)</span></span>;</span><br><span class="line">    std::<span class="built_in">lock</span>(lock1, lock2);</span><br><span class="line">    from.num_things -= num;</span><br><span class="line">    to.num_things += num; </span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="function">Box <span class="title">box1</span><span class="params">(<span class="number">100</span>)</span></span>;</span><br><span class="line">    <span class="function">Box <span class="title">box2</span><span class="params">(<span class="number">50</span>)</span></span>;</span><br><span class="line">    <span class="function">std::thread <span class="title">t1</span><span class="params">(transfer, std::ref(box1), std::ref(box2), <span class="number">10</span>)</span></span>;</span><br><span class="line">    <span class="function">std::thread <span class="title">t2</span><span class="params">(transfer, std::ref(box2), std::ref(box1), <span class="number">5</span>)</span></span>;</span><br><span class="line">    t1.<span class="built_in">join</span>();</span><br><span class="line">    t2.<span class="built_in">join</span>();</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;box1:&quot;</span> &lt;&lt; box1.num_things &lt;&lt; std::endl;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;box2:&quot;</span> &lt;&lt; box2.num_things &lt;&lt; std::endl;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # ./a.out </span><br><span class="line">box1:95</span><br><span class="line">box2:55</span><br></pre></td></tr></table></figure>
+<h1>总结</h1>
+<p>unique_lock 内部会维护一个锁的状态，所以在效率上肯定会比 lock_guard 慢。所以在能使用 lock_guard 的情况下尽量优先使用 lock_guard。</p>
 
     </div>
 
@@ -306,7 +342,7 @@ AddressSanitizer（ASan）是一个快速的内存错误检测工具。它包括
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="https://caijizhuo.github.io/20221208021019_25309/" title="内存泄露定位">https://caijizhuo.github.io/20221208021019_25309/</a>
+    <a href="https://caijizhuo.github.io/20230416004015_2260001540/" title="lock_guard和unique_lock">https://caijizhuo.github.io/20230416004015_2260001540/</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
@@ -317,7 +353,8 @@ AddressSanitizer（ASan）是一个快速的内存错误检测工具。它包括
 
       <footer class="post-footer">
           <div class="post-tags">
-              <a href="/tags/linux/" rel="tag"># linux</a>
+              <a href="/tags/cpp/" rel="tag"># cpp</a>
+              <a href="/tags/concurrent/" rel="tag"># concurrent</a>
           </div>
 
         
@@ -326,12 +363,12 @@ AddressSanitizer（ASan）是一个快速的内存错误检测工具。它包括
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/20221109222551_35921/" rel="prev" title="KMP算法">
-      <i class="fa fa-chevron-left"></i> KMP算法
+    <a href="/20230414004940_59277/" rel="prev" title="make_shared与shared_ptr">
+      <i class="fa fa-chevron-left"></i> make_shared与shared_ptr
     </a></div>
       <div class="post-nav-item">
-    <a href="/20230206005045_37741/" rel="next" title="cpp虚函数表">
-      cpp虚函数表 <i class="fa fa-chevron-right"></i>
+    <a href="/20230416184222_894450274/" rel="next" title="cpp四种cast">
+      cpp四种cast <i class="fa fa-chevron-right"></i>
     </a></div>
     </div>
       </footer>
@@ -391,7 +428,7 @@ AddressSanitizer（ASan）是一个快速的内存错误检测工具。它包括
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">1.</span> <span class="nav-text">什么是内存泄漏？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">2.</span> <span class="nav-text">valgrid工具</span></a></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">3.</span> <span class="nav-text">AddressSantizer</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">1.</span> <span class="nav-text">锁</span></a></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">2.</span> <span class="nav-text">lock_guard</span></a></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">3.</span> <span class="nav-text">unique_lock</span></a></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
