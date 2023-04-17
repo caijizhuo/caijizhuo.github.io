@@ -200,15 +200,6 @@
   </url>
   
   <url>
-    <loc>https://caijizhuo.github.io/20230409022514_6883/</loc>
-    
-    <lastmod>2023-04-17</lastmod>
-    
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
     <loc>https://caijizhuo.github.io/20220404212726_25762/</loc>
     
     <lastmod>2023-04-17</lastmod>
@@ -218,7 +209,7 @@
   </url>
   
   <url>
-    <loc>https://caijizhuo.github.io/20220926020815_60782/</loc>
+    <loc>https://caijizhuo.github.io/20230409022514_6883/</loc>
     
     <lastmod>2023-04-17</lastmod>
     
@@ -228,6 +219,15 @@
   
   <url>
     <loc>https://caijizhuo.github.io/20230414004940_59277/</loc>
+    
+    <lastmod>2023-04-17</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://caijizhuo.github.io/20220926020815_60782/</loc>
     
     <lastmod>2023-04-17</lastmod>
     
@@ -376,6 +376,13 @@
   </url>
   
   <url>
+    <loc>https://caijizhuo.github.io/tags/algorithm/</loc>
+    <lastmod>2023-04-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
     <loc>https://caijizhuo.github.io/tags/linux/</loc>
     <lastmod>2023-04-17</lastmod>
     <changefreq>weekly</changefreq>
@@ -391,13 +398,6 @@
   
   <url>
     <loc>https://caijizhuo.github.io/tags/concurrent/</loc>
-    <lastmod>2023-04-17</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://caijizhuo.github.io/tags/algorithm/</loc>
     <lastmod>2023-04-17</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -441,14 +441,14 @@
   </url>
   
   <url>
-    <loc>https://caijizhuo.github.io/categories/socket-programming/</loc>
+    <loc>https://caijizhuo.github.io/categories/algorithm/</loc>
     <lastmod>2023-04-17</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
-    <loc>https://caijizhuo.github.io/categories/algorithm/</loc>
+    <loc>https://caijizhuo.github.io/categories/socket-programming/</loc>
     <lastmod>2023-04-17</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
