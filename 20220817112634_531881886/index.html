@@ -22,12 +22,12 @@
     var CONFIG = {"hostname":"caijizhuo.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="基类析构函数为虚函数的必要性 由于 C++ 中类的多态性，使用基类指针指向派生类时，若函数是虚的，则调用派生类中的函数。析构函数也是如此。如果有个基类指针指向了派生类对象，删除这个指针，调用的则是派生类的析构函数。派生类的析构函数又会自动调用基类的析构函数，达到所有空间都释放的目的。 如果不声明为虚函数，那么编译器实行静态绑定，在删除基类指针时，只调用基类的虚构函数而不调用派生类的析构函数，造成派">
+  <meta name="description" content="基类析构函数为虚函数的必要性 由于 C++ 中类的多态性，使用基类指针指向派生类时，若函数是虚的，则调用派生类中的函数。析构函数也是如此。如果有个基类指针指向了派生类对象，删除这个指针，调用的则是派生类的析构函数。派生类的析构函数又会自动调用基类的析构函数，达到所有空间都释放的目的。 如果不声明为虚函数，那么编译器实行静态绑定，在删除基类指针时，只调用基类的虚构函数而不调用派生类的析构函数，造成">
 <meta property="og:type" content="article">
 <meta property="og:title" content="为何基类析构函数必须为虚函数">
 <meta property="og:url" content="https://caijizhuo.github.io/20220817112634_531881886/index.html">
 <meta property="og:site_name" content="caijizhuo">
-<meta property="og:description" content="基类析构函数为虚函数的必要性 由于 C++ 中类的多态性，使用基类指针指向派生类时，若函数是虚的，则调用派生类中的函数。析构函数也是如此。如果有个基类指针指向了派生类对象，删除这个指针，调用的则是派生类的析构函数。派生类的析构函数又会自动调用基类的析构函数，达到所有空间都释放的目的。 如果不声明为虚函数，那么编译器实行静态绑定，在删除基类指针时，只调用基类的虚构函数而不调用派生类的析构函数，造成派">
+<meta property="og:description" content="基类析构函数为虚函数的必要性 由于 C++ 中类的多态性，使用基类指针指向派生类时，若函数是虚的，则调用派生类中的函数。析构函数也是如此。如果有个基类指针指向了派生类对象，删除这个指针，调用的则是派生类的析构函数。派生类的析构函数又会自动调用基类的析构函数，达到所有空间都释放的目的。 如果不声明为虚函数，那么编译器实行静态绑定，在删除基类指针时，只调用基类的虚构函数而不调用派生类的析构函数，造成">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2022-08-17T03:26:34.000Z">
 <meta property="article:modified_time" content="2023-04-17T08:35:51.010Z">
@@ -258,20 +258,20 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h1>基类析构函数为虚函数的必要性</h1>
+        <h1 id="基类析构函数为虚函数的必要性"><a class="markdownIt-Anchor" href="#基类析构函数为虚函数的必要性"></a> 基类析构函数为虚函数的必要性</h1>
 <p>由于 C++ 中类的多态性，使用基类指针指向派生类时，若函数是虚的，则调用派生类中的函数。析构函数也是如此。如果有个基类指针指向了派生类对象，删除这个指针，调用的则是派生类的析构函数。派生类的析构函数又会自动调用基类的析构函数，达到所有空间都释放的目的。</p>
 <p>如果不声明为虚函数，那么编译器实行静态绑定，在删除基类指针时，只调用基类的虚构函数而不调用派生类的析构函数，造成派生类中有空间没有释放完全而导致<em><strong>内存泄漏</strong></em>。</p>
 <p>所以声明为虚函数是必要的，为了防止只析构基类而不析构派生类。</p>
-<h1>非虚析构函数会发生什么</h1>
+<h1 id="非虚析构函数会发生什么"><a class="markdownIt-Anchor" href="#非虚析构函数会发生什么"></a> 非虚析构函数会发生什么</h1>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Parent</span> &#123;</span><br><span class="line">    <span class="keyword">public</span>:</span><br><span class="line">        <span class="built_in">Parent</span>() &#123;</span><br><span class="line">            cout &lt;&lt; <span class="string">&quot;父类构造函数&quot;</span> &lt;&lt; endl;</span><br><span class="line">        &#125;</span><br><span class="line">        ~<span class="built_in">Parent</span>() &#123;</span><br><span class="line">            cout &lt;&lt; <span class="string">&quot;父类析构函数&quot;</span> &lt;&lt; endl;</span><br><span class="line">        &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Son</span> : <span class="keyword">public</span> Parent &#123;</span><br><span class="line">    <span class="keyword">public</span>:</span><br><span class="line">        <span class="built_in">Son</span>() &#123;</span><br><span class="line">            cout &lt;&lt; <span class="string">&quot;子类构造函数&quot;</span> &lt;&lt; endl;</span><br><span class="line">        &#125;</span><br><span class="line">        ~<span class="built_in">Son</span>() &#123;</span><br><span class="line">            cout &lt;&lt; <span class="string">&quot;子类析构函数&quot;</span> &lt;&lt; endl;</span><br><span class="line">        &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    Parent *p = <span class="keyword">new</span> <span class="built_in">Son</span>();</span><br><span class="line">    <span class="keyword">delete</span> p;</span><br><span class="line">    p = <span class="literal">nullptr</span>;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>结果：</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # ./a.out </span><br><span class="line">父类构造函数</span><br><span class="line">子类构造函数</span><br><span class="line">父类析构函数</span><br></pre></td></tr></table></figure>
 <p>可以看到，子类析构函数并没有被调用到。</p>
-<h1>基类析构函数定义为虚函数</h1>
+<h1 id="基类析构函数定义为虚函数"><a class="markdownIt-Anchor" href="#基类析构函数定义为虚函数"></a> 基类析构函数定义为虚函数</h1>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Parent</span> &#123;</span><br><span class="line">    <span class="keyword">public</span>:</span><br><span class="line">        <span class="built_in">Parent</span>() &#123;</span><br><span class="line">            cout &lt;&lt; <span class="string">&quot;父类构造函数&quot;</span> &lt;&lt; endl;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">virtual</span> ~<span class="built_in">Parent</span>() &#123;</span><br><span class="line">            cout &lt;&lt; <span class="string">&quot;父类析构函数&quot;</span> &lt;&lt; endl;</span><br><span class="line">        &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Son</span> : <span class="keyword">public</span> Parent &#123;</span><br><span class="line">    <span class="keyword">public</span>:</span><br><span class="line">        <span class="built_in">Son</span>() &#123;</span><br><span class="line">            cout &lt;&lt; <span class="string">&quot;子类构造函数&quot;</span> &lt;&lt; endl;</span><br><span class="line">        &#125;</span><br><span class="line">        ~<span class="built_in">Son</span>() &#123;</span><br><span class="line">            cout &lt;&lt; <span class="string">&quot;子类析构函数&quot;</span> &lt;&lt; endl;</span><br><span class="line">        &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    Parent *p = <span class="keyword">new</span> <span class="built_in">Son</span>();</span><br><span class="line">    <span class="keyword">delete</span> p;</span><br><span class="line">    p = <span class="literal">nullptr</span>;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>结果：</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # ./a.out </span><br><span class="line">父类构造函数</span><br><span class="line">子类构造函数</span><br><span class="line">子类析构函数</span><br><span class="line">父类析构函数</span><br></pre></td></tr></table></figure>
-<h1>小技巧</h1>
+<h1 id="小技巧"><a class="markdownIt-Anchor" href="#小技巧"></a> 小技巧</h1>
 <p>如果父类的设计者忘记了在析构函数处加 virtual，子类的设计者有义务提醒父类设计者，避免内存泄漏。</p>
 <p>C++11 的关键字 override 可以起作用。override 表示函数应当重写基类中的虚函数（用于派生类的虚函数中）。编译器会检查基类中的虚函数和派生类中带有 override 的虚函数有没有相同的函数签名，一旦不匹配便会报错。</p>
 <p>因此子类设计者可以在其析构函数后增加关键字 override，一旦父类缺少关键字 virtual，就会被编译器发现并报错。</p>
@@ -377,7 +377,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">1.</span> <span class="nav-text">基类析构函数为虚函数的必要性</span></a></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">2.</span> <span class="nav-text">非虚析构函数会发生什么</span></a></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">3.</span> <span class="nav-text">基类析构函数定义为虚函数</span></a></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">4.</span> <span class="nav-text">小技巧</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9F%BA%E7%B1%BB%E6%9E%90%E6%9E%84%E5%87%BD%E6%95%B0%E4%B8%BA%E8%99%9A%E5%87%BD%E6%95%B0%E7%9A%84%E5%BF%85%E8%A6%81%E6%80%A7"><span class="nav-number">1.</span> <span class="nav-text"> 基类析构函数为虚函数的必要性</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%9D%9E%E8%99%9A%E6%9E%90%E6%9E%84%E5%87%BD%E6%95%B0%E4%BC%9A%E5%8F%91%E7%94%9F%E4%BB%80%E4%B9%88"><span class="nav-number">2.</span> <span class="nav-text"> 非虚析构函数会发生什么</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9F%BA%E7%B1%BB%E6%9E%90%E6%9E%84%E5%87%BD%E6%95%B0%E5%AE%9A%E4%B9%89%E4%B8%BA%E8%99%9A%E5%87%BD%E6%95%B0"><span class="nav-number">3.</span> <span class="nav-text"> 基类析构函数定义为虚函数</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%8F%E6%8A%80%E5%B7%A7"><span class="nav-number">4.</span> <span class="nav-text"> 小技巧</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -393,20 +393,20 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">39</span>
+          <span class="site-state-item-count">41</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-count">8</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-count">11</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
