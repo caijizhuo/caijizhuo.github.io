@@ -1,3 +1,6 @@
+https://caijizhuo.github.io/20220522152654_4271767810/
+https://caijizhuo.github.io/20221123170741_370704261/
+https://caijizhuo.github.io/20220523191254_3964297908/
 https://caijizhuo.github.io/20230420105926_1589524973/
 https://caijizhuo.github.io/20230226005931_7541/
 https://caijizhuo.github.io/20230413001256_5003/
@@ -18,11 +21,11 @@ https://caijizhuo.github.io/20230412003055_25523/
 https://caijizhuo.github.io/20220709142056_5009/
 https://caijizhuo.github.io/20220316211246_20228/
 https://caijizhuo.github.io/20220515214808_6652/
-https://caijizhuo.github.io/20220809190428_61809/
 https://caijizhuo.github.io/20220226095439_17254/
+https://caijizhuo.github.io/20220809190428_61809/
 https://caijizhuo.github.io/20220307204428_2297/
-https://caijizhuo.github.io/20220310205117_35219/
 https://caijizhuo.github.io/20220308204810_47395/
+https://caijizhuo.github.io/20220310205117_35219/
 https://caijizhuo.github.io/20220317211553_61371/
 https://caijizhuo.github.io/20220303204239_59743/
 https://caijizhuo.github.io/20220910100549_28421/
@@ -34,8 +37,8 @@ https://caijizhuo.github.io/20230414004940_59277/
 https://caijizhuo.github.io/20220926020815_60782/
 https://caijizhuo.github.io/20220216093825_32353/
 https://caijizhuo.github.io/20220211093017_10688/
-https://caijizhuo.github.io/20230206005045_37741/
 https://caijizhuo.github.io/20220504213234_4709/
+https://caijizhuo.github.io/20230206005045_37741/
 https://caijizhuo.github.io/20220504214132_17671/
 https://caijizhuo.github.io/20221109222551_35921/
 https://caijizhuo.github.io/20220225095132_3023/
@@ -52,8 +55,10 @@ https://caijizhuo.github.io/tags/linux/
 https://caijizhuo.github.io/tags/socket/
 https://caijizhuo.github.io/tags/concurrent/
 https://caijizhuo.github.io/tags/design-pattern/
-https://caijizhuo.github.io/tags/data-structure/
+https://caijizhuo.github.io/tags/gpu/
 https://caijizhuo.github.io/tags/math/
+https://caijizhuo.github.io/tags/data-structure/
+https://caijizhuo.github.io/tags/AI/
 https://caijizhuo.github.io/tags/gdb/
 https://caijizhuo.github.io/categories/cpp/
 https://caijizhuo.github.io/categories/algorithm/
@@ -61,5 +66,7 @@ https://caijizhuo.github.io/categories/tools/
 https://caijizhuo.github.io/categories/socket-programming/
 https://caijizhuo.github.io/categories/design-pattern/
 https://caijizhuo.github.io/categories/concurrent-programming/
+https://caijizhuo.github.io/categories/gpu/
 https://caijizhuo.github.io/categories/data-structure/
+https://caijizhuo.github.io/categories/AI/
 https://caijizhuo.github.io/categories/linux/
