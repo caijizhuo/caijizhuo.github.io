@@ -591,6 +591,149 @@ A类占用8字节，B类占用8字节，C类占用8字节，D类占用28字节((
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20221225154730_448578471/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/portrait.jpg">
+      <meta itemprop="name" content="caijizhuo">
+      <meta itemprop="description" content="Looks delicious">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="caijizhuo">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/20221225154730_448578471/" class="post-title-link" itemprop="url">cpp之std::atomic</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-12-25 15:47:30" itemprop="dateCreated datePublished" datetime="2022-12-25T15:47:30+08:00">2022-12-25</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-04-25 20:29:05" itemprop="dateModified" datetime="2023-04-25T20:29:05+08:00">2023-04-25</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/cpp/" itemprop="url" rel="index"><span itemprop="name">cpp</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/concurrent-programming/" itemprop="url" rel="index"><span itemprop="name">concurrent-programming</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1>std::atomic</h1>
+<p>原子类型是对数据的一种封装，可以防止数据竞争，达到同步多线程的内存访问的目的。对该变量的读写是原子的。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;atomic&gt;</span></span></span><br></pre></td></tr></table></figure>
+<p>使用前需要包含头文件。该头文件中主要包含两个类：atomic 和 atomic_flag。本文主要讲解 std::atomic。</p>
+<h2 id="构造函数和赋值">构造函数和赋值</h2>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">atomic</span>() <span class="keyword">noexcept</span> = <span class="keyword">default</span>;</span><br><span class="line"><span class="function"><span class="keyword">constexpr</span> <span class="title">atomic</span> <span class="params">(T val)</span> <span class="keyword">noexcept</span></span>;</span><br><span class="line"><span class="built_in">atomic</span> (<span class="type">const</span> atomic&amp;) = <span class="keyword">delete</span>;</span><br><span class="line"></span><br><span class="line">T <span class="keyword">operator</span>= (T val) <span class="keyword">noexcept</span>;</span><br><span class="line">T <span class="keyword">operator</span>= (T val) <span class="keyword">volatile</span> <span class="keyword">noexcept</span>;</span><br><span class="line">atomic&amp; <span class="keyword">operator</span>= (<span class="type">const</span> atomic&amp;) = <span class="keyword">delete</span>;</span><br><span class="line">atomic&amp; <span class="keyword">operator</span>= (<span class="type">const</span> atomic&amp;) <span class="keyword">volatile</span> = <span class="keyword">delete</span>;</span><br></pre></td></tr></table></figure>
+<ol>
+<li>构造一个未初始化的原子对象。</li>
+<li>构造一个用 val 初始化的原子对象。</li>
+<li>禁用拷贝构造函数，<strong>原子对象不可复制、移动</strong>。</li>
+<li>可以赋值（val）。</li>
+</ol>
+<h2 id="memory-order">memory_order</h2>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">enum</span> <span class="title class_">memory_order</span> &#123;</span><br><span class="line">    memory_order_relaxed,</span><br><span class="line">    memory_order_consume,</span><br><span class="line">    memory_order_acquire,</span><br><span class="line">    memory_order_release,</span><br><span class="line">    memory_order_acq_rel,</span><br><span class="line">    memory_order_seq_cst</span><br><span class="line">&#125; memory_order;</span><br></pre></td></tr></table></figure>
+<p>它们的目的是为了做线程间的同步，原理是在线程内限制变量操作的顺序：</p>
+<ol>
+<li>memory_order_relaxed：不做任何限制。</li>
+<li>memory_order_acquire：类似 lock，用于 load 操作，如果一个原子变量的 load 用了该选项，那么可以保证，<strong>在本线程内</strong>，该 load 语句<strong>之后的所有变量</strong>（不论是否原子变量）的读写语句，都实际在该 load 操作执行后执行。</li>
+<li>memory_order_release：类似 unlock，用于 store 操作，如果一个原子变量的 store 用了该选项，那么可以保证，<strong>在本线程内</strong>，该 store 语句<strong>之前的所有变量</strong>（不论是否原子变量）的读写语句，都实际在该 store 操作执行前执行。</li>
+<li>memory_order_consume：用于 load 操作，如果一个原子变量的 load 用了该选项，那么可以保证，在本线程内，该 load 语句<strong>之后的所有依赖该变量的变量</strong>的读写语句，都实际在该 load 操作执行后执行。</li>
+<li>memory_order_acq_rel：memory_order_acquire + memory_order_release</li>
+<li>memory_order_seq_cst：sequence consistent，顺序一致，要求所有变量的读写执行顺序都和代码中的顺序一致。</li>
+</ol>
+<p>memory_order_acquire 和 memory_order_release 直观上就像一个栅栏：在调用处设置一个栅栏，acquire 是拦住代码中在它后边的变量读写操作，不让其跑到它前边；release则相反，不让前边的跑到后边。（cpu 提供 memory_barrier 或者 memory_fence 指令）关于为什么 cpu 会进行内存重排，请见其他文章。</p>
+<h2 id="atomic-store">atomic::store()</h2>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">store</span> <span class="params">(T val, memory_order sync = memory_order_seq_cst)</span> <span class="keyword">volatile</span> <span class="keyword">noexcept</span></span>;</span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">store</span> <span class="params">(T val, memory_order sync = memory_order_seq_cst)</span> <span class="keyword">noexcept</span></span>;</span><br></pre></td></tr></table></figure>
+<p>用 val 替换原子对象中的值。该操作是原子性的，通过 sync 指定内存顺序。sync 可选项见上文。</p>
+<h2 id="atomic-load">atomic::load()</h2>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">T <span class="title">load</span> <span class="params">(memory_order sync = memory_order_seq_cst)</span> <span class="type">const</span> <span class="keyword">volatile</span> <span class="keyword">noexcept</span></span>;</span><br><span class="line"><span class="function">T <span class="title">load</span> <span class="params">(memory_order sync = memory_order_seq_cst)</span> <span class="type">const</span> <span class="keyword">noexcept</span></span>;</span><br></pre></td></tr></table></figure>
+<p>返回原子对象中的值。该操作为原子性。</p>
+<h2 id="atomic-exchange">atomic::exchange</h2>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">T <span class="title">exchange</span> <span class="params">(T val, memory_order sync = memory_order_seq_cst)</span> <span class="keyword">volatile</span> <span class="keyword">noexcept</span></span>;</span><br><span class="line"><span class="function">T <span class="title">exchange</span> <span class="params">(T val, memory_order sync = memory_order_seq_cst)</span> <span class="keyword">noexcept</span></span>;</span><br></pre></td></tr></table></figure>
+<p>用 val 替换原子对象中的值，并返回替换前的值。操作为原子性。整个过程完成之前，其他线程无法访问。</p>
+<h2 id="atomic-compare-exchange-weak">atomic::compare_exchange_weak</h2>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">bool</span> <span class="title">compare_exchange_weak</span> <span class="params">(T &amp;expected, T val, memory_order sync = memory_order_seq_cst)</span> <span class="keyword">volatile</span> <span class="keyword">noexcept</span></span>;</span><br><span class="line"><span class="function"><span class="type">bool</span> <span class="title">compare_exchange_weak</span> <span class="params">(T &amp;expected, T val, memory_order sync = memory_order_seq_cst)</span> <span class="keyword">noexcept</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">bool</span> <span class="title">compare_exchange_weak</span> <span class="params">(T &amp;expected, T val, memory_order success, memory_order failure)</span> <span class="keyword">volatile</span> <span class="keyword">noexcept</span></span>;</span><br><span class="line"><span class="function"><span class="type">bool</span> <span class="title">compare_exchange_weak</span> <span class="params">(T &amp;expected, T val, memory_order success, memory_order failure)</span> <span class="keyword">noexcept</span></span>;</span><br></pre></td></tr></table></figure>
+<p>将原子对象的存储值和预期值比较：</p>
+<ul>
+<li>若为 true，用 val 替换原子对象值。</li>
+<li>若为 false， 用包含的值替换预期值。</li>
+</ul>
+<p>整个过程是原子性的。</p>
+<p>下面版本使用的内存顺序取决于比较结果：true 则使用 success; false 则使用 failure。该函数比较的是原子对象和预期值中的物理内容，这可能导致使用操作符 == 比较相等的值的在这里比较失败。</p>
+<p>与 compare_exchange_strong 不同，该 weak 版本<strong>允许错误的返回 false</strong>，即使原子对象存储值与预期值相等。对于某些循环算法，这可能是可接受的行为，并且可能在某些平台上显著提高性能。对于这些虚假的失败，函数返回 false，但不修改预期的值。对于非循环算法，通常首选 compare_exchange_strong。</p>
+<h2 id="atomic-compare-exchange-strong">atomic::compare_exchange_strong</h2>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">bool</span> <span class="title">compare_exchange_strong</span> <span class="params">(T &amp;expected, T val, memory_order sync = memory_order_seq_cst)</span> <span class="keyword">volatile</span> <span class="keyword">noexcept</span></span>;</span><br><span class="line"><span class="function"><span class="type">bool</span> <span class="title">compare_exchange_strong</span> <span class="params">(T &amp;expected, T val, memory_order sync = memory_order_seq_cst)</span> <span class="keyword">noexcept</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">bool</span> <span class="title">compare_exchange_strong</span> <span class="params">(T &amp;expected, T val, memory_order success, memory_order failure)</span> <span class="keyword">volatile</span> <span class="keyword">noexcept</span></span>;</span><br><span class="line"><span class="function"><span class="type">bool</span> <span class="title">compare_exchange_strong</span> <span class="params">(T &amp;expected, T val, memory_order success, memory_order failure)</span> <span class="keyword">noexcept</span></span>;</span><br></pre></td></tr></table></figure>
+<p>原子操作。与 compare_exchange_week 不同，当期望值与对象存储的值相等时，这个强版本必须始终返回 true，不允许虚假的失败。但是，在某些机器上，对于某些在循环中检查这个的算法，compare_exchange_weak 可能有更高的性能表现。</p>
+<h2 id="专门化计算操作">专门化计算操作</h2>
+<h3 id="atomic-fetch-add-T-val-memory-order-sync-memory-order-seq-cst">atomic::fetch_add(T val, memory_order sync = memory_order_seq_cst)</h3>
+<p>存储的值 + val 并返回之前的值，整个操作是原子性的。如果第二个参数使用默认值，那么这个函数相当于 atomic::operator+=。</p>
+<h3 id="atomic-fetch-sub-T-val-memory-order-sync-memory-order-seq-cst">atomic::fetch_sub(T val, memory_order sync = memory_order_seq_cst)</h3>
+<p>存储的值 - val 并返回之前的值，整个操作是原子性的。如果第二个参数使用默认值，那么这个函数相当于 atomic::operator-=。</p>
+<h3 id="atomic-fetch-and-T-val-memory-order-sync-memory-order-seq-cst">atomic::fetch_and(T val, memory_order sync = memory_order_seq_cst)</h3>
+<p>（存储的值 &amp; val）并返回之前的值，整个操作是原子性的。如果第二个参数使用默认值，那么这个函数相当于 atomic::operator&amp;=。</p>
+<h3 id="atomic-fetch-or-T-val-memory-order-sync-memory-order-seq-cst">atomic::fetch_or(T val, memory_order sync = memory_order_seq_cst)</h3>
+<p>（存储的值 | val）并返回之前的值，整个操作是原子性的。如果第二个参数使用默认值，那么这个函数相当于 atomic::operator|=。</p>
+<h3 id="atomic-fetch-xor-T-val-memory-order-sync-memory-order-seq-cst">atomic::fetch_xor(T val, memory_order sync = memory_order_seq_cst)</h3>
+<p>（存储的值 ^ val）并返回之前的值，整个操作是原子性的。如果第二个参数使用默认值，那么这个函数相当于 atomic::operator^=。</p>
+<h3 id="atomic-operator">atomic::operator++ ()</h3>
+<p>递增保存的值，返回递增后的值。</p>
+<h3 id="atomic-operator-int">atomic::operator++ (int)</h3>
+<p>递增保存的值，返回递增前的值。</p>
+<h3 id="atomic-operator-2">atomic::operator-- ()</h3>
+<p>递减保存的值，返回递减后的值。</p>
+<h3 id="atomic-operator-int-2">atomic::operator-- (int)</h3>
+<p>递减保存的值，返回递减前的值。</p>
+<p>reference：<a target="_blank" rel="noopener" href="https://blog.csdn.net/u014673282/article/details/89789139">https://blog.csdn.net/u014673282/article/details/89789139</a></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20221208021019_25309/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1154,90 +1297,6 @@ KMP算法可以在 <span class="katex"><span class="katex-mathml"><math xmlns="h
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20220926020815_60782/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/portrait.jpg">
-      <meta itemprop="name" content="caijizhuo">
-      <meta itemprop="description" content="Looks delicious">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="caijizhuo">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/20220926020815_60782/" class="post-title-link" itemprop="url">nslookup程序(getaddrinfo和getnameinfo示例)</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-09-26 02:08:15" itemprop="dateCreated datePublished" datetime="2022-09-26T02:08:15+08:00">2022-09-26</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-04-17 09:19:24" itemprop="dateModified" datetime="2023-04-17T09:19:24+08:00">2023-04-17</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/socket-programming/" itemprop="url" rel="index"><span itemprop="name">socket-programming</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h3 id="代码"><a class="markdownIt-Anchor" href="#代码"></a> 代码：</h3>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;netdb.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> MAXLINE 64</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span> **argv)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">addrinfo</span> *<span class="title">p</span>, *<span class="title">listp</span>, <span class="title">hints</span>;</span></span><br><span class="line">    <span class="type">char</span> buf[MAXLINE];</span><br><span class="line">    <span class="type">int</span> rc, flags;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (argc != <span class="number">2</span>) &#123;</span><br><span class="line">        <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">&quot;usage: %s &lt;domain name&gt;\n&quot;</span>, argv[<span class="number">0</span>]);</span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">0</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">memset</span>(&amp;hints, <span class="number">0</span>, <span class="keyword">sizeof</span>(<span class="keyword">struct</span> addrinfo));</span><br><span class="line">    hints.ai_family = AF_INET;  <span class="comment">// 只用IPV4</span></span><br><span class="line">    hints.ai_socktype = SOCK_STREAM;  <span class="comment">// 只用TCP</span></span><br><span class="line">    <span class="keyword">if</span> ((rc = getaddrinfo(argv[<span class="number">1</span>], <span class="literal">NULL</span>, &amp;hints, &amp;listp)) != <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">&quot;getaddrinfo error: %s\n&quot;</span>, gai_strerror(rc));</span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    flags = NI_NUMERICHOST;  <span class="comment">// 展示数字而不是域名</span></span><br><span class="line">    <span class="keyword">for</span> (p = listp; p; p = p-&gt;ai_next) &#123;  <span class="comment">// 遍历结果链表</span></span><br><span class="line">        getnameinfo(p-&gt;ai_addr, p-&gt;ai_addrlen, buf, MAXLINE, <span class="literal">NULL</span>, <span class="number">0</span>, flags);</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;%s\n&quot;</span>, buf);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    freeaddrinfo(listp);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">exit</span>(<span class="number">0</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="编译"><a class="markdownIt-Anchor" href="#编译"></a> 编译：</h3>
-<blockquote>
-<p>gcc nslookup.c -o nslook</p>
-</blockquote>
-<h3 id="运行"><a class="markdownIt-Anchor" href="#运行"></a> 运行：</h3>
-<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20220926020815_60782/1.png" alt="在这里插入图片描述"></p>
-<hr>
-<h3 id="reference"><a class="markdownIt-Anchor" href="#reference"></a> Reference:</h3>
-<p>CSAPP: <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>P</mi><mn>659</mn></msub></mrow><annotation encoding="application/x-tex">P_{659}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.83333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.13889em;">P</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.30110799999999993em;"><span style="top:-2.5500000000000003em;margin-left:-0.13889em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">6</span><span class="mord mtight">5</span><span class="mord mtight">9</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1309,7 +1368,7 @@ KMP算法可以在 <span class="katex"><span class="katex-mathml"><math xmlns="h
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">47</span>
+          <span class="site-state-item-count">48</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
