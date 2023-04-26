@@ -200,7 +200,7 @@
   </url>
   
   <url>
-    <loc>https://caijizhuo.github.io/20220214012513_19332/</loc>
+    <loc>https://caijizhuo.github.io/20220215093634_43852/</loc>
     
     <lastmod>2023-04-17</lastmod>
     
@@ -209,7 +209,7 @@
   </url>
   
   <url>
-    <loc>https://caijizhuo.github.io/20220215093634_43852/</loc>
+    <loc>https://caijizhuo.github.io/20220214012513_19332/</loc>
     
     <lastmod>2023-04-17</lastmod>
     
@@ -398,7 +398,7 @@
   </url>
   
   <url>
-    <loc>https://caijizhuo.github.io/20220211093017_10688/</loc>
+    <loc>https://caijizhuo.github.io/20220216093825_32353/</loc>
     
     <lastmod>2023-04-17</lastmod>
     
@@ -407,7 +407,7 @@
   </url>
   
   <url>
-    <loc>https://caijizhuo.github.io/20220216093825_32353/</loc>
+    <loc>https://caijizhuo.github.io/20220211093017_10688/</loc>
     
     <lastmod>2023-04-17</lastmod>
     
@@ -470,7 +470,7 @@
   </url>
   
   <url>
-    <loc>https://caijizhuo.github.io/categories/index.html</loc>
+    <loc>https://caijizhuo.github.io/tags/index.html</loc>
     
     <lastmod>2023-04-07</lastmod>
     
@@ -479,7 +479,7 @@
   </url>
   
   <url>
-    <loc>https://caijizhuo.github.io/tags/index.html</loc>
+    <loc>https://caijizhuo.github.io/categories/index.html</loc>
     
     <lastmod>2023-04-07</lastmod>
     
@@ -497,14 +497,14 @@
 
   
   <url>
-    <loc>https://caijizhuo.github.io/tags/tools/</loc>
+    <loc>https://caijizhuo.github.io/tags/algorithm/</loc>
     <lastmod>2023-04-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
-    <loc>https://caijizhuo.github.io/tags/algorithm/</loc>
+    <loc>https://caijizhuo.github.io/tags/tools/</loc>
     <lastmod>2023-04-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -590,14 +590,14 @@
 
   
   <url>
-    <loc>https://caijizhuo.github.io/categories/tools/</loc>
+    <loc>https://caijizhuo.github.io/categories/algorithm/</loc>
     <lastmod>2023-04-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
-    <loc>https://caijizhuo.github.io/categories/algorithm/</loc>
+    <loc>https://caijizhuo.github.io/categories/tools/</loc>
     <lastmod>2023-04-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -639,6 +639,13 @@
   </url>
   
   <url>
+    <loc>https://caijizhuo.github.io/categories/linux/</loc>
+    <lastmod>2023-04-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
     <loc>https://caijizhuo.github.io/categories/data-structure/</loc>
     <lastmod>2023-04-26</lastmod>
     <changefreq>weekly</changefreq>
@@ -647,13 +654,6 @@
   
   <url>
     <loc>https://caijizhuo.github.io/categories/AI/</loc>
-    <lastmod>2023-04-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://caijizhuo.github.io/categories/linux/</loc>
     <lastmod>2023-04-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
