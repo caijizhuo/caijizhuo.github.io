@@ -22,12 +22,12 @@
     var CONFIG = {"hostname":"caijizhuo.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="区别 先来看一段代码: 123struct A;std::shared_ptr&lt;A&gt; p1 &#x3D; std::make_shared&lt;A&gt;();std::shared_ptr&lt;A&gt; p2(new A); 他俩是有区别的，使用 make_shared 的方式只会申请一次内存，而使用 new 的方式要申请两次。 shared_ptr 内部有一个计数器，会维护指向当前对">
+  <meta name="description" content="区别 先来看一段代码: 123struct A;std::shared_ptr&lt;A&gt; p1 &#x3D; std::make_shared&lt;A&gt;();std::shared_ptr&lt;A&gt; p2(new A); 他俩是有区别的，使用 make_shared 的方式只会申请一次内存，而使用 new 的方式要申请两次。 shared_ptr 内部有一个计数器，会维护指向当前对象">
 <meta property="og:type" content="article">
 <meta property="og:title" content="cpp之make_shared与shared_ptr">
 <meta property="og:url" content="https://caijizhuo.github.io/20230414004940_59277/index.html">
 <meta property="og:site_name" content="caijizhuo">
-<meta property="og:description" content="区别 先来看一段代码: 123struct A;std::shared_ptr&lt;A&gt; p1 &#x3D; std::make_shared&lt;A&gt;();std::shared_ptr&lt;A&gt; p2(new A); 他俩是有区别的，使用 make_shared 的方式只会申请一次内存，而使用 new 的方式要申请两次。 shared_ptr 内部有一个计数器，会维护指向当前对">
+<meta property="og:description" content="区别 先来看一段代码: 123struct A;std::shared_ptr&lt;A&gt; p1 &#x3D; std::make_shared&lt;A&gt;();std::shared_ptr&lt;A&gt; p2(new A); 他俩是有区别的，使用 make_shared 的方式只会申请一次内存，而使用 new 的方式要申请两次。 shared_ptr 内部有一个计数器，会维护指向当前对象">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://caijizhuo.github.io/20230414004940_59277/1.png">
 <meta property="og:image" content="https://caijizhuo.github.io/20230414004940_59277/2.png">
@@ -261,7 +261,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h1 id="区别"><a class="markdownIt-Anchor" href="#区别"></a> 区别</h1>
+        <h1>区别</h1>
 <p>先来看一段代码:</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">A</span>;</span><br><span class="line">std::shared_ptr&lt;A&gt; p1 = std::<span class="built_in">make_shared</span>&lt;A&gt;();</span><br><span class="line"><span class="function">std::shared_ptr&lt;A&gt; <span class="title">p2</span><span class="params">(<span class="keyword">new</span> A)</span></span>;</span><br></pre></td></tr></table></figure>
 <p>他俩是有区别的，使用 make_shared 的方式只会申请一次内存，而使用 new 的方式要申请两次。<br>
@@ -271,7 +271,7 @@ shared_ptr 内部有一个计数器，会维护指向当前对象的指针个数
 <li>用make_shared 的方式，是把指向对象部分和维护计数部分合在一起，一起申请，所以是一次申请。<br>
 那这两种有什么影响呢？</li>
 </ol>
-<h1 id="影响"><a class="markdownIt-Anchor" href="#影响"></a> 影响</h1>
+<h1>影响</h1>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">func</span><span class="params">(std::shared_ptr&lt;Lhs&gt; &amp;lhs, std::shared_ptr&lt;Rhs&gt; &amp;rhs)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// do something</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="built_in">func</span>(std::<span class="built_in">shared_ptr</span>&lt;Lhs&gt;(<span class="keyword">new</span> <span class="built_in">Lhs</span>()), std::<span class="built_in">shared_ptr</span>&lt;Rhs&gt;(<span class="keyword">new</span> <span class="built_in">Rhs</span>()));</span><br></pre></td></tr></table></figure>
 <p>C++ 允许在做<strong>参数运算</strong>的时候 <strong>打乱顺序</strong>，所以执行顺序可能为这样：</p>
 <ol>
@@ -284,14 +284,14 @@ shared_ptr 内部有一个计数器，会维护指向当前对象的指针个数
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">auto</span> lhs = std::<span class="built_in">shared_ptr</span>&lt;Lhs&gt;(<span class="keyword">new</span> <span class="built_in">Lhs</span>());</span><br><span class="line"><span class="keyword">auto</span> rhs = std::<span class="built_in">shared_ptr</span>&lt;Rhs&gt;(<span class="keyword">new</span> <span class="built_in">Rhs</span>());</span><br><span class="line"><span class="built_in">func</span>(lhs, rhs);</span><br></pre></td></tr></table></figure>
 <p>这样不够优雅，所以诞生了 make_shared：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">func</span>(std::<span class="built_in">make_shared</span>&lt;Lhs&gt;(), std::<span class="built_in">make_shared</span>&lt;Rhs&gt;());</span><br></pre></td></tr></table></figure>
-<h1 id="make_shared-的缺点"><a class="markdownIt-Anchor" href="#make_shared-的缺点"></a> make_shared 的缺点</h1>
+<h1>make_shared 的缺点</h1>
 <p>因为 make_shared 是申请（控制块 + 数据块）一整块内存，所以也是一起释放。weak_ptr 可以无限期地保持控制块的存活。<br>
 <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20230414004940_59277/1.png" alt="使用 new 申请的 shared_ptr 内存分布"><br>
 使用 new 申请的 shared_ptr 内存分布<br>
 <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20230414004940_59277/2.png" alt="使用 make_shared 申请的 shared_ptr 内存分布"><br>
 使用 make_shared 申请的 shared_ptr 内存分布<br>
 为什么 weak_ptr 的实例会使控制块保持活动状态？<br>
-必须有一种方法让 weak_ptr 来确定托管对象是否仍然有效(例如for lock)。他们通过检查 shared_ptr 拥有托管对象的数量来实现这一点，该托管对象存储在控制块中。结果是控制块处于活动状态，直到 shared_ptr 计数和 weak_ptr 计数都达到 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>0</mn></mrow><annotation encoding="application/x-tex">0</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.64444em;vertical-align:0em;"></span><span class="mord">0</span></span></span></span>，才会释放整个控制块和数据块。</p>
+必须有一种方法让 weak_ptr 来确定托管对象是否仍然有效(例如for lock)。他们通过检查 shared_ptr 拥有托管对象的数量来实现这一点，该托管对象存储在控制块中。结果是控制块处于活动状态，直到 shared_ptr 计数和 weak_ptr 计数都达到 $0$，才会释放整个控制块和数据块。</p>
 
     </div>
 
@@ -392,7 +392,7 @@ shared_ptr 内部有一个计数器，会维护指向当前对象的指针个数
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8C%BA%E5%88%AB"><span class="nav-number">1.</span> <span class="nav-text"> 区别</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BD%B1%E5%93%8D"><span class="nav-number">2.</span> <span class="nav-text"> 影响</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#make_shared-%E7%9A%84%E7%BC%BA%E7%82%B9"><span class="nav-number">3.</span> <span class="nav-text"> make_shared 的缺点</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">1.</span> <span class="nav-text">区别</span></a></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">2.</span> <span class="nav-text">影响</span></a></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">3.</span> <span class="nav-text">make_shared 的缺点</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -408,7 +408,7 @@ shared_ptr 内部有一个计数器，会维护指向当前对象的指针个数
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">50</span>
+          <span class="site-state-item-count">51</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
