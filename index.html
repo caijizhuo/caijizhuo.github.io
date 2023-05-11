@@ -226,7 +226,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-05-08 16:49:27" itemprop="dateModified" datetime="2023-05-08T16:49:27+08:00">2023-05-08</time>
+                <time title="修改时间：2023-05-11 11:16:45" itemprop="dateModified" datetime="2023-05-11T11:16:45+08:00">2023-05-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -265,9 +265,9 @@
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 向线程池加入任务</span></span><br><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="keyword">class</span> F, <span class="keyword">class</span>... Args&gt;</span></span><br><span class="line"><span class="function"><span class="keyword">auto</span> <span class="title">add_task</span><span class="params">(F&amp;&amp; f, Args&amp;&amp;... args)</span> -&gt; std::future&lt;<span class="title">decltype</span><span class="params">(f(args...))</span>&gt; </span>&#123;</span><br><span class="line">  <span class="keyword">using</span> return_type = <span class="keyword">decltype</span>(<span class="built_in">f</span>(args...));</span><br><span class="line">  <span class="keyword">auto</span> task_ptr = std::make_shared&lt;std::packaged_task&lt;<span class="built_in">return_type</span>()&gt;&gt;( <span class="comment">// 因为 packaged_task 无法拷贝构造，所以用 make_shared</span></span><br><span class="line">      std::<span class="built_in">bind</span>(std::forward&lt;F&gt;(f), std::forward&lt;Args&gt;(args)...)</span><br><span class="line">  );</span><br><span class="line"></span><br><span class="line">  std::future&lt;return_type&gt; res = task_ptr-&gt;<span class="built_in">get_future</span>();</span><br><span class="line">  &#123;</span><br><span class="line">    <span class="function">std::unique_lock&lt;std::mutex&gt; <span class="title">lock</span><span class="params">(mutex_)</span></span>;</span><br><span class="line">    tasks_.<span class="built_in">emplace</span>([task_ptr]() &#123;</span><br><span class="line">      (*task_ptr)();</span><br><span class="line">    &#125;);</span><br><span class="line">  &#125;</span><br><span class="line">  wake_cond_.<span class="built_in">notify_one</span>();</span><br><span class="line">  <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>这个函数有两个模板参数，第一个模板参数 F 代表的是一个函数，第二个模板参数 Args 代表的是这个函数执行时的参数。该函数的返回值是一个 std::future 对象，可以通过 future.get() 来获得执行函数的返回值。具体用法可以见 <a href="/20230326005424_31584/" title="cpp多线程之std::future">future用法</a>。</p>
 <p>因为不知道函数返回值是什么类型，所以需要用到 decltype，在编译时自动确定调用函数的返回值类型。届时从 future 对象中 get 到的数据类型就可以拿到了。在本函数中，先定义了一个指向 packaged_task 的智能指针（packaged_task 本质是个仿函数），之后把这个仿函数包装一层，让它变为一个<strong>返回值为 return_type，并且没有入参的函数</strong>。之所以用指针，是因为 packaged_task 无法进行拷贝构造，所以下面没法调用。之后在放入执行线程队列前，用 lambda 表达式封装它，让它变为<strong>返回值为 void 的函数</strong>，把它放到执行线程的队列中。最后该函数返回 packaged_task 对应的 future 对象，方便调用者拿到返回值。</p>
-<p>值得注意的是，该函数因为是有模板参数，所以这个实现应该放在头文件中。原因详见：<a target="_blank" rel="noopener" href="https://jianshu.com/p/dc94f0cbfcf7">https://jianshu.com/p/dc94f0cbfcf7</a></p>
+<p>值得注意的是，该函数因为是有模板参数，所以这个实现应该放在头文件中。原因详见：<a href="/20230502100634_2223083831/" title="cpp模板类定义放在头文件原因">cpp模板类定义放在头文件原因</a></p>
 <h2 id="完整代码">完整代码</h2>
-<p>以下代码是对 <a href="/20230503112818_1492199803/" title="C++11简单线程池">cpp11简单线程池</a> 基础上做的改进：</p>
+<p>以下代码是对 <a href="/20230503112818_1492199803/" title="cpp11简单线程池">cpp11简单线程池</a> 基础上做的改进：</p>
 <p><a target="_blank" rel="noopener" href="http://main.cc">main.cc</a>：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;chrono&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;future&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;thread_pool.h&quot;</span></span></span><br><span class="line"></span><br><span class="line">std::mutex g_screen_mutex; <span class="comment">// 向终端打印信息的锁</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">test</span><span class="params">(<span class="type">int</span> a, <span class="type">int</span> b)</span> </span>&#123;</span><br><span class="line">  std::this_thread::<span class="built_in">sleep_for</span>(std::chrono::<span class="built_in">seconds</span>(<span class="number">1</span>));</span><br><span class="line">  <span class="function">std::lock_guard&lt;std::mutex&gt; <span class="title">lock</span><span class="params">(g_screen_mutex)</span></span>;</span><br><span class="line">  std::cout &lt;&lt; <span class="string">&quot;test() at thread [ &quot;</span> &lt;&lt; std::this_thread::<span class="built_in">get_id</span>() &lt;&lt; <span class="string">&quot;] output [&quot;</span> &lt;&lt; a + b &lt;&lt; <span class="string">&quot;]&quot;</span> &lt;&lt; std::endl;</span><br><span class="line">  <span class="keyword">return</span> a + b;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  thread_pool thread_pool;</span><br><span class="line">  std::vector&lt;std::future&lt;<span class="type">int</span>&gt;&gt; results;</span><br><span class="line">  <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">5</span> ; i++) &#123;</span><br><span class="line">    <span class="keyword">auto</span> fu = thread_pool.<span class="built_in">add_task</span>(test, i, <span class="number">2</span>);</span><br><span class="line">    results.<span class="built_in">emplace_back</span>(std::<span class="built_in">move</span>(fu));</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="built_in">getchar</span>(); <span class="comment">// 等待，不要让主进程退出</span></span><br><span class="line">  <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">5</span>; i++) &#123;</span><br><span class="line">    std::cout&lt;&lt; <span class="string">&quot;result of number &quot;</span> &lt;&lt; i &lt;&lt; <span class="string">&quot; :&quot;</span> &lt;&lt; results[i].<span class="built_in">get</span>() &lt;&lt; std::endl;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>thread_pool.h：</p>
@@ -308,7 +308,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/20230503112818_1492199803/" class="post-title-link" itemprop="url">C++11简单线程池</a>
+            <a href="/20230503112818_1492199803/" class="post-title-link" itemprop="url">cpp11简单线程池</a>
         </h2>
 
         <div class="post-meta">
@@ -325,7 +325,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-05-08 09:21:11" itemprop="dateModified" datetime="2023-05-08T09:21:11+08:00">2023-05-08</time>
+                <time title="修改时间：2023-05-11 11:16:45" itemprop="dateModified" datetime="2023-05-11T11:16:45+08:00">2023-05-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -397,6 +397,114 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20230502100634_2223083831/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/portrait.jpg">
+      <meta itemprop="name" content="caijizhuo">
+      <meta itemprop="description" content="Looks delicious">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="caijizhuo">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/20230502100634_2223083831/" class="post-title-link" itemprop="url">cpp模板类定义放在头文件原因</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-05-02 10:06:34" itemprop="dateCreated datePublished" datetime="2023-05-02T10:06:34+08:00">2023-05-02</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-05-11 11:16:45" itemprop="dateModified" datetime="2023-05-11T11:16:45+08:00">2023-05-11</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/cpp/" itemprop="url" rel="index"><span itemprop="name">cpp</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="编译单元">编译单元</h2>
+<p>编译单元是指一个源文件（.c/.cpp）文件和包含展开的头文件，之后编译器会将该文件编译成一个 object 文件（在 linux 中是 .o 文件）。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gcc xxx.cc -c</span><br></pre></td></tr></table></figure>
+<p>之后用可以看见当前目录下生成一个 xxx.o 的文件，这个文件就是 <a target="_blank" rel="noopener" href="http://xxx.cc">xxx.cc</a> 编译单元生成的对应二进制。这个二进制里面有该文件所对应的符号。</p>
+<h2 id="普通成员函数">普通成员函数</h2>
+<p>现在有如下例子，尝试编译对应的二进制文件，不链接：</p>
+<p><a target="_blank" rel="noopener" href="http://main.cc">main.cc</a>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;A.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    A a;</span><br><span class="line">    a.<span class="built_in">print</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>A.h：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">A</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="type">int</span> m;</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">print</span><span class="params">()</span></span>;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p><a target="_blank" rel="noopener" href="http://A.cc">A.cc</a>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;A.h&quot;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">A::print</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    cout &lt;&lt; m &lt;&lt; endl;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>之后可以用 nm 命令查看二进制中的符号，如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # g++ main.cc -c</span><br><span class="line">@└────&gt; # g++ A.cc -c</span><br><span class="line">@└────&gt; # nm main.o </span><br><span class="line">0000000000000000 T main</span><br><span class="line">                 U _ZN1A5printEv</span><br><span class="line">@└────&gt; # nm A.o </span><br><span class="line">                 U __cxa_atexit</span><br><span class="line">                 U __dso_handle</span><br><span class="line">000000000000006c t _GLOBAL__sub_I__ZN1A5printEv</span><br><span class="line">000000000000002e t _Z41__static_initialization_and_destruction_0ii</span><br><span class="line">0000000000000000 T _ZN1A5printEv</span><br><span class="line">                 U _ZNSolsEi</span><br><span class="line">                 U _ZNSolsEPFRSoS_E</span><br><span class="line">                 U _ZNSt8ios_base4InitC1Ev</span><br><span class="line">                 U _ZNSt8ios_base4InitD1Ev</span><br><span class="line">                 U _ZSt4cout</span><br><span class="line">                 U _ZSt4endlIcSt11char_traitsIcEERSt13basic_ostreamIT_T0_ES6_</span><br><span class="line">0000000000000000 r _ZStL19piecewise_construct</span><br><span class="line">0000000000000000 b _ZStL8__ioinit</span><br></pre></td></tr></table></figure>
+<p>可以看到，在 main.o 中，有一个 _ZN1A5printEv，是对 undefined，也就是说编译器在这个编译单元中找不到这个符号。在 main.o 中，看下反汇编，调用 print 函数的时候是类似 call print 这种形式跳转函数的。因为找不到这个符号，自然也就不知道这个函数的地址，所以需要链接器链接有这个符号的 A.o，就可以运行了。常规的成员函数这样运行的，那么如果换成模板成员函数会怎么样呢？</p>
+<h2 id="模板成员函数">模板成员函数</h2>
+<p>修改代码如下：</p>
+<p><a target="_blank" rel="noopener" href="http://main.cc">main.cc</a>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;A.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    A a;</span><br><span class="line">    a.<span class="built_in">print</span>&lt;<span class="type">int</span>&gt;();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>A.h：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">A</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="type">int</span> m;</span><br><span class="line">    <span class="function"><span class="keyword">template</span>&lt;<span class="keyword">class</span> T&gt;</span></span><br><span class="line"><span class="function">    <span class="type">void</span> <span class="title">print</span><span class="params">()</span></span>;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p><a target="_blank" rel="noopener" href="http://A.cc">A.cc</a>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;A.h&quot;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="keyword">class</span> T&gt;</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">A::print</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    cout &lt;&lt; m &lt;&lt; endl;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>编译：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # g++ main.cc -c</span><br><span class="line">@└────&gt; # g++ A.cc -c</span><br><span class="line">@└────&gt; # nm main.o </span><br><span class="line">0000000000000000 T main</span><br><span class="line">                 U _ZN1A5printIiEEvv</span><br><span class="line">@└────&gt; # nm A.o</span><br><span class="line">                 U __cxa_atexit</span><br><span class="line">                 U __dso_handle</span><br><span class="line">000000000000003e t _GLOBAL__sub_I_A.cc</span><br><span class="line">0000000000000000 t _Z41__static_initialization_and_destruction_0ii</span><br><span class="line">                 U _ZNSt8ios_base4InitC1Ev</span><br><span class="line">                 U _ZNSt8ios_base4InitD1Ev</span><br><span class="line">0000000000000000 r _ZStL19piecewise_construct</span><br><span class="line">0000000000000000 b _ZStL8__ioinit</span><br></pre></td></tr></table></figure>
+<p>可以看到，在换成模板函数后，A.o 中根本没有 print 的符号！尽管 <a target="_blank" rel="noopener" href="http://A.cc">A.cc</a> 中有定义。这是因为在 C++ 中，<strong>当一个模板不被用到的时侯它就不该被实例化出来</strong>，而在 <a target="_blank" rel="noopener" href="http://A.cc">A.cc</a> 中显然这个模板没有被用到。所以编译器在编译 main.o 的时候，没找到符号，就把希望寄托于链接器。而链接器在链接的时候也懵逼了，因为这个符号在 A.o 中也没有。所以这种情况下链接器会报找不到符号的错误。</p>
+<h2 id="解决方案">解决方案</h2>
+<p>所以回到主题，这就是为什么对于 C++ 的模板函数来说，要把模板函数的实现放到头文件中。</p>
+<p><a target="_blank" rel="noopener" href="http://main.cc">main.cc</a>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;A.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    A a;</span><br><span class="line">    a.<span class="built_in">print</span>&lt;<span class="type">int</span>&gt;();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>A.h：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">A</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="type">int</span> m;</span><br><span class="line">    <span class="function"><span class="keyword">template</span>&lt;<span class="keyword">class</span> T&gt;</span></span><br><span class="line"><span class="function">    <span class="type">void</span> <span class="title">print</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        std::cout &lt;&lt; m &lt;&lt; std::endl;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>编译：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # g++ main.cc -c</span><br><span class="line">@└────&gt; # nm main.o </span><br><span class="line">                 U __cxa_atexit</span><br><span class="line">                 U __dso_handle</span><br><span class="line">0000000000000059 t _GLOBAL__sub_I_main</span><br><span class="line">0000000000000000 T main</span><br><span class="line">000000000000001b t _Z41__static_initialization_and_destruction_0ii</span><br><span class="line">0000000000000000 W _ZN1A5printIiEEvv</span><br><span class="line">                 U _ZNSolsEi</span><br><span class="line">                 U _ZNSolsEPFRSoS_E</span><br><span class="line">                 U _ZNSt8ios_base4InitC1Ev</span><br><span class="line">                 U _ZNSt8ios_base4InitD1Ev</span><br><span class="line">                 U _ZSt4cout</span><br><span class="line">                 U _ZSt4endlIcSt11char_traitsIcEERSt13basic_ostreamIT_T0_ES6_</span><br><span class="line">0000000000000000 r _ZStL19piecewise_construct</span><br><span class="line">0000000000000000 b _ZStL8__ioinit</span><br></pre></td></tr></table></figure>
+<p>可以看到 main.o 中包含 print 的符号。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20230501161003_1606969208/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -428,7 +536,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-05-08 09:18:23" itemprop="dateModified" datetime="2023-05-08T09:18:23+08:00">2023-05-08</time>
+                <time title="修改时间：2023-05-11 11:15:10" itemprop="dateModified" datetime="2023-05-11T11:15:10+08:00">2023-05-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -530,10 +638,16 @@ auto 和 decltype 关键字都可以自动推导出变量的类型，但它们�
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2023-04-27 09:37:48 / 修改时间：11:36:15" itemprop="dateCreated datePublished" datetime="2023-04-27T09:37:48+08:00">2023-04-27</time>
+              <time title="创建时间：2023-04-27 09:37:48" itemprop="dateCreated datePublished" datetime="2023-04-27T09:37:48+08:00">2023-04-27</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-05-11 11:13:46" itemprop="dateModified" datetime="2023-05-11T11:13:46+08:00">2023-05-11</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
@@ -634,10 +748,16 @@ auto 和 decltype 关键字都可以自动推导出变量的类型，但它们�
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2023-04-25 10:47:00 / 修改时间：14:37:47" itemprop="dateCreated datePublished" datetime="2023-04-25T10:47:00+08:00">2023-04-25</time>
+              <time title="创建时间：2023-04-25 10:47:00" itemprop="dateCreated datePublished" datetime="2023-04-25T10:47:00+08:00">2023-04-25</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-05-11 11:13:46" itemprop="dateModified" datetime="2023-05-11T11:13:46+08:00">2023-05-11</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
@@ -730,7 +850,7 @@ $$<br>
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-05-08 11:08:59" itemprop="dateModified" datetime="2023-05-08T11:08:59+08:00">2023-05-08</time>
+                <time title="修改时间：2023-05-11 11:15:49" itemprop="dateModified" datetime="2023-05-11T11:15:49+08:00">2023-05-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -893,10 +1013,16 @@ $$<br>
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2023-04-19 00:35:47 / 修改时间：09:58:20" itemprop="dateCreated datePublished" datetime="2023-04-19T00:35:47+08:00">2023-04-19</time>
+              <time title="创建时间：2023-04-19 00:35:47" itemprop="dateCreated datePublished" datetime="2023-04-19T00:35:47+08:00">2023-04-19</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-05-11 11:10:40" itemprop="dateModified" datetime="2023-05-11T11:10:40+08:00">2023-05-11</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
@@ -1023,10 +1149,16 @@ $$<br>
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2023-04-18 01:01:34 / 修改时间：11:31:11" itemprop="dateCreated datePublished" datetime="2023-04-18T01:01:34+08:00">2023-04-18</time>
+              <time title="创建时间：2023-04-18 01:01:34" itemprop="dateCreated datePublished" datetime="2023-04-18T01:01:34+08:00">2023-04-18</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-05-11 11:10:40" itemprop="dateModified" datetime="2023-05-11T11:10:40+08:00">2023-05-11</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
@@ -1119,7 +1251,7 @@ $$<br>
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-04-17 09:35:03" itemprop="dateModified" datetime="2023-04-17T09:35:03+08:00">2023-04-17</time>
+                <time title="修改时间：2023-05-11 11:09:39" itemprop="dateModified" datetime="2023-05-11T11:09:39+08:00">2023-05-11</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1179,147 +1311,6 @@ const_cast 在调用第三方函数中的使用：<br>
 <p>输出结果：</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">20</span><br></pre></td></tr></table></figure>
 <p>我们在使用第三方库和 API 的时候，我们只能调用，看不到其具体的实现，为了能够调用成功，需要使用 const_cast 来去除 *ptr 的 const 属性。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20230416004015_2260001540/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/portrait.jpg">
-      <meta itemprop="name" content="caijizhuo">
-      <meta itemprop="description" content="Looks delicious">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="caijizhuo">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/20230416004015_2260001540/" class="post-title-link" itemprop="url">cpp之lock_guard和unique_lock</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2023-04-16 00:40:15" itemprop="dateCreated datePublished" datetime="2023-04-16T00:40:15+08:00">2023-04-16</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-04-25 15:49:27" itemprop="dateModified" datetime="2023-04-25T15:49:27+08:00">2023-04-25</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/cpp/" itemprop="url" rel="index"><span itemprop="name">cpp</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/concurrent-programming/" itemprop="url" rel="index"><span itemprop="name">concurrent-programming</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1>锁</h1>
-<p>锁是用来防止不同线程访问同一个共享资源时发生数据竞争风险，保证访问的先后顺序而达到数据的一致性访问。本文介绍的 lock_guard 和 unique_lock，都是对 std::mutex 进行封装，实现 RAII 的效果。这两种锁本质差不多，而 unique_lock 的功能比 lock_guard 多一些。</p>
-<h1>lock_guard</h1>
-<p>lock_guard 用来管理一个 std::mutext 类型的对象，定义一个 lock_guard 对象同时调用构造函数，对 std::mutex 进行上锁，退出作用域时析构，从而进行解锁。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">std::lock_guard&lt;std::mutex&gt; <span class="title">lock</span><span class="params">(mutex_name)</span></span>;</span><br></pre></td></tr></table></figure>
-<p>特点如下：</p>
-<ol>
-<li>创建即加锁，退出作用域自动解锁，避免忘记解锁。</li>
-<li>无需手工解锁。不能中途解锁。</li>
-<li>无法复制。</li>
-<li>并不管理 std::mutex 的生命周期，如果在作用域内的时候 std::mutex 被释放了，那就会出现空指针错误。<br>
-使用示例：</li>
-</ol>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;thread&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;mutex&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"> </span><br><span class="line"><span class="type">int</span> g_i = <span class="number">0</span>;</span><br><span class="line">std::mutex g_i_mutex;  </span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">safe_increment</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="type">const</span> std::lock_guard&lt;std::mutex&gt; <span class="title">lock</span><span class="params">(g_i_mutex)</span></span>;</span><br><span class="line">    ++g_i;</span><br><span class="line">    std::cout &lt;&lt; std::this_thread::<span class="built_in">get_id</span>() &lt;&lt; <span class="string">&quot;: &quot;</span> &lt;&lt; g_i &lt;&lt; std::endl;</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;start: &quot;</span> &lt;&lt; g_i &lt;&lt; <span class="string">&#x27;\n&#x27;</span>;</span><br><span class="line">    <span class="function">std::thread <span class="title">t1</span><span class="params">(safe_increment)</span></span>;</span><br><span class="line">    <span class="function">std::thread <span class="title">t2</span><span class="params">(safe_increment)</span></span>;</span><br><span class="line">    t1.<span class="built_in">join</span>();</span><br><span class="line">    t2.<span class="built_in">join</span>();</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;end: &quot;</span> &lt;&lt; g_i &lt;&lt; <span class="string">&#x27;\n&#x27;</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>输出：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # ./a.out </span><br><span class="line">start: 0</span><br><span class="line">140365627524864: 1</span><br><span class="line">140365619132160: 2</span><br><span class="line">end: 2</span><br></pre></td></tr></table></figure>
-<h1>unique_lock</h1>
-<p>虽然 lock_guard 挺好用的，但是有个很大的缺陷，在定义 lock_guard 的地方会调用构造函数加锁，在离开定义域的话 lock_guard 就会被销毁，调用析构函数解锁。这就产生了一个问题，如果这个定义域范围很大的话，那么锁的粒度就很大，很大程序上会影响效率。<br>
-所以为了解决 lock_guard 锁的<strong>粒度过大</strong>的问题，unique_lock 就出现了。</p>
-<table>
-<thead>
-<tr>
-<th style="text-align:left">方法</th>
-<th style="text-align:left">说明</th>
-<th style="text-align:left">详细说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left"><code>explicit unique_lock(mutex_type&amp; m);</code></td>
-<td style="text-align:left">加锁</td>
-<td style="text-align:left">新创建的 unique_lock 对象，管理 Mutex 对象 m，并尝试调用 m.lock() 对 Mutex 对象进行上锁，如果此时另外某个 unique_lock 对象已经管理了该 Mutex 对象 m，则当前线程将<strong>会被阻塞</strong>。</td>
-</tr>
-<tr>
-<td style="text-align:left"><code>unique_lock(mutex_type&amp; m, try_to_lock_t tag);</code></td>
-<td style="text-align:left">尝试加锁</td>
-<td style="text-align:left">try-locking 初始化新创建的 unique_lock 对象，管理 Mutex 对象 m，并尝试调用 m.try_lock() 对 Mutex 对象进行上锁，但如果上锁不成功，并<strong>不会阻塞</strong>当前线程。</td>
-</tr>
-<tr>
-<td style="text-align:left"><code>unique_lock(mutex_type&amp; m, defer_lock_t tag) noexcept;</code></td>
-<td style="text-align:left">延迟加锁</td>
-<td style="text-align:left">初始化新创建的 unique_lock 对象，管理 Mutex 对象 m，但是在初始化的时候并<strong>不锁住</strong> Mutex 对象。 m 应该是一个没有当前线程锁住的 Mutex 对象。</td>
-</tr>
-<tr>
-<td style="text-align:left"><code>unique_lock(mutex_type&amp; m, adopt_lock_t tag);</code></td>
-<td style="text-align:left">递归加锁</td>
-<td style="text-align:left">初始化新创建的 unique_lock 对象管理 Mutex 对象 m， m 应该是一个<strong>已经被当前线程锁住</strong>的 Mutex 对象。(并且当前新创建的 unique_lock 对象拥有对锁(Lock)的所有权)。</td>
-</tr>
-</tbody>
-</table>
-<p>特点如下：</p>
-<ol>
-<li>创建时可以不锁定（通过指定第二个参数为 std::defer_lock），而在需要时再锁定。</li>
-<li>可以随时加锁解锁（调用 lock 或者 unlock 成员函数）。</li>
-<li>作用域规则同 lock_grard，析构的时候会判断当前锁的状态来决定是否解锁，如果当前状态已经是解锁状态了，那么就不会再次解锁，而如果当前状态是加锁状态，就会自动调用unique.unlock()来解锁。</li>
-<li>不可复制，可移动</li>
-<li>条件变量需要该类型的锁作为参数（此时必须使用 unique_lock）</li>
-</ol>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">condition_variable cv;</span><br><span class="line">cv.<span class="built_in">wait</span>(unique_lock);  <span class="comment">// 会做两件事1：使线程进入等待状态 2:unique_lock.unlock 把mtx给释放掉</span></span><br></pre></td></tr></table></figure>
-<p>unique_lock 示例：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;mutex&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;thread&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;chrono&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"> </span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">Box</span> &#123;</span><br><span class="line">    <span class="function"><span class="keyword">explicit</span> <span class="title">Box</span><span class="params">(<span class="type">int</span> num)</span> : num_things&#123;</span>num&#125; &#123;&#125;</span><br><span class="line">    <span class="type">int</span> num_things;</span><br><span class="line">    std::mutex m;</span><br><span class="line">&#125;;</span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">transfer</span><span class="params">(Box &amp;from, Box &amp;to, <span class="type">int</span> num)</span> </span>&#123;</span><br><span class="line">    <span class="function">std::unique_lock&lt;std::mutex&gt; <span class="title">lock1</span><span class="params">(from.m, std::defer_lock)</span></span>;</span><br><span class="line">    <span class="function">std::unique_lock&lt;std::mutex&gt; <span class="title">lock2</span><span class="params">(to.m, std::defer_lock)</span></span>;</span><br><span class="line">    std::<span class="built_in">lock</span>(lock1, lock2);</span><br><span class="line">    from.num_things -= num;</span><br><span class="line">    to.num_things += num; </span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="function">Box <span class="title">box1</span><span class="params">(<span class="number">100</span>)</span></span>;</span><br><span class="line">    <span class="function">Box <span class="title">box2</span><span class="params">(<span class="number">50</span>)</span></span>;</span><br><span class="line">    <span class="function">std::thread <span class="title">t1</span><span class="params">(transfer, std::ref(box1), std::ref(box2), <span class="number">10</span>)</span></span>;</span><br><span class="line">    <span class="function">std::thread <span class="title">t2</span><span class="params">(transfer, std::ref(box2), std::ref(box1), <span class="number">5</span>)</span></span>;</span><br><span class="line">    t1.<span class="built_in">join</span>();</span><br><span class="line">    t2.<span class="built_in">join</span>();</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;box1:&quot;</span> &lt;&lt; box1.num_things &lt;&lt; std::endl;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;box2:&quot;</span> &lt;&lt; box2.num_things &lt;&lt; std::endl;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # ./a.out </span><br><span class="line">box1:95</span><br><span class="line">box2:55</span><br></pre></td></tr></table></figure>
-<h1>总结</h1>
-<p>unique_lock 内部会维护一个锁的状态，所以在效率上肯定会比 lock_guard 慢。所以在能使用 lock_guard 的情况下尽量优先使用 lock_guard。</p>
 
       
     </div>
@@ -1406,7 +1397,7 @@ const_cast 在调用第三方函数中的使用：<br>
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">55</span>
+          <span class="site-state-item-count">56</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
