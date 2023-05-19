@@ -195,6 +195,100 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20230418010134_2667555321/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/portrait.jpg">
+      <meta itemprop="name" content="caijizhuo">
+      <meta itemprop="description" content="Looks delicious">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="caijizhuo">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/20230418010134_2667555321/" class="post-title-link" itemprop="url">callgrind和kcachegrind查看调用时间和调用图</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-04-18 01:01:34" itemprop="dateCreated datePublished" datetime="2023-04-18T01:01:34+08:00">2023-04-18</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-05-11 11:10:40" itemprop="dateModified" datetime="2023-05-11T11:10:40+08:00">2023-05-11</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/tools/" itemprop="url" rel="index"><span itemprop="name">tools</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="callgrind"><a class="markdownIt-Anchor" href="#callgrind"></a> callgrind</h1>
+<p>callgrind 是 valgrind 套件中的一个工具，使用方式为</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">valgrind --tool=callgrind ./your_program your_program_args1 your_program_args2</span><br></pre></td></tr></table></figure>
+<p>运行之后，可以生成一份 callgrind.out.pid 的文件，在当前目录下。这份文件记录了运行时的一些数据，以及函数调用关系。</p>
+<h1 id="kcachegrind"><a class="markdownIt-Anchor" href="#kcachegrind"></a> kcachegrind</h1>
+<p>kcachegrind 可以分析上述产生的 callgrind.out.pid 的文件，并且点击下方 call graph 可以看到调用关系图，帮助我们分析代码结构。</p>
+<p><a target="_blank" rel="noopener" href="https://sourceforge.net/projects/precompiledbin/files/?source=navbar" title="工具下载">点击下载windows版kcachegrind</a></p>
+<h1 id="示例"><a class="markdownIt-Anchor" href="#示例"></a> 示例</h1>
+<p>代码：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">accumulate</span><span class="params">(<span class="type">int</span> begin, <span class="type">int</span> end)</span> </span>&#123;</span><br><span class="line">    <span class="type">int</span> result = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = begin; i &lt; end; i++) &#123;</span><br><span class="line">        result += i;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">accumulate0_100000</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">accumulate</span>(<span class="number">0</span>, <span class="number">100000</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">accumulate0_200000</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">accumulate</span>(<span class="number">0</span>, <span class="number">200000</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="built_in">accumulate0_100000</span>();</span><br><span class="line">    <span class="built_in">accumulate0_200000</span>();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">valgrind --tool=callgrind --dump-instr=yes --trace-jump=yes ./a.out</span><br></pre></td></tr></table></figure>
+<h2 id="kcachegrind分析"><a class="markdownIt-Anchor" href="#kcachegrind分析"></a> kcachegrind分析</h2>
+<p>生成文件后，使用 kcachegrind 工具打开这个分析文件。</p>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20230418010134_2667555321/1.png" alt="1"></p>
+<p>可以从图中看到函数执行时间，百分比等功能。</p>
+<h2 id="gprof2dot分析"><a class="markdownIt-Anchor" href="#gprof2dot分析"></a> gprof2dot分析</h2>
+<p>使用 gprof2dot 工具，需要安装 python 和 graphviz。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">yum install graphviz</span><br><span class="line">pip3 install gprof2dot</span><br></pre></td></tr></table></figure>
+<p>之后使用上述工具对其进行分析，生成调用图。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gprof2dot -f callgrind -n0 -e0 ./callgrind.out.2328 &gt; callgrind.2328.dot</span><br><span class="line">dot callgrind.2328.dot -Tsvg -o callgrind.2328.dot.svg</span><br></pre></td></tr></table></figure>
+<p>其中 -f 指定输出格式为 callgrin d格式，-nX 指定生成的文件忽略小于 X 个 node 的函数，例如 -n10，代表函数节点小于 10 个的，在最终文件中不生成其相关信息，-eX 代表边缘阈值，与 -n 类似。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20230416184222_894450274/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -336,7 +430,7 @@ const_cast 在调用第三方函数中的使用：<br>
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-05-11 11:13:46" itemprop="dateModified" datetime="2023-05-11T11:13:46+08:00">2023-05-11</time>
+                <time title="修改时间：2023-05-19 15:53:40" itemprop="dateModified" datetime="2023-05-19T15:53:40+08:00">2023-05-19</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -373,9 +467,9 @@ const_cast 在调用第三方函数中的使用：<br>
 <li>创建即加锁，退出作用域自动解锁，避免忘记解锁。</li>
 <li>无需手工解锁。不能中途解锁。</li>
 <li>无法复制。</li>
-<li>并不管理 std::mutex 的生命周期，如果在作用域内的时候 std::mutex 被释放了，那就会出现空指针错误。<br>
-使用示例：</li>
+<li>并不管理 std::mutex 的生命周期，如果在作用域内的时候 std::mutex 被释放了，那就会出现空指针错误。</li>
 </ol>
+<p>使用示例：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;thread&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;mutex&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"> </span><br><span class="line"><span class="type">int</span> g_i = <span class="number">0</span>;</span><br><span class="line">std::mutex g_i_mutex;  </span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">safe_increment</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="type">const</span> std::lock_guard&lt;std::mutex&gt; <span class="title">lock</span><span class="params">(g_i_mutex)</span></span>;</span><br><span class="line">    ++g_i;</span><br><span class="line">    std::cout &lt;&lt; std::this_thread::<span class="built_in">get_id</span>() &lt;&lt; <span class="string">&quot;: &quot;</span> &lt;&lt; g_i &lt;&lt; std::endl;</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;start: &quot;</span> &lt;&lt; g_i &lt;&lt; <span class="string">&#x27;\n&#x27;</span>;</span><br><span class="line">    <span class="function">std::thread <span class="title">t1</span><span class="params">(safe_increment)</span></span>;</span><br><span class="line">    <span class="function">std::thread <span class="title">t2</span><span class="params">(safe_increment)</span></span>;</span><br><span class="line">    t1.<span class="built_in">join</span>();</span><br><span class="line">    t2.<span class="built_in">join</span>();</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;end: &quot;</span> &lt;&lt; g_i &lt;&lt; <span class="string">&#x27;\n&#x27;</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>输出：</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # ./a.out </span><br><span class="line">start: 0</span><br><span class="line">140365627524864: 1</span><br><span class="line">140365619132160: 2</span><br><span class="line">end: 2</span><br></pre></td></tr></table></figure>
@@ -477,7 +571,7 @@ const_cast 在调用第三方函数中的使用：<br>
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-05-11 11:13:46" itemprop="dateModified" datetime="2023-05-11T11:13:46+08:00">2023-05-11</time>
+                <time title="修改时间：2023-05-19 15:54:01" itemprop="dateModified" datetime="2023-05-19T15:54:01+08:00">2023-05-19</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -507,9 +601,9 @@ const_cast 在调用第三方函数中的使用：<br>
 shared_ptr 内部有一个计数器，会维护指向当前对象的指针个数。</p>
 <ol>
 <li>在使用 new 的方式申请的时候，先用 new 申请指向对象的内存，再申请 shared_ptr 中维护计数部分的内存，所以是两次申请。</li>
-<li>用make_shared 的方式，是把指向对象部分和维护计数部分合在一起，一起申请，所以是一次申请。<br>
-那这两种有什么影响呢？</li>
+<li>用make_shared 的方式，是把指向对象部分和维护计数部分合在一起，一起申请，所以是一次申请。</li>
 </ol>
+<p>那这两种有什么影响呢？</p>
 <h1 id="影响"><a class="markdownIt-Anchor" href="#影响"></a> 影响</h1>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">func</span><span class="params">(std::shared_ptr&lt;Lhs&gt; &amp;lhs, std::shared_ptr&lt;Rhs&gt; &amp;rhs)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// do something</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="built_in">func</span>(std::<span class="built_in">shared_ptr</span>&lt;Lhs&gt;(<span class="keyword">new</span> <span class="built_in">Lhs</span>()), std::<span class="built_in">shared_ptr</span>&lt;Rhs&gt;(<span class="keyword">new</span> <span class="built_in">Rhs</span>()));</span><br></pre></td></tr></table></figure>
 <p>C++ 允许在做<strong>参数运算</strong>的时候 <strong>打乱顺序</strong>，所以执行顺序可能为这样：</p>
@@ -517,9 +611,9 @@ shared_ptr 内部有一个计数器，会维护指向当前对象的指针个数
 <li>new Lhs();</li>
 <li>new Rhs();</li>
 <li>shared_ptr<Lhs> 构造</Lhs></li>
-<li>shared_ptr<Rhs> 构造<br>
-假设在步骤 2 中，因为内存不足抛出了异常。之后我们就丢失了 1 中申请的内存，因为 shared_ptr 还没有指向它，也就没有接受管理。有一种解决方案：</Rhs></li>
+<li>shared_ptr<Rhs> 构造</Rhs></li>
 </ol>
+<p>假设在步骤 2 中，因为内存不足抛出了异常。之后我们就丢失了 1 中申请的内存，因为 shared_ptr 还没有指向它，也就没有接受管理。有一种解决方案：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">auto</span> lhs = std::<span class="built_in">shared_ptr</span>&lt;Lhs&gt;(<span class="keyword">new</span> <span class="built_in">Lhs</span>());</span><br><span class="line"><span class="keyword">auto</span> rhs = std::<span class="built_in">shared_ptr</span>&lt;Rhs&gt;(<span class="keyword">new</span> <span class="built_in">Rhs</span>());</span><br><span class="line"><span class="built_in">func</span>(lhs, rhs);</span><br></pre></td></tr></table></figure>
 <p>这样不够优雅，所以诞生了 make_shared：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">func</span>(std::<span class="built_in">make_shared</span>&lt;Lhs&gt;(), std::<span class="built_in">make_shared</span>&lt;Rhs&gt;());</span><br></pre></td></tr></table></figure>
@@ -581,7 +675,7 @@ shared_ptr 内部有一个计数器，会维护指向当前对象的指针个数
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-05-11 11:10:40" itemprop="dateModified" datetime="2023-05-11T11:10:40+08:00">2023-05-11</time>
+                <time title="修改时间：2023-05-19 15:54:34" itemprop="dateModified" datetime="2023-05-19T15:54:34+08:00">2023-05-19</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -616,9 +710,9 @@ shared_ptr 内部有一个计数器，会维护指向当前对象的指针个数
 <p>RAII 代表 resource acquisition is initialization 的缩写，意为“资源获取即初始化”。它是 C++ 之父提出的设计理念，核心是把<strong>资源和对象的生命周期绑定，对象创建获取资源，销毁释放资源</strong>。这样做有两大好处：</p>
 <ol>
 <li>不需要显式的释放资源。</li>
-<li>对象所需资源在其生命周期始终保持有效。<br>
-实现一个简单的智能指针：</li>
+<li>对象所需资源在其生命周期始终保持有效。</li>
 </ol>
+<p>实现一个简单的智能指针：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">class</span> <span class="title class_">T</span>&gt;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">smartPtr</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">smartPtr</span>(T* ptr = <span class="literal">nullptr</span>) : <span class="built_in">ptr_</span>(ptr) &#123;&#125;</span><br><span class="line">    ~<span class="built_in">smartPtr</span>() &#123;</span><br><span class="line">        <span class="keyword">if</span> (ptr_) &#123;</span><br><span class="line">            <span class="keyword">delete</span> ptr_;</span><br><span class="line">        &#125;</span><br><span class="line">        cout &lt;&lt; <span class="string">&quot;~smartPtr called!&quot;</span> &lt;&lt; endl;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    T* ptr_;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="type">int</span>* a = <span class="keyword">new</span> <span class="built_in">int</span>(<span class="number">1</span>);</span><br><span class="line">    <span class="function">smartPtr&lt;<span class="type">int</span>&gt; <span class="title">sp</span><span class="params">(a)</span></span>; <span class="comment">//将a 指针委托给sp对象管理</span></span><br><span class="line">    smartPtr&lt;<span class="type">int</span>&gt;<span class="built_in">sp2</span>(<span class="keyword">new</span> <span class="built_in">int</span>(<span class="number">2</span>)); <span class="comment">//直接船舰匿名对象给sp2管理</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>上面的还不足以称为智能指针，因为</p>
 <ol>
@@ -716,7 +810,7 @@ auto_ptr 实现代码:</p>
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-05-11 11:09:39" itemprop="dateModified" datetime="2023-05-11T11:09:39+08:00">2023-05-11</time>
+                <time title="修改时间：2023-05-19 15:52:50" itemprop="dateModified" datetime="2023-05-19T15:52:50+08:00">2023-05-19</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1192,113 +1286,6 @@ A类占用8字节，B类占用8字节，C类占用8字节，D类占用28字节((
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20230127151632_3224177663/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/portrait.jpg">
-      <meta itemprop="name" content="caijizhuo">
-      <meta itemprop="description" content="Looks delicious">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="caijizhuo">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/20230127151632_3224177663/" class="post-title-link" itemprop="url">linux内存寻址</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2023-01-27 15:16:32" itemprop="dateCreated datePublished" datetime="2023-01-27T15:16:32+08:00">2023-01-27</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-05-11 11:13:46" itemprop="dateModified" datetime="2023-05-11T11:13:46+08:00">2023-05-11</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="内存寻址定义"><a class="markdownIt-Anchor" href="#内存寻址定义"></a> 内存寻址定义</h2>
-<p>所谓内存寻址，就是 cpu 接受到指令后，需要从内存中取得相应数据。但是内存中的数据都是有对应地址的，如何通过地址拿到的地址，来获取相应地址段上的数据。</p>
-<p>所谓地址在操作系统中分为逻辑地址，虚拟地址，线性地址和物理地址。</p>
-<h3 id="1-逻辑地址"><a class="markdownIt-Anchor" href="#1-逻辑地址"></a> 1. 逻辑地址</h3>
-<p>逻辑地址就是机器码指令用到的地址。机器指令码中用到的地址都是逻辑地址。目前这个地址是由 16 位段选择符和 32 位偏移量来表示的（CS：EIP 段选择符：段内偏移量）。</p>
-<h3 id="2-虚拟地址"><a class="markdownIt-Anchor" href="#2-虚拟地址"></a> 2. 虚拟地址</h3>
-<p>虚拟地址就是逻辑地址的段内偏移量。所以逻辑地址 = 段选择符：<strong>虚拟地址</strong>。我们正常代码中拿到的地址就是虚拟地址，比如：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> *p = (<span class="type">int</span>*)<span class="built_in">malloc</span>(<span class="built_in">sizeof</span>(<span class="type">int</span>));</span><br></pre></td></tr></table></figure>
-<h3 id="3-线性地址"><a class="markdownIt-Anchor" href="#3-线性地址"></a> 3. 线性地址</h3>
-<p>是一个 32 位无符号整数，是<strong>由逻辑地址</strong>经过段页式转换而来的。我们常说的进程的地址空间，所谓的地址指的就是线性地址。</p>
-<h3 id="4-物理地址"><a class="markdownIt-Anchor" href="#4-物理地址"></a> 4. 物理地址</h3>
-<p>是内存芯片中的物理地址，是存放数据的实际地址。是<strong>由逻辑地址</strong>转换而来的。最终是由这个地址来定位到内存空间。在页表转换时，这里存的不是真正物理地址，是物理内存块编号。例如一个内存块大小为 4K，那第 0 块地址若为 0x50000000，第一块就为 0x50001000。</p>
-<p>最后给一张地址变换的图：</p>
-<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20230127151632_3224177663/0.png" alt="0"></p>
-<h2 id="x86-段页式内存管理机制"><a class="markdownIt-Anchor" href="#x86-段页式内存管理机制"></a> x86 段页式内存管理机制</h2>
-<p>逻辑地址转换为物理地址需要经历两个过程：</p>
-<h3 id="1-段式内存管理逻辑地址-线性地址"><a class="markdownIt-Anchor" href="#1-段式内存管理逻辑地址-线性地址"></a> 1. 段式内存管理：逻辑地址 =&gt; 线性地址</h3>
-<p>逻辑地址是（selector：offset）的形式，selector 可以为代码段或者数据段。</p>
-<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20230127151632_3224177663/1.png" alt="1"></p>
-<p>如用 selector 去 GDT 全局描述符表（假定 TI = 0）拿到段基址 segment base address，之后再加上 offset，就得到了线性地址。这个过程，被称为<strong>段式内存管理</strong>。对于表指示器 Table Indicator 来讲，决定了去哪种表寻找描述符。全局描述符放在 GDT（每个 CPU 有一个）里面，进程自己的放在 LDT 里面。</p>
-<p>分段的目的主要有两个：</p>
-<ul>
-<li>使操作系统可以访问大于地址总线的内存，如 32 位地址总线可以访问 大于 4G 的内存。</li>
-<li>权限控制，将每个段设置权限位，让不同程序可以访问不同段。</li>
-</ul>
-<h3 id="2-页式内存管理线性地址-物理地址"><a class="markdownIt-Anchor" href="#2-页式内存管理线性地址-物理地址"></a> 2. 页式内存管理：线性地址 =&gt; 物理地址</h3>
-<p>线性地址结构如下图：</p>
-<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20230127151632_3224177663/2.png" alt="2"></p>
-<p>线性地址切成三段，用前两段分别作为索引去 Page Directory 和 Page Table 里查表，会先得到一个页目录表项，再得到一个页表项（Page Table Entry），那里面的值就是一个物理内存块的起始地址（其实就是是物理内存编号），把它加上 线性地址 切分之后第三段的<strong>页内偏移</strong>就得到了最终的物理地址。我们把这个过程称作<strong>页式内存管理</strong>。</p>
-<h2 id="linux-段页式管理做法"><a class="markdownIt-Anchor" href="#linux-段页式管理做法"></a> Linux 段页式管理做法</h2>
-<p>Linux 认为靠页式管理就能完成内核所需的功能了，段式太麻烦了。关又关不掉，因为是硬件那里做的，所以只能略施小计：所有段的 segment base address 都设置为 0！这样就不分段了，所有段内空间和线性空间重合。</p>
-<blockquote>
-<p><strong>逻辑地址 == 虚拟地址 == 线性地址</strong></p>
-</blockquote>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1370,20 +1357,20 @@ A类占用8字节，B类占用8字节，C类占用8字节，D类占用28字节((
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">57</span>
+          <span class="site-state-item-count">58</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-count">11</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-count">14</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

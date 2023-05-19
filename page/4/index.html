@@ -195,6 +195,98 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20220817112634_531881886/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/portrait.jpg">
+      <meta itemprop="name" content="caijizhuo">
+      <meta itemprop="description" content="Looks delicious">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="caijizhuo">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/20220817112634_531881886/" class="post-title-link" itemprop="url">为何基类析构函数必须为虚函数</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-08-17 11:26:34" itemprop="dateCreated datePublished" datetime="2022-08-17T11:26:34+08:00">2022-08-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-05-11 11:10:40" itemprop="dateModified" datetime="2023-05-11T11:10:40+08:00">2023-05-11</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/cpp/" itemprop="url" rel="index"><span itemprop="name">cpp</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="基类析构函数为虚函数的必要性"><a class="markdownIt-Anchor" href="#基类析构函数为虚函数的必要性"></a> 基类析构函数为虚函数的必要性</h1>
+<p>由于 C++ 中类的多态性，使用基类指针指向派生类时，若函数是虚的，则调用派生类中的函数。析构函数也是如此。如果有个基类指针指向了派生类对象，删除这个指针，调用的则是派生类的析构函数。派生类的析构函数又会自动调用基类的析构函数，达到所有空间都释放的目的。</p>
+<p>如果不声明为虚函数，那么编译器实行静态绑定，在删除基类指针时，只调用基类的虚构函数而不调用派生类的析构函数，造成派生类中有空间没有释放完全而导致<em><strong>内存泄漏</strong></em>。</p>
+<p>所以声明为虚函数是必要的，为了防止只析构基类而不析构派生类。</p>
+<h1 id="非虚析构函数会发生什么"><a class="markdownIt-Anchor" href="#非虚析构函数会发生什么"></a> 非虚析构函数会发生什么</h1>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Parent</span> &#123;</span><br><span class="line">    <span class="keyword">public</span>:</span><br><span class="line">        <span class="built_in">Parent</span>() &#123;</span><br><span class="line">            cout &lt;&lt; <span class="string">&quot;父类构造函数&quot;</span> &lt;&lt; endl;</span><br><span class="line">        &#125;</span><br><span class="line">        ~<span class="built_in">Parent</span>() &#123;</span><br><span class="line">            cout &lt;&lt; <span class="string">&quot;父类析构函数&quot;</span> &lt;&lt; endl;</span><br><span class="line">        &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Son</span> : <span class="keyword">public</span> Parent &#123;</span><br><span class="line">    <span class="keyword">public</span>:</span><br><span class="line">        <span class="built_in">Son</span>() &#123;</span><br><span class="line">            cout &lt;&lt; <span class="string">&quot;子类构造函数&quot;</span> &lt;&lt; endl;</span><br><span class="line">        &#125;</span><br><span class="line">        ~<span class="built_in">Son</span>() &#123;</span><br><span class="line">            cout &lt;&lt; <span class="string">&quot;子类析构函数&quot;</span> &lt;&lt; endl;</span><br><span class="line">        &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    Parent *p = <span class="keyword">new</span> <span class="built_in">Son</span>();</span><br><span class="line">    <span class="keyword">delete</span> p;</span><br><span class="line">    p = <span class="literal">nullptr</span>;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>结果：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # ./a.out </span><br><span class="line">父类构造函数</span><br><span class="line">子类构造函数</span><br><span class="line">父类析构函数</span><br></pre></td></tr></table></figure>
+<p>可以看到，子类析构函数并没有被调用到。</p>
+<h1 id="基类析构函数定义为虚函数"><a class="markdownIt-Anchor" href="#基类析构函数定义为虚函数"></a> 基类析构函数定义为虚函数</h1>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Parent</span> &#123;</span><br><span class="line">    <span class="keyword">public</span>:</span><br><span class="line">        <span class="built_in">Parent</span>() &#123;</span><br><span class="line">            cout &lt;&lt; <span class="string">&quot;父类构造函数&quot;</span> &lt;&lt; endl;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">virtual</span> ~<span class="built_in">Parent</span>() &#123;</span><br><span class="line">            cout &lt;&lt; <span class="string">&quot;父类析构函数&quot;</span> &lt;&lt; endl;</span><br><span class="line">        &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Son</span> : <span class="keyword">public</span> Parent &#123;</span><br><span class="line">    <span class="keyword">public</span>:</span><br><span class="line">        <span class="built_in">Son</span>() &#123;</span><br><span class="line">            cout &lt;&lt; <span class="string">&quot;子类构造函数&quot;</span> &lt;&lt; endl;</span><br><span class="line">        &#125;</span><br><span class="line">        ~<span class="built_in">Son</span>() &#123;</span><br><span class="line">            cout &lt;&lt; <span class="string">&quot;子类析构函数&quot;</span> &lt;&lt; endl;</span><br><span class="line">        &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    Parent *p = <span class="keyword">new</span> <span class="built_in">Son</span>();</span><br><span class="line">    <span class="keyword">delete</span> p;</span><br><span class="line">    p = <span class="literal">nullptr</span>;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>结果：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # ./a.out </span><br><span class="line">父类构造函数</span><br><span class="line">子类构造函数</span><br><span class="line">子类析构函数</span><br><span class="line">父类析构函数</span><br></pre></td></tr></table></figure>
+<h1 id="小技巧"><a class="markdownIt-Anchor" href="#小技巧"></a> 小技巧</h1>
+<p>如果父类的设计者忘记了在析构函数处加 virtual，子类的设计者有义务提醒父类设计者，避免内存泄漏。</p>
+<p>C++11 的关键字 override 可以起作用。override 表示函数应当重写基类中的虚函数（用于派生类的虚函数中）。编译器会检查基类中的虚函数和派生类中带有 override 的虚函数有没有相同的函数签名，一旦不匹配便会报错。</p>
+<p>因此子类设计者可以在其析构函数后增加关键字 override，一旦父类缺少关键字 virtual，就会被编译器发现并报错。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Parent</span> &#123;</span><br><span class="line">    <span class="keyword">public</span>:</span><br><span class="line">        <span class="built_in">Parent</span>() &#123;</span><br><span class="line">            cout &lt;&lt; <span class="string">&quot;父类构造函数&quot;</span> &lt;&lt; endl;</span><br><span class="line">        &#125;</span><br><span class="line">        ~<span class="built_in">Parent</span>() &#123;  <span class="comment">// 此处没加 virtual，会有编译错误</span></span><br><span class="line">            cout &lt;&lt; <span class="string">&quot;父类析构函数&quot;</span> &lt;&lt; endl;</span><br><span class="line">        &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Son</span> : <span class="keyword">public</span> Parent &#123;</span><br><span class="line">    <span class="keyword">public</span>:</span><br><span class="line">        <span class="built_in">Son</span>() &#123;</span><br><span class="line">            cout &lt;&lt; <span class="string">&quot;子类构造函数&quot;</span> &lt;&lt; endl;</span><br><span class="line">        &#125;</span><br><span class="line">        ~<span class="built_in">Son</span>() <span class="keyword">override</span> &#123;</span><br><span class="line">            cout &lt;&lt; <span class="string">&quot;子类析构函数&quot;</span> &lt;&lt; endl;</span><br><span class="line">        &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    Parent *p = <span class="keyword">new</span> <span class="built_in">Son</span>();</span><br><span class="line">    <span class="keyword">delete</span> p;</span><br><span class="line">    p = <span class="literal">nullptr</span>;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>编译结果：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # g++ test.cc </span><br><span class="line">test.cc:18:9: error: ‘Son::~Son()’ marked ‘override’, but does not override</span><br><span class="line">         ~Son() override &#123;</span><br><span class="line">         ^</span><br></pre></td></tr></table></figure>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20220809190428_61809/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -653,7 +745,7 @@ sendfile 函数可以在两个文件描述符之间传递数据（完全在内�
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-05-11 11:10:40" itemprop="dateModified" datetime="2023-05-11T11:10:40+08:00">2023-05-11</time>
+                <time title="修改时间：2023-05-19 15:53:32" itemprop="dateModified" datetime="2023-05-19T15:53:32+08:00">2023-05-19</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -696,9 +788,9 @@ sendfile 函数可以在两个文件描述符之间传递数据（完全在内�
 <p>如果基类中的函数和派生类中有两个名字一样的函数 func 满足下面的两个条件</p>
 <ol>
 <li>在基类中函数声明的时候有 virtual 关键字</li>
-<li>基类中的函数和派生类中的函数一模一样，包括函数名，参数，返回类型都一样。<br>
-那么这就是叫做覆盖（override），这也就是虚函数，多态的性质。其他的情况，只要名字一样，不满足上面覆盖的条件，就是隐藏。</li>
+<li>基类中的函数和派生类中的函数一模一样，包括函数名，参数，返回类型都一样。</li>
 </ol>
+<p>那么这就是叫做覆盖（override），这也就是虚函数，多态的性质。其他的情况，只要名字一样，不满足上面覆盖的条件，就是隐藏。</p>
 <p>好多人认为，基类中的函数会继承下来和派生类中的同名不同参的函数构成重载。</p>
 <blockquote>
 <p>重载（overload）：<br>
@@ -1183,106 +1275,6 @@ Linux高性能服务器编程——游双<span class="katex"><span class="katex-
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20220504214132_17671/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/portrait.jpg">
-      <meta itemprop="name" content="caijizhuo">
-      <meta itemprop="description" content="Looks delicious">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="caijizhuo">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/20220504214132_17671/" class="post-title-link" itemprop="url">cgi简单服务器</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-05-04 21:41:32" itemprop="dateCreated datePublished" datetime="2022-05-04T21:41:32+08:00">2022-05-04</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-05-11 11:09:39" itemprop="dateModified" datetime="2023-05-11T11:09:39+08:00">2023-05-11</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/socket-programming/" itemprop="url" rel="index"><span itemprop="name">socket-programming</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/concurrent-programming/" itemprop="url" rel="index"><span itemprop="name">concurrent-programming</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>CGI 是Web 服务器运行时外部程序的规范,按CGI 编写的程序可以扩展服务器功能。<br>
-CGI(Common Gateway Interface) 是WWW技术中最重要的技术之一，有着不可替代的重要地位。CGI是外部应用程序（CGI程序）与WEB服务器之间的接口标准，是在CGI程序和Web服务器之间传递信息的过程。<br>
-CGI规范允许Web服务器执行外部程序，并将它们的输出发送给Web浏览器，CGI将Web的一组简单的静态超媒体文档变成一个完整的新的交互式媒体。</p>
-<h2 id="cgi的处理步骤"><a class="markdownIt-Anchor" href="#cgi的处理步骤"></a> CGI的处理步骤：</h2>
-<ol>
-<li>通过Internet把用户请求送到web服务器。</li>
-<li>web服务器接收用户请求并交给CGI程序处理。</li>
-<li>CGI程序把处理结果传送给web服务器。</li>
-<li>web服务器把结果送回到用户。</li>
-</ol>
-<h2 id="示例代码"><a class="markdownIt-Anchor" href="#示例代码"></a> 示例代码：</h2>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;netinet/in.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;arpa/inet.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;assert.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;errno.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/epoll.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;signal.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/wait.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/stat.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;processpool.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 用于处理客户cgi请求的类，他可以作为processpool类的模板参数</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">cgi_conn</span> &#123;</span><br><span class="line"> <span class="keyword">public</span>:</span><br><span class="line">  <span class="built_in">cgi_conn</span>()&#123;&#125;;</span><br><span class="line">  ~<span class="built_in">cgi_conn</span>()&#123;&#125;;</span><br><span class="line">  <span class="comment">// 初始化客户连接，清空读缓冲区</span></span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">init</span><span class="params">(<span class="type">int</span> epollfd, <span class="type">int</span> sockfd, <span class="type">const</span> sockaddr_in&amp; client_addr)</span> </span>&#123;</span><br><span class="line">    m_epollfd = epollfd;</span><br><span class="line">    m_sockfd = sockfd;</span><br><span class="line">    m_address = client_addr;</span><br><span class="line">    <span class="built_in">memset</span>(m_buf, <span class="string">&#x27;\0&#x27;</span>, BUFFER_SIZE);</span><br><span class="line">    m_read_idx = <span class="number">0</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">process</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="type">int</span> idx = <span class="number">0</span>;</span><br><span class="line">    <span class="type">int</span> ret = <span class="number">-1</span>;</span><br><span class="line">    <span class="comment">// 循环读取和分析客户数据</span></span><br><span class="line">    <span class="keyword">while</span> (<span class="literal">true</span>) &#123;</span><br><span class="line">      idx = m_read_idx;</span><br><span class="line">      ret = <span class="built_in">recv</span>(m_sockfd, m_buf + idx, BUFFER_SIZE - <span class="number">1</span> - idx, <span class="number">0</span>);</span><br><span class="line">      <span class="comment">// 如果读操作发生错误，则关闭客户连接，如果是暂时无数据可读，则退出循环</span></span><br><span class="line">      <span class="keyword">if</span> (ret &lt; <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (errno != EAGAIN) &#123;</span><br><span class="line">          <span class="built_in">removefd</span>(m_epollfd, m_sockfd);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">      &#125; <span class="keyword">else</span> <span class="keyword">if</span> (ret == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="comment">// 如果对方关闭连接，服务器也关闭连接</span></span><br><span class="line">        <span class="built_in">removefd</span>(m_epollfd, m_sockfd);</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        m_read_idx += ret;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;user content is: %s\n&quot;</span>, m_buf);</span><br><span class="line">        <span class="keyword">for</span> (; idx &lt; m_read_idx; ++idx) &#123;</span><br><span class="line">          <span class="keyword">if</span> ((idx &gt;= <span class="number">1</span>) &amp;&amp; (m_buf[idx - <span class="number">1</span>] == <span class="string">&#x27;\r&#x27;</span>) &amp;&amp; (m_buf[idx] == <span class="string">&#x27;\n&#x27;</span>)) &#123;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 如果没有遇到字符\r\n 则需要读取更多客户数据</span></span><br><span class="line">        <span class="keyword">if</span> (idx == m_read_idx) &#123;</span><br><span class="line">          <span class="keyword">continue</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        m_buf[idx - <span class="number">1</span>] = <span class="string">&#x27;\0&#x27;</span>;</span><br><span class="line"></span><br><span class="line">        <span class="type">char</span>* filename = m_buf;</span><br><span class="line">        <span class="comment">// 判断客户要运行的cgi程序是否存在</span></span><br><span class="line">        <span class="keyword">if</span> (<span class="built_in">access</span>(filename, F_OK) == <span class="number">-1</span>) &#123;</span><br><span class="line">          <span class="built_in">removefd</span>(m_epollfd, m_sockfd);</span><br><span class="line">          <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 创建子进程来执行cgi程序</span></span><br><span class="line">        ret = fork();</span><br><span class="line">        <span class="keyword">if</span> (ret == <span class="number">-1</span>) &#123;</span><br><span class="line">          <span class="built_in">removefd</span>(m_epollfd, m_sockfd);</span><br><span class="line">          <span class="keyword">break</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (ret &gt; <span class="number">0</span>) &#123; <span class="comment">// 父进程</span></span><br><span class="line">          <span class="comment">// 父进程只需要关闭连接</span></span><br><span class="line">          <span class="built_in">removefd</span>(m_epollfd, m_sockfd);</span><br><span class="line">          <span class="keyword">break</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">          <span class="comment">// 子进程需要将标准输出定向到 m_sockfd,并执行cgi程序</span></span><br><span class="line">          <span class="built_in">close</span>(STDOUT_FILENO);</span><br><span class="line">          <span class="built_in">dup</span>(m_sockfd); <span class="comment">// 把m_sockfd重定向到标准输出</span></span><br><span class="line">          <span class="built_in">execl</span>(m_buf, m_buf, <span class="number">0</span>);</span><br><span class="line">          <span class="built_in">exit</span>(<span class="number">0</span>);</span><br><span class="line">        &#125;</span><br><span class="line">      &#125; <span class="comment">// 读数据end</span></span><br><span class="line">    &#125; <span class="comment">// while end</span></span><br><span class="line"></span><br><span class="line">  &#125; <span class="comment">// process end</span></span><br><span class="line"></span><br><span class="line"> <span class="keyword">private</span>:</span><br><span class="line">  <span class="type">static</span> <span class="type">const</span> <span class="type">int</span> BUFFER_SIZE = <span class="number">1024</span>;</span><br><span class="line">  <span class="type">static</span> <span class="type">int</span> m_epollfd;</span><br><span class="line">  <span class="type">int</span> m_sockfd;</span><br><span class="line">  sockaddr_in m_address;</span><br><span class="line">  <span class="type">char</span> m_buf[BUFFER_SIZE];</span><br><span class="line">  <span class="type">int</span> m_read_idx; <span class="comment">// 读的光标位置</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> cgi_conn::m_epollfd = <span class="number">-1</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span>* argv[])</span> </span>&#123;</span><br><span class="line">  <span class="keyword">if</span> (argc &lt;= <span class="number">2</span>) &#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;usage: %s ip_address port_number\n&quot;</span>, <span class="built_in">basename</span>(argv[<span class="number">0</span>]));</span><br><span class="line">    <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="type">const</span> <span class="type">char</span>* ip = argv[<span class="number">1</span>];</span><br><span class="line">  <span class="type">int</span> port = <span class="built_in">atoi</span>(argv[<span class="number">2</span>]);</span><br><span class="line"></span><br><span class="line">  <span class="type">int</span> listenfd = <span class="built_in">socket</span>(PF_INET, SOCK_STREAM, <span class="number">0</span>);</span><br><span class="line">  <span class="built_in">assert</span>(listenfd &gt;= <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">  <span class="type">int</span> ret = <span class="number">0</span>;</span><br><span class="line">  <span class="keyword">struct</span> <span class="title class_">sockaddr_in</span> address;</span><br><span class="line">  <span class="built_in">bzero</span>(&amp;address, <span class="built_in">sizeof</span>(address));</span><br><span class="line">  address.sin_family = AF_INET;</span><br><span class="line">  <span class="built_in">inet_pton</span>(AF_INET, ip, &amp;address.sin_addr);</span><br><span class="line">  address.sin_port = <span class="built_in">htons</span>(port);</span><br><span class="line"></span><br><span class="line">  ret = <span class="built_in">bind</span>(listenfd, (<span class="keyword">struct</span> sockaddr*)&amp;address, <span class="built_in">sizeof</span>(address));</span><br><span class="line">  <span class="built_in">assert</span>(ret != <span class="number">-1</span>);</span><br><span class="line"></span><br><span class="line">  ret = <span class="built_in">listen</span>(listenfd, <span class="number">5</span>);</span><br><span class="line">  <span class="built_in">assert</span>(ret != <span class="number">-1</span>);</span><br><span class="line"></span><br><span class="line">  processpool&lt;cgi_conn&gt;* pool = processpool&lt;cgi_conn&gt;::<span class="built_in">create</span>(listenfd); <span class="comment">// 创建唯一进程池实例</span></span><br><span class="line">  <span class="keyword">if</span> (pool) &#123;</span><br><span class="line">    pool-&gt;<span class="built_in">run</span>();</span><br><span class="line">    <span class="keyword">delete</span> pool;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="built_in">close</span>(listenfd); <span class="comment">// 正如前文提到的，main函数创建了文件描述符listenfd，那么就由它亲自关闭之</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>本程序需要配合上一节的线程池头文件processpool.h。<br>
-运行结果如下：</p>
-<h2 id="服务器"><a class="markdownIt-Anchor" href="#服务器"></a> 服务器</h2>
-<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20220504214132_17671/1.png" alt="在这里插入图片描述"></p>
-<hr>
-<h2 id="客户端"><a class="markdownIt-Anchor" href="#客户端"></a> 客户端：</h2>
-<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20220504214132_17671/2.png" alt="在这里插入图片描述"></p>
-<hr>
-<p>这里只是简单模拟，由于服务器是将信息作为文件名去访问服务器文件，而客户端随意发送信息，所以判断信息不存在就直接退出了。</p>
-<hr>
-<p>reference：linux高性能服务器编程——游双</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1354,20 +1346,20 @@ CGI规范允许Web服务器执行外部程序，并将它们的输出发送给We
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">57</span>
+          <span class="site-state-item-count">58</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-count">11</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-count">14</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
