@@ -195,6 +195,217 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20230526103802_4041215688/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/portrait.jpg">
+      <meta itemprop="name" content="caijizhuo">
+      <meta itemprop="description" content="Looks delicious">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="caijizhuo">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/20230526103802_4041215688/" class="post-title-link" itemprop="url">进程代码段地址空间随机加载</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2023-05-26 10:38:02 / 修改时间：11:14:42" itemprop="dateCreated datePublished" datetime="2023-05-26T10:38:02+08:00">2023-05-26</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>778</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="问题"><a class="markdownIt-Anchor" href="#问题"></a> 问题</h2>
+<p>今天调试代码的时候看到地址的时候突然感到奇怪：我记得我之前看到的代码地址空间好多都是 0x400xxx 开头的，怎么这次的地址空间是 0x5562b845axxx 呢？是什么导致了这个差异？</p>
+<p>我换了地址空间为 0x400xxx 开头的机器，准备了相同的代码，在两台不同的机器上编译：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%p\n&quot;</span>, main);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个简单的程序可以打出 main 函数的地址。经测试，在不同的机上打出的结果有很大差异。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # ./a.out </span><br><span class="line">0x5562b845a649</span><br><span class="line"></span><br><span class="line">@└────&gt; # ./b.out </span><br><span class="line">0x400596</span><br></pre></td></tr></table></figure>
+<h2 id="答案"><a class="markdownIt-Anchor" href="#答案"></a> 答案</h2>
+<p>经查阅资料，这个问题是 Linux 的 ASLR （Address Space Layout Randomization）导致的。这项技术会在装载时，装载到随机地址，防止黑客利用固定地址注入恶意代码。对于 b.out，没有使用该技术。所以 b.out 的代码段虚拟地址一直是 0x400000 开头。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # readelf -h b.out </span><br><span class="line">ELF Header:</span><br><span class="line">  Magic:   7f 45 4c 46 02 01 01 00 00 00 00 00 00 00 00 00 </span><br><span class="line">  Class:                             ELF64</span><br><span class="line">  Data:                              2&#x27;s complement, little endian</span><br><span class="line">  Version:                           1 (current)</span><br><span class="line">  OS/ABI:                            UNIX - System V</span><br><span class="line">  ABI Version:                       0</span><br><span class="line">  Type:                              EXEC (Executable file)        // 这里是 EXEC</span><br><span class="line">  Machine:                           Advanced Micro Devices X86-64</span><br><span class="line">  Version:                           0x1</span><br><span class="line">  Entry point address:               0x4004b0                      // 这里是 _start 的绝对地址</span><br><span class="line">  Start of program headers:          64 (bytes into file)</span><br><span class="line">  Start of section headers:          15608 (bytes into file)</span><br><span class="line">  Flags:                             0x0</span><br><span class="line">  Size of this header:               64 (bytes)</span><br><span class="line">  Size of program headers:           56 (bytes)</span><br><span class="line">  Number of program headers:         9</span><br><span class="line">  Size of section headers:           64 (bytes)</span><br><span class="line">  Number of section headers:         30</span><br><span class="line">  Section header string table index: 29</span><br></pre></td></tr></table></figure>
+<p>可以看到，对于 b.out，他的文件类型是 Executable file，_start 的地址是 0x400xxx 开头。这种就是没有使用 ASLR 技术的。而对于 a.out，结果如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # readelf -h a.out </span><br><span class="line">ELF Header:</span><br><span class="line">  Magic:   7f 45 4c 46 02 01 01 00 00 00 00 00 00 00 00 00 </span><br><span class="line">  Class:                             ELF64</span><br><span class="line">  Data:                              2&#x27;s complement, little endian</span><br><span class="line">  Version:                           1 (current)</span><br><span class="line">  OS/ABI:                            UNIX - System V</span><br><span class="line">  ABI Version:                       0</span><br><span class="line">  Type:                              DYN (Shared object file)      // 这里是 DYN</span><br><span class="line">  Machine:                           Advanced Micro Devices X86-64</span><br><span class="line">  Version:                           0x1</span><br><span class="line">  Entry point address:               0x560                         // 这里是 _start 的相对地址</span><br><span class="line">  Start of program headers:          64 (bytes into file)</span><br><span class="line">  Start of section headers:          12744 (bytes into file)</span><br><span class="line">  Flags:                             0x0</span><br><span class="line">  Size of this header:               64 (bytes)</span><br><span class="line">  Size of program headers:           56 (bytes)</span><br><span class="line">  Number of program headers:         9</span><br><span class="line">  Size of section headers:           64 (bytes)</span><br><span class="line">  Number of section headers:         31</span><br><span class="line">  Section header string table index: 30</span><br></pre></td></tr></table></figure>
+<p>对于 a.out，文件类型为 Shared object file，而且 _start 的地址是个相对地址。就是这个导致的这个差异。每次装载 a.out 时，代码会被加载到随机的位置。可以看到，每次运行，得到的地址都不同。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # ./a.out </span><br><span class="line">0x559536d9d649</span><br><span class="line">@└────&gt; # ./a.out </span><br><span class="line">0x559a7a6df649</span><br><span class="line">@└────&gt; # ./a.out </span><br><span class="line">0x55ca5dbd4649</span><br></pre></td></tr></table></figure>
+<h2 id="发生根因"><a class="markdownIt-Anchor" href="#发生根因"></a> 发生根因</h2>
+<p>之所以发生这个原因，是因为操作系统版本导致的。低版本操作系统默认不使用 ASLR。想要在不同的操作系统上复现这两个方式也很简单：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # gcc 1.c -fPIC -pie</span><br></pre></td></tr></table></figure>
+<p>这种方式编译出来的就是使用了 ASLR 技术的。其中 -pie 的意思是 position-independent executable，位置无关的可执行文件。编译时还需要加上 -fPIC （Position-Independent Code）生成位置无关代码。而</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # gcc 1.c -no-pie</span><br></pre></td></tr></table></figure>
+<p>方式编出来的就是固定地址。有些工具必须使用 -no-pie 才可以使用。这样固定的情况也比较好调试，因为虚拟地址固定。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20230522100059_339516945/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/portrait.jpg">
+      <meta itemprop="name" content="caijizhuo">
+      <meta itemprop="description" content="Looks delicious">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="caijizhuo">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/20230522100059_339516945/" class="post-title-link" itemprop="url">linux中>&和&>区别</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-05-22 10:00:59" itemprop="dateCreated datePublished" datetime="2023-05-22T10:00:59+08:00">2023-05-22</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-05-26 10:30:57" itemprop="dateModified" datetime="2023-05-26T10:30:57+08:00">2023-05-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>422</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="linux-中常用的文件描述符"><a class="markdownIt-Anchor" href="#linux-中常用的文件描述符"></a> Linux 中常用的文件描述符</h2>
+<ul>
+<li>0 文件描述符，表示标准输入。</li>
+<li>1 文件描述符，表示标准输出。</li>
+<li>2 文件描述符，表示标准错误。</li>
+</ul>
+<p>标准情况下，这些文件描述符和以下设备关联：</p>
+<ul>
+<li>0 文件描述符关联键盘，并返回给前端。</li>
+<li>1 正确返回值，返回给前端。</li>
+<li>2 错误返回值，返回给前端。</li>
+</ul>
+<h2 id="符号"><a class="markdownIt-Anchor" href="#符号"></a> &gt; 符号</h2>
+<p>在 shell 中，我们经常使用 &gt; 符号，把输出重定位到一个文件。例如：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat /proc/xxx/maps &gt; memory.txt</span><br></pre></td></tr></table></figure>
+<p>以上输出是把某个进程的内存布局重定向到一个文件。其中，&gt; 是 1&gt; 的简写，实际意思是把标准输出重定向到后面的文件。这样屏幕上就不会有打印了，打印会重定向到文件中。</p>
+<h2 id="符号-2"><a class="markdownIt-Anchor" href="#符号-2"></a> &gt;&amp; 符号</h2>
+<p>本质上，&gt;&amp; 符号不是一个符号。我们经常见到 2&gt;&amp;1 符号，实际意义是，将<strong>标准错误</strong>重新定位到<strong>标准输出</strong>。那为什么要加个 &amp; 呢？因为不加 &amp; 的话操作系统不会认为你是想把标准错误重定位给标准输出，而是想重定向到一个叫 “1” 的文件。所以 &amp;1 表示 1 输出通道。举例，strace 命令可以查看系统调用，这个结果是输出到标准错误的。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">strace ls &gt; log 2&gt;&amp;1</span><br></pre></td></tr></table></figure>
+<p>将标准输出重定向到 log 文件，并将标准错误重定向到标准输出。这样标准错误也会被重定向到 log 文件。</p>
+<h2 id="符号-3"><a class="markdownIt-Anchor" href="#符号-3"></a> &amp;&gt; 符号</h2>
+<p>&amp;&gt; 意思是把标准错误和标准输出都重定向到某个文件。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">strace ls &amp;&gt; log</span><br></pre></td></tr></table></figure>
+<p>写起来比较简单，且省力。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20230517171931_2797536300/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -242,7 +453,21 @@
                 </span>
             </span>
 
-          
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
 
         </div>
       </header>
@@ -340,7 +565,21 @@
                 </span>
             </span>
 
-          
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>829</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
 
         </div>
       </header>
@@ -435,7 +674,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-05-11 11:16:45" itemprop="dateModified" datetime="2023-05-11T11:16:45+08:00">2023-05-11</time>
+                <time title="修改时间：2023-05-26 14:25:47" itemprop="dateModified" datetime="2023-05-26T14:25:47+08:00">2023-05-26</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -451,7 +690,21 @@
                 </span>
             </span>
 
-          
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.5k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>5 分钟</span>
+            </span>
 
         </div>
       </header>
@@ -534,7 +787,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-05-11 11:16:45" itemprop="dateModified" datetime="2023-05-11T11:16:45+08:00">2023-05-11</time>
+                <time title="修改时间：2023-05-26 14:25:47" itemprop="dateModified" datetime="2023-05-26T14:25:47+08:00">2023-05-26</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -550,7 +803,21 @@
                 </span>
             </span>
 
-          
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.1k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
 
         </div>
       </header>
@@ -649,7 +916,21 @@
                 </span>
             </span>
 
-          
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>740</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
 
         </div>
       </header>
@@ -757,7 +1038,21 @@
                 </span>
             </span>
 
-          
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>722</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
 
         </div>
       </header>
@@ -855,7 +1150,7 @@ auto 和 decltype 关键字都可以自动推导出变量的类型，但它们�
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-05-11 11:13:46" itemprop="dateModified" datetime="2023-05-11T11:13:46+08:00">2023-05-11</time>
+                <time title="修改时间：2023-05-26 14:25:47" itemprop="dateModified" datetime="2023-05-26T14:25:47+08:00">2023-05-26</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -867,7 +1162,21 @@ auto 和 decltype 关键字都可以自动推导出变量的类型，但它们�
                 </span>
             </span>
 
-          
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>976</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
 
         </div>
       </header>
@@ -977,7 +1286,21 @@ auto 和 decltype 关键字都可以自动推导出变量的类型，但它们�
                 </span>
             </span>
 
-          
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>232</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
 
         </div>
       </header>
@@ -1007,313 +1330,6 @@ i    &amp; i 为 2 的幂\\
 \end{aligned}
 </annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:6.674782em;vertical-align:-3.087391em;"></span><span class="mord"><span class="mtable"><span class="col-align-r"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:3.587391em;"><span style="top:-5.587391em;"><span class="pstrut" style="height:3.9610050000000006em;"></span><span class="mord"><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.6513970000000002em;"><span style="top:-1.872331em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">i</span><span class="mrel mtight">=</span><span class="mord mtight">0</span></span></span></span><span style="top:-3.050005em;"><span class="pstrut" style="height:3.05em;"></span><span><span class="mop op-symbol large-op">∑</span></span></span><span style="top:-4.3000050000000005em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">n</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.277669em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord"><span class="mord mathnormal">c</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.31166399999999994em;"><span style="top:-2.5500000000000003em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span><span style="top:-3.0336140000000005em;"><span class="pstrut" style="height:3.9610050000000006em;"></span><span class="mord"></span></span><span style="top:-1.5336140000000005em;"><span class="pstrut" style="height:3.9610050000000006em;"></span><span class="mord"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:3.087391em;"><span></span></span></span></span></span><span class="col-align-l"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:3.587391em;"><span style="top:-5.587391em;"><span class="pstrut" style="height:3.9610050000000006em;"></span><span class="mord"><span class="mord"></span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">≤</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mord mathnormal">n</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.9610050000000006em;"><span style="top:-1.872331em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span><span class="mrel mtight">=</span><span class="mord mtight">0</span></span></span></span><span style="top:-3.050005em;"><span class="pstrut" style="height:3.05em;"></span><span><span class="mop op-symbol large-op">∑</span></span></span><span style="top:-4.386005em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mopen mtight">⌊</span><span class="mord mathnormal mtight" style="margin-right:0.01968em;">l</span><span class="mord mathnormal mtight">o</span><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.03588em;">g</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.31731428571428577em;"><span style="top:-2.357em;margin-left:-0.03588em;margin-right:0.07142857142857144em;"><span class="pstrut" style="height:2.5em;"></span><span class="sizing reset-size3 size1 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.143em;"><span></span></span></span></span></span></span><span class="mord mathnormal mtight">n</span><span class="mclose mtight">⌋</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.4137769999999998em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.874664em;"><span style="top:-3.1130000000000004em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span></span></span></span></span></span></span><span style="top:-3.0336140000000005em;"><span class="pstrut" style="height:3.9610050000000006em;"></span><span class="mord"><span class="mord"></span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">≤</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mord mathnormal">n</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mord">2</span><span class="mord mathnormal">n</span></span></span><span style="top:-1.5336140000000005em;"><span class="pstrut" style="height:3.9610050000000006em;"></span><span class="mord"><span class="mord"></span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">≤</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mord">3</span><span class="mord mathnormal">n</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:3.087391em;"><span></span></span></span></span></span></span></span></span></span></span></span></p>
 <p>因为共有 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi></mrow><annotation encoding="application/x-tex">n</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.43056em;vertical-align:0em;"></span><span class="mord mathnormal">n</span></span></span></span> 次插入，所以总时间复杂度为 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>O</mi><mo stretchy="false">(</mo><mn>3</mn><mi>n</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">O(3n)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.02778em;">O</span><span class="mopen">(</span><span class="mord">3</span><span class="mord mathnormal">n</span><span class="mclose">)</span></span></span></span>，均摊下来平均时间复杂度为 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>O</mi><mo stretchy="false">(</mo><mn>3</mn><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">O(3)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.02778em;">O</span><span class="mopen">(</span><span class="mord">3</span><span class="mclose">)</span></span></span></span>。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20230420105926_1589524973/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/portrait.jpg">
-      <meta itemprop="name" content="caijizhuo">
-      <meta itemprop="description" content="Looks delicious">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="caijizhuo">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/20230420105926_1589524973/" class="post-title-link" itemprop="url">cpp单例模式</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2023-04-20 10:59:26" itemprop="dateCreated datePublished" datetime="2023-04-20T10:59:26+08:00">2023-04-20</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-05-11 11:15:49" itemprop="dateModified" datetime="2023-05-11T11:15:49+08:00">2023-05-11</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/design-pattern/" itemprop="url" rel="index"><span itemprop="name">design-pattern</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="单例模式概念"><a class="markdownIt-Anchor" href="#单例模式概念"></a> 单例模式概念</h2>
-<h3 id="定义"><a class="markdownIt-Anchor" href="#定义"></a> 定义</h3>
-<p>单例模式 Singleton：该类只能实例化一个对象的设计模式。</p>
-<h3 id="分类"><a class="markdownIt-Anchor" href="#分类"></a> 分类</h3>
-<ol>
-<li>懒汉模式：延时加载，在这个唯一的对象使用时才加载。
-<blockquote>
-<h4 id="优点"><a class="markdownIt-Anchor" href="#优点"></a> 优点</h4>
-<ol>
-<li>资源利用率高，使用时才创建，不存在浪费。</li>
-<li>加载类速度快，不需要创捷对象。</li>
-</ol>
-<h4 id="缺点"><a class="markdownIt-Anchor" href="#缺点"></a> 缺点</h4>
-<ol>
-<li>存在线程安全问题，需要引入同步机制（锁、信号量）。创建唯一对象不是原子操作，判空也不是原子操作。</li>
-<li>运行获取速度慢，多线程同步带来额外开销。</li>
-</ol>
-</blockquote>
-</li>
-<li>饿汉模式：贪婪加载，在类加载时就生成唯一的对象。
-<blockquote>
-<h4 id="优点-2"><a class="markdownIt-Anchor" href="#优点-2"></a> 优点</h4>
-<ol>
-<li>线程安全的单例模式。因为在加载的时候就创建了，所以不会有竞争。</li>
-<li>获取对象速度快，因为已经创建好了，只需要获取就可以。</li>
-</ol>
-<h4 id="缺点-2"><a class="markdownIt-Anchor" href="#缺点-2"></a> 缺点</h4>
-<ol>
-<li>存在资源浪费的可能。因为可能只是加载这个类却不使用他。</li>
-<li>类加载速度慢，因为需要创建对象。</li>
-</ol>
-</blockquote>
-</li>
-</ol>
-<h3 id="设计思想"><a class="markdownIt-Anchor" href="#设计思想"></a> 设计思想</h3>
-<h4 id="如何控制达到只生成一个对象的目的"><a class="markdownIt-Anchor" href="#如何控制达到只生成一个对象的目的"></a> 如何控制，达到只生成一个对象的目的。</h4>
-<ol>
-<li>对生成对象进行控制，将构造函数设计为私有。这样类外就不能调用构造函数，达到控制对象生成的目的。</li>
-<li>对拷贝构造函数进行控制，将其设为私有并不实现，或者进行删除（C++11）。</li>
-</ol>
-<h4 id="提供对外接口生成唯一对象"><a class="markdownIt-Anchor" href="#提供对外接口生成唯一对象"></a> 提供对外接口，生成唯一对象。</h4>
-<p>这个接口需要判断是否只生成了一个对象。</p>
-<ol>
-<li>这个函数的返回值需要返回一个对象，分三种情况。
-<blockquote>
-<ol>
-<li>返回对象类名，存在临时对象，会发生拷贝，不符合单例模式要求。</li>
-<li>返回对象引用，没有拷贝发生。</li>
-<li>返回对象的指针，没有拷贝发生。</li>
-</ol>
-</blockquote>
-</li>
-<li>修饰关键字设置，从调用角度考虑。
-<blockquote>
-<ol>
-<li>依赖对象来调用，obj.func() 来生成。但是此时对象未生成，所以不符合要求。</li>
-<li>设计为静态函数，不依赖对象调用。通过类作用域来调用 ClassName::func() 来生成。</li>
-</ol>
-</blockquote>
-</li>
-<li>有一个标识，来标识唯一的对象。
-<blockquote>
-<ol>
-<li>为了防止这个接口被调用很多次，定义一个唯一标识对象的指针，这个指针不依赖于对象。所以还是定义为静态变量，类外初始化为 nullptr。</li>
-<li>指针为空，那就说明对象还没有生成。如果不为空，就说明已经生成了。</li>
-</ol>
-</blockquote>
-</li>
-</ol>
-<h2 id="懒汉模式代码"><a class="markdownIt-Anchor" href="#懒汉模式代码"></a> 懒汉模式代码</h2>
-<h3 id="单线程版本"><a class="markdownIt-Anchor" href="#单线程版本"></a> 单线程版本</h3>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">LazySingleton</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">static</span> LazySingleton *<span class="title">GetInstance</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (instance_ == <span class="literal">nullptr</span>) &#123;</span><br><span class="line">            instance_ = <span class="keyword">new</span> <span class="built_in">LazySingleton</span>();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> instance_;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="built_in">LazySingleton</span>() &#123;</span><br><span class="line">        cout &lt;&lt; <span class="string">&quot;create singleton object:&quot;</span> &lt;&lt; <span class="keyword">this</span> &lt;&lt; endl;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">LazySingleton</span>(<span class="type">const</span> LazySingleton&amp; s) = <span class="keyword">delete</span>;</span><br><span class="line">    <span class="type">static</span> LazySingleton *instance_;</span><br><span class="line">&#125;;</span><br><span class="line">LazySingleton* LazySingleton::instance_ = <span class="literal">nullptr</span>;</span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    LazySingleton *obj1 = LazySingleton::<span class="built_in">GetInstance</span>();</span><br><span class="line">    LazySingleton *obj2 = LazySingleton::<span class="built_in">GetInstance</span>();</span><br><span class="line">    LazySingleton *obj3 = LazySingleton::<span class="built_in">GetInstance</span>();</span><br><span class="line">    cout &lt;&lt; <span class="string">&quot;obj1:&quot;</span> &lt;&lt; obj1 &lt;&lt; endl;</span><br><span class="line">    cout &lt;&lt; <span class="string">&quot;obj2:&quot;</span> &lt;&lt; obj2 &lt;&lt; endl;</span><br><span class="line">    cout &lt;&lt; <span class="string">&quot;obj3:&quot;</span> &lt;&lt; obj3 &lt;&lt; endl;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>输出：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # ./a.out </span><br><span class="line">create singleton object:0x1861eb0</span><br><span class="line">obj1:0x1861eb0</span><br><span class="line">obj2:0x1861eb0</span><br><span class="line">obj3:0x1861eb0</span><br></pre></td></tr></table></figure>
-<p>这种懒汉模式的单例，在单线程下是没问题的，但是多线程下有竞争就会出现问题。比如两个线程都进行完了 instance_ 的判断，并且都为空，那么他们都会调用那个构造函数。</p>
-<h3 id="多线程版本"><a class="markdownIt-Anchor" href="#多线程版本"></a> 多线程版本</h3>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;mutex&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;thread&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">LazySingleton</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">static</span> LazySingleton *<span class="title">GetInstance</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        m_.<span class="built_in">lock</span>();</span><br><span class="line">        <span class="keyword">if</span> (instance_ == <span class="literal">nullptr</span>) &#123;</span><br><span class="line">            instance_ = <span class="keyword">new</span> <span class="built_in">LazySingleton</span>();</span><br><span class="line">        &#125;</span><br><span class="line">        m_.<span class="built_in">unlock</span>();</span><br><span class="line">        <span class="keyword">return</span> instance_;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="built_in">LazySingleton</span>() &#123;</span><br><span class="line">        cout &lt;&lt; <span class="string">&quot;create singleton object:&quot;</span> &lt;&lt; <span class="keyword">this</span> &lt;&lt; endl;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">LazySingleton</span>(<span class="type">const</span> LazySingleton&amp; s) = <span class="keyword">delete</span>;</span><br><span class="line">    <span class="type">static</span> LazySingleton *instance_;</span><br><span class="line">    <span class="type">static</span> mutex m_;</span><br><span class="line">&#125;;</span><br><span class="line">LazySingleton* LazySingleton::instance_ = <span class="literal">nullptr</span>;</span><br><span class="line">mutex LazySingleton::m_;</span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="function">thread <span class="title">t1</span><span class="params">([]() &#123;</span></span></span><br><span class="line"><span class="params"><span class="function">        cout &lt;&lt; <span class="string">&quot;thread id:&quot;</span> &lt;&lt; this_thread::get_id() &lt;&lt; <span class="string">&quot; instance pointer:&quot;</span> &lt;&lt; LazySingleton::GetInstance() &lt;&lt; endl;</span></span></span><br><span class="line"><span class="params"><span class="function">    &#125;)</span></span>;</span><br><span class="line">    <span class="function">thread <span class="title">t2</span><span class="params">([]() &#123;</span></span></span><br><span class="line"><span class="params"><span class="function">        cout &lt;&lt; <span class="string">&quot;thread id:&quot;</span> &lt;&lt; this_thread::get_id() &lt;&lt; <span class="string">&quot; instance pointer:&quot;</span> &lt;&lt; LazySingleton::GetInstance() &lt;&lt; endl;</span></span></span><br><span class="line"><span class="params"><span class="function">    &#125;)</span></span>;</span><br><span class="line">    <span class="function">thread <span class="title">t3</span><span class="params">([]() &#123;</span></span></span><br><span class="line"><span class="params"><span class="function">        cout &lt;&lt; <span class="string">&quot;thread id:&quot;</span> &lt;&lt; this_thread::get_id() &lt;&lt; <span class="string">&quot; instance pointer:&quot;</span> &lt;&lt; LazySingleton::GetInstance() &lt;&lt; endl;</span></span></span><br><span class="line"><span class="params"><span class="function">    &#125;)</span></span>;</span><br><span class="line">    t1.<span class="built_in">join</span>();</span><br><span class="line">    t2.<span class="built_in">join</span>();</span><br><span class="line">    t3.<span class="built_in">join</span>();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>结果：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # ./a.out </span><br><span class="line">thread id:139862718146304 instance pointer:create singleton object:0x7f344c000f70</span><br><span class="line">0x7f344c000f70</span><br><span class="line">thread id:139862709753600 instance pointer:0x7f344c000f70</span><br><span class="line">thread id:139862701360896 instance pointer:0x7f344c000f70</span><br></pre></td></tr></table></figure>
-<p>加锁，保证一个线程在对临界资源进行操作时不能被其他线程打断。用互斥锁即可，但是如果每次调用都需要进行加锁解锁，在第一个对象已经生成之后，在读的层面不需要进行加锁了。加锁解锁会导致效率低下。</p>
-<p>可以把上面的加锁部分套在一个 if 判断里，这样下个线程进来的时候就不用试图加锁了。</p>
-<p>改进版代码：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;mutex&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;thread&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">LazySingleton</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">static</span> LazySingleton *<span class="title">GetInstance</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (instance_ == <span class="literal">nullptr</span>) &#123; <span class="comment">// 套起来</span></span><br><span class="line">            m_.<span class="built_in">lock</span>();</span><br><span class="line">            <span class="keyword">if</span> (instance_ == <span class="literal">nullptr</span>) &#123;</span><br><span class="line">                instance_ = <span class="keyword">new</span> <span class="built_in">LazySingleton</span>();</span><br><span class="line">            &#125;</span><br><span class="line">            m_.<span class="built_in">unlock</span>();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> instance_;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="built_in">LazySingleton</span>() &#123;</span><br><span class="line">        cout &lt;&lt; <span class="string">&quot;create singleton object:&quot;</span> &lt;&lt; <span class="keyword">this</span> &lt;&lt; endl;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">LazySingleton</span>(<span class="type">const</span> LazySingleton&amp; s) = <span class="keyword">delete</span>;</span><br><span class="line">    <span class="type">static</span> LazySingleton *instance_;</span><br><span class="line">    <span class="type">static</span> mutex m_;</span><br><span class="line">&#125;;</span><br><span class="line">LazySingleton* LazySingleton::instance_ = <span class="literal">nullptr</span>;</span><br><span class="line">mutex LazySingleton::m_;</span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="function">thread <span class="title">t1</span><span class="params">([]() &#123;</span></span></span><br><span class="line"><span class="params"><span class="function">        cout &lt;&lt; <span class="string">&quot;thread id:&quot;</span> &lt;&lt; this_thread::get_id() &lt;&lt; <span class="string">&quot; instance pointer:&quot;</span> &lt;&lt; LazySingleton::GetInstance() &lt;&lt; endl;</span></span></span><br><span class="line"><span class="params"><span class="function">    &#125;)</span></span>;</span><br><span class="line">    <span class="function">thread <span class="title">t2</span><span class="params">([]() &#123;</span></span></span><br><span class="line"><span class="params"><span class="function">        cout &lt;&lt; <span class="string">&quot;thread id:&quot;</span> &lt;&lt; this_thread::get_id() &lt;&lt; <span class="string">&quot; instance pointer:&quot;</span> &lt;&lt; LazySingleton::GetInstance() &lt;&lt; endl;</span></span></span><br><span class="line"><span class="params"><span class="function">    &#125;)</span></span>;</span><br><span class="line">    <span class="function">thread <span class="title">t3</span><span class="params">([]() &#123;</span></span></span><br><span class="line"><span class="params"><span class="function">        cout &lt;&lt; <span class="string">&quot;thread id:&quot;</span> &lt;&lt; this_thread::get_id() &lt;&lt; <span class="string">&quot; instance pointer:&quot;</span> &lt;&lt; LazySingleton::GetInstance() &lt;&lt; endl;</span></span></span><br><span class="line"><span class="params"><span class="function">    &#125;)</span></span>;</span><br><span class="line">    t1.<span class="built_in">join</span>();</span><br><span class="line">    t2.<span class="built_in">join</span>();</span><br><span class="line">    t3.<span class="built_in">join</span>();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>结果和上面是一样的，这里就不展示了。</p>
-<h3 id="c11-的多线程版本"><a class="markdownIt-Anchor" href="#c11-的多线程版本"></a> C++11 的多线程版本</h3>
-<p>在 C++11 中，引入了 std::call_once，可以更便捷的实现上述功能。如需使用，只需要 #include <mutex> 即可，简单来说 std:call_once 的作用，确保函数或代码片段在多线程环境下，只需要执行一次，常用的场景如 Init() 操作或一些系统参数的获取等。</mutex></p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;mutex&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;thread&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">LazySingleton</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">static</span> LazySingleton *<span class="title">GetInstance</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        std::<span class="built_in">call_once</span>(instnace_flag_, []() &#123;</span><br><span class="line">            instance_ = <span class="keyword">new</span> <span class="built_in">LazySingleton</span>();</span><br><span class="line">        &#125;);</span><br><span class="line">        <span class="keyword">return</span> instance_;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="built_in">LazySingleton</span>() &#123;</span><br><span class="line">        cout &lt;&lt; <span class="string">&quot;create singleton object:&quot;</span> &lt;&lt; <span class="keyword">this</span> &lt;&lt; endl;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">LazySingleton</span>(<span class="type">const</span> LazySingleton&amp; s) = <span class="keyword">delete</span>;</span><br><span class="line">    <span class="type">static</span> LazySingleton *instance_;</span><br><span class="line">    <span class="type">static</span> once_flag instnace_flag_;</span><br><span class="line">&#125;;</span><br><span class="line">LazySingleton* LazySingleton::instance_ = <span class="literal">nullptr</span>;</span><br><span class="line">once_flag LazySingleton::instnace_flag_;</span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="function">thread <span class="title">t1</span><span class="params">([]() &#123;</span></span></span><br><span class="line"><span class="params"><span class="function">        cout &lt;&lt; <span class="string">&quot;thread id:&quot;</span> &lt;&lt; this_thread::get_id() &lt;&lt; <span class="string">&quot; instance pointer:&quot;</span> &lt;&lt; LazySingleton::GetInstance() &lt;&lt; endl;</span></span></span><br><span class="line"><span class="params"><span class="function">    &#125;)</span></span>;</span><br><span class="line">    <span class="function">thread <span class="title">t2</span><span class="params">([]() &#123;</span></span></span><br><span class="line"><span class="params"><span class="function">        cout &lt;&lt; <span class="string">&quot;thread id:&quot;</span> &lt;&lt; this_thread::get_id() &lt;&lt; <span class="string">&quot; instance pointer:&quot;</span> &lt;&lt; LazySingleton::GetInstance() &lt;&lt; endl;</span></span></span><br><span class="line"><span class="params"><span class="function">    &#125;)</span></span>;</span><br><span class="line">    <span class="function">thread <span class="title">t3</span><span class="params">([]() &#123;</span></span></span><br><span class="line"><span class="params"><span class="function">        cout &lt;&lt; <span class="string">&quot;thread id:&quot;</span> &lt;&lt; this_thread::get_id() &lt;&lt; <span class="string">&quot; instance pointer:&quot;</span> &lt;&lt; LazySingleton::GetInstance() &lt;&lt; endl;</span></span></span><br><span class="line"><span class="params"><span class="function">    &#125;)</span></span>;</span><br><span class="line">    t1.<span class="built_in">join</span>();</span><br><span class="line">    t2.<span class="built_in">join</span>();</span><br><span class="line">    t3.<span class="built_in">join</span>();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>结果：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # ./a.out </span><br><span class="line">thread id:140655525984000 instance pointer:create singleton object:0x7fece4000f70</span><br><span class="line">0x7fece4000f70</span><br><span class="line">thread id:140655517591296 instance pointer:0x7fece4000f70</span><br><span class="line">thread id:140655509198592 instance pointer:0x7fece4000f70</span><br></pre></td></tr></table></figure>
-<h2 id="饿汉模式代码"><a class="markdownIt-Anchor" href="#饿汉模式代码"></a> 饿汉模式代码</h2>
-<p>如果我们在线程开启前，已经将唯一的对象生成，就不会出现线程不安全的问题。即唯一的对象在main函数调用前已经生成，就不会产生线程安全问题。所以：</p>
-<ol>
-<li>在未进入 main 函数时，就完成唯一对象的生成，那么就是在程序加载时已经完成，存放在 .data段 的数据有这样的特点，所以我们可以直接给静态成员变量生成对象。</li>
-<li>接口只用返回生成好的对象指针即可。<br>
-代码：</li>
-</ol>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;thread&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">HungerSingleton</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">static</span> HungerSingleton *<span class="title">GetInstance</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> instance_;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="built_in">HungerSingleton</span>() &#123;</span><br><span class="line">        cout &lt;&lt; <span class="string">&quot;create singleton object:&quot;</span> &lt;&lt; <span class="keyword">this</span> &lt;&lt; endl;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">HungerSingleton</span>(<span class="type">const</span> HungerSingleton&amp; s) = <span class="keyword">delete</span>;</span><br><span class="line">    <span class="type">static</span> HungerSingleton *instance_;</span><br><span class="line">&#125;;</span><br><span class="line">HungerSingleton* HungerSingleton::instance_ = <span class="keyword">new</span> <span class="built_in">HungerSingleton</span>();</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="function">thread <span class="title">t1</span><span class="params">([]() &#123;</span></span></span><br><span class="line"><span class="params"><span class="function">        cout &lt;&lt; <span class="string">&quot;thread id:&quot;</span> &lt;&lt; this_thread::get_id() &lt;&lt; <span class="string">&quot; instance pointer:&quot;</span> &lt;&lt; HungerSingleton::GetInstance() &lt;&lt; endl;</span></span></span><br><span class="line"><span class="params"><span class="function">    &#125;)</span></span>;</span><br><span class="line">    <span class="function">thread <span class="title">t2</span><span class="params">([]() &#123;</span></span></span><br><span class="line"><span class="params"><span class="function">        cout &lt;&lt; <span class="string">&quot;thread id:&quot;</span> &lt;&lt; this_thread::get_id() &lt;&lt; <span class="string">&quot; instance pointer:&quot;</span> &lt;&lt; HungerSingleton::GetInstance() &lt;&lt; endl;</span></span></span><br><span class="line"><span class="params"><span class="function">    &#125;)</span></span>;</span><br><span class="line">    <span class="function">thread <span class="title">t3</span><span class="params">([]() &#123;</span></span></span><br><span class="line"><span class="params"><span class="function">        cout &lt;&lt; <span class="string">&quot;thread id:&quot;</span> &lt;&lt; this_thread::get_id() &lt;&lt; <span class="string">&quot; instance pointer:&quot;</span> &lt;&lt; HungerSingleton::GetInstance() &lt;&lt; endl;</span></span></span><br><span class="line"><span class="params"><span class="function">    &#125;)</span></span>;</span><br><span class="line">    t1.<span class="built_in">join</span>();</span><br><span class="line">    t2.<span class="built_in">join</span>();</span><br><span class="line">    t3.<span class="built_in">join</span>();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # ./a.out </span><br><span class="line">create singleton object:<span class="number">0x2343eb0</span></span><br><span class="line">thread id:<span class="number">140504409663232</span> instance pointer:<span class="number">0x2343eb0</span></span><br><span class="line">thread id:<span class="number">140504401270528</span> instance pointer:<span class="number">0x2343eb0</span></span><br><span class="line">thread id:<span class="number">140504392877824</span> instance pointer:<span class="number">0x2343eb0</span></span><br></pre></td></tr></table></figure>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20230419003547_3397109457/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/portrait.jpg">
-      <meta itemprop="name" content="caijizhuo">
-      <meta itemprop="description" content="Looks delicious">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="caijizhuo">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/20230419003547_3397109457/" class="post-title-link" itemprop="url">select&poll&epoll的区别</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2023-04-19 00:35:47" itemprop="dateCreated datePublished" datetime="2023-04-19T00:35:47+08:00">2023-04-19</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-05-11 11:10:40" itemprop="dateModified" datetime="2023-05-11T11:10:40+08:00">2023-05-11</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/socket-programming/" itemprop="url" rel="index"><span itemprop="name">socket-programming</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/concurrent-programming/" itemprop="url" rel="index"><span itemprop="name">concurrent-programming</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id="什么是多路复用"><a class="markdownIt-Anchor" href="#什么是多路复用"></a> 什么是多路复用</h1>
-<p>操作系统在处理 I/O 的时候，分为两个阶段：</p>
-<ol>
-<li>等待数据到达内核空间。</li>
-<li>等待数据从内核空间拷贝到用户空间。</li>
-</ol>
-<p>在 Linux 操作系统中，多路复用的方式有三种。分别是 select，poll，和 epoll。I/O 多路复用为，只通过一种机制，可以监视多个描述符，一旦某个描述符就绪（读就绪/写就绪），能够通知程序进行相应的读写操作。</p>
-<p>但 select，poll，epoll 本质上都是同步 I/O，因为他们都需要在读写事件就绪后自己负责进行读写，也就是说这个读写过程是阻塞的，而异步 I/O 则无需自己负责进行读写，异步 I/O 的实现会负责把数据从内核拷贝到用户空间。</p>
-<h1 id="select"><a class="markdownIt-Anchor" href="#select"></a> select</h1>
-<p>单个进程就可以同时处理多个网络连接的 I/O 请求（同时阻塞多个 I/O 操作）。</p>
-<p>基本原理就是：</p>
-<ol>
-<li>程序调用 select，然后整个程序就阻塞状态。</li>
-<li>这时候，内核就会<em><strong>轮询检查</strong></em>所有 select 负责的文件描述符集合 fd_set（一般上限为 1024 个），当找到其中那个的数据准备好了的文件描述符返回给 select。</li>
-<li>select 进行系统调用，将数据从内核复制到进程缓冲区（用户空间）。</li>
-</ol>
-<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20230419003547_3397109457/1.png" alt="1"></p>
-<p>select的缺点：</p>
-<ol>
-<li>每次调用 select，都需要把 fd_set 从用户态拷贝到内核态，这个开销在 fd 很多时会很大。</li>
-<li>同时每次调用 select 都需要在内核遍历传递进来的所有 fd，这个开销在 fd 很多时也很大</li>
-<li>select 支持的文件描述符数量太小了，默认是 1024</li>
-</ol>
-<h1 id="poll"><a class="markdownIt-Anchor" href="#poll"></a> poll</h1>
-<p>poll的原理与select非常相似，差别如下：</p>
-<ol>
-<li>描述fd集合的方式不同，poll 使用 pollfd 结构而不是 fd_set 结构，是链式的，所以没有最大连接数的限制。</li>
-<li>poll 有一个特点是水平触发，也就是通知程序 fd 就绪后，这次没有被处理，那么下次 poll 的时候会再次通知同样的 fd 已经就绪。</li>
-</ol>
-<p>poll 解决了 fd_set 有上限的情况，并且每次读就绪描述符集合时不用保存之前的状态。</p>
-<h1 id="epoll"><a class="markdownIt-Anchor" href="#epoll"></a> epoll</h1>
-<p>epoll 提供了三个函数：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">epoll_create</span><span class="params">(<span class="type">int</span> size)</span></span>;</span><br><span class="line"><span class="comment">//  建立一個 epoll 对象，并传回它的id</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">epoll_ctl</span><span class="params">(<span class="type">int</span> epfd, <span class="type">int</span> op, <span class="type">int</span> fd, <span class="keyword">struct</span> epoll_event *event)</span></span>;</span><br><span class="line"><span class="comment">//  事件注册函数，将需要监听的事件和需要监听的fd交给epoll对象</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">epoll_wait</span><span class="params">(<span class="type">int</span> epfd, <span class="keyword">struct</span> epoll_event *events, <span class="type">int</span> maxevents, <span class="type">int</span> timeout)</span></span>;</span><br><span class="line"><span class="comment">//  等待注册的事件被触发或者timeout发生</span></span><br></pre></td></tr></table></figure>
-<p>epoll解决的问题：</p>
-<ol>
-<li>epoll没有fd数量限制</li>
-</ol>
-<blockquote>
-<p>epoll没有这个限制，我们知道每个 epoll 监听一个 fd，所以最大数量与能打开的 fd 数量有关，一个 G 的内存的机器上，能打开10万个左右</p>
-</blockquote>
-<ol start="2">
-<li>epoll 不需要每次都从用户空间将 fd_set 复制到内核</li>
-</ol>
-<blockquote>
-<p>epoll 在用 epoll_ctl 函数进行事件注册的时候，已经将 fd 复制到内核中，所以不需要每次都重新复制一次</p>
-</blockquote>
-<ol start="3">
-<li>select 和 poll 都是主动轮询机制，需要遍历每一个人 fd；而 epoll 是被动触发方式。</li>
-</ol>
-<blockquote>
-<p>epoll_ctl 给 fd 注册了相应事件的时候，我们为每一个 fd 指定了一个<em><strong>回调函数</strong></em>，当数据准备好之后，就会把就绪的 fd 加入一个就绪的队列中，epoll_wait 的工作方式实际上就是在这个<em><strong>就绪队列中查看</strong></em>有没有就绪的 fd，如果有，就唤醒就绪队列上的等待者，然后调用回调函数。</p>
-</blockquote>
-<blockquote>
-<p>虽然 epoll, poll, select 都需要查看是否有 fd 就绪，但是 epoll 之所以是被动触发，就在于它<em><strong>只要去查找就绪队列</strong></em>中有没有 fd，就绪的 fd 是主动加到队列中，epoll 不需要一个个轮询确认。</p>
-</blockquote>
-<blockquote>
-<p>换一句话讲，就是 select 和 poll 只能通知有 fd 已经就绪了，但不能知道究竟是哪个 fd 就绪，所以 select 和 poll 就要去主动<strong>轮询一遍</strong>所有监听的 fd 才能找到就绪的 fd。而 epoll 则是不但可以知道有 fd 可以就绪，而且还具体可以知道就绪 fd 的编号，所以直接找到就可以，不用轮询。</p>
-</blockquote>
-<p>注意，epoll 只有 Linux 上面有。</p>
 
       
     </div>
@@ -1400,7 +1416,7 @@ i    &amp; i 为 2 的幂\\
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">58</span>
+          <span class="site-state-item-count">60</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1457,6 +1473,18 @@ i    &amp; i 为 2 的幂\\
     <i class="fa fa-user"></i>
   </span>
   <span class="author" itemprop="copyrightHolder">caijizhuo</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">52k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">3:10</span>
 </div>
 
         
