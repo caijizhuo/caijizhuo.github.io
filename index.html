@@ -195,6 +195,285 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20230530190403_3280945033/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/portrait.jpg">
+      <meta itemprop="name" content="caijizhuo">
+      <meta itemprop="description" content="Looks delicious">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="caijizhuo">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/20230530190403_3280945033/" class="post-title-link" itemprop="url">x86_64常用汇编</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-05-30 19:04:03" itemprop="dateCreated datePublished" datetime="2023-05-30T19:04:03+08:00">2023-05-30</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-06-01 17:24:10" itemprop="dateModified" datetime="2023-06-01T17:24:10+08:00">2023-06-01</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.8k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>6 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>本文用以记录常用汇编指令以供快速查找回忆，仅限于 X86_64 的 AT&amp;T 格式。</p>
+<h2 id="语法格式">语法格式</h2>
+<h3 id="1-引用寄存器前加-。如">1. 引用寄存器前加 %。如</h3>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">mov</span>    %rsp, %rbp</span><br></pre></td></tr></table></figure>
+<h3 id="2-指令长度后缀">2. 指令长度后缀</h3>
+<p>对于访问内存的数据，指令后加上 b w l q，操作 1 2 4 8 字节。如</p>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">movb</span>   <span class="number">$0x1</span>,<span class="number">0x201c3f</span>(%rip)</span><br><span class="line"><span class="symbol">nopw</span>   %cs:<span class="number">0x0</span>(%rax,%rax,<span class="number">1</span>)</span><br><span class="line"><span class="symbol">movl</span>   <span class="number">$0x5</span>,-<span class="number">0xc</span>(%rbp)</span><br><span class="line"><span class="symbol">movq</span>   <span class="number">$0x400b30</span>,-<span class="number">0x18</span>(%rbp)</span><br></pre></td></tr></table></figure>
+<h3 id="3-立即数前加-。16-进制数用-0x-开头。如">3. 立即数前加 $。16 进制数用 0x 开头。如</h3>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">movl</span>   <span class="number">$1</span>, %eax</span><br><span class="line"><span class="keyword">mov</span>    <span class="number">$0x0</span>,%eax</span><br></pre></td></tr></table></figure>
+<h3 id="4-注释可以用-开头，也可以用">4. 注释可以用 ! 开头，也可以用 ;</h3>
+<h3 id="5-操作数顺序">5. 操作数顺序</h3>
+<p>从源操作数到目的操作数，如下将 %rsp 寄存器中的数传给 %rbp 寄存器。</p>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">mov</span>    %rsp,%rbp</span><br></pre></td></tr></table></figure>
+<h3 id="6-数据声明">6. 数据声明</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">命令</th>
+<th style="text-align:center">数据类型</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">.ascii</td>
+<td style="text-align:center">文本字符串</td>
+</tr>
+<tr>
+<td style="text-align:center">.asciz</td>
+<td style="text-align:center">以空字符串结尾的文本字符串</td>
+</tr>
+<tr>
+<td style="text-align:center">.byte</td>
+<td style="text-align:center">字节值</td>
+</tr>
+<tr>
+<td style="text-align:center">.double</td>
+<td style="text-align:center">双精度浮点数</td>
+</tr>
+<tr>
+<td style="text-align:center">.float</td>
+<td style="text-align:center">单精度浮点数</td>
+</tr>
+<tr>
+<td style="text-align:center">.single</td>
+<td style="text-align:center">单精度浮点数同上</td>
+</tr>
+<tr>
+<td style="text-align:center">.int</td>
+<td style="text-align:center">32位整数</td>
+</tr>
+<tr>
+<td style="text-align:center">.long</td>
+<td style="text-align:center">32位整数同上</td>
+</tr>
+<tr>
+<td style="text-align:center">.octa</td>
+<td style="text-align:center">16字节整数</td>
+</tr>
+<tr>
+<td style="text-align:center">.quad</td>
+<td style="text-align:center">8字节整数</td>
+</tr>
+<tr>
+<td style="text-align:center">.short</td>
+<td style="text-align:center">16位整数</td>
+</tr>
+<tr>
+<td style="text-align:center">.comm</td>
+<td style="text-align:center">声明未初始化的数据的通用内存区域</td>
+</tr>
+<tr>
+<td style="text-align:center">.lcomm</td>
+<td style="text-align:center">声明未初始化的数据的本地通用内存区域</td>
+</tr>
+</tbody>
+</table>
+<h3 id="7-文件组成">7. 文件组成</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">命令</th>
+<th style="text-align:center">作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">.org</td>
+<td style="text-align:center">定义当前汇编位置</td>
+</tr>
+<tr>
+<td style="text-align:center">.globl</td>
+<td style="text-align:center">让段全局可见</td>
+</tr>
+<tr>
+<td style="text-align:center">.text</td>
+<td style="text-align:center">存放代码指令正文段</td>
+</tr>
+<tr>
+<td style="text-align:center">.bss</td>
+<td style="text-align:center">存放未初始化的全局和静态变量，运行时该区域初始化为 0</td>
+</tr>
+<tr>
+<td style="text-align:center">.rodata</td>
+<td style="text-align:center">read only data</td>
+</tr>
+<tr>
+<td style="text-align:center">.data</td>
+<td style="text-align:center">可读可写的数据段</td>
+</tr>
+</tbody>
+</table>
+<h3 id="8-寻址方式">8. 寻址方式</h3>
+<ul>
+<li>直接寻址：把某个地址上的值放到寄存器中</li>
+</ul>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">mov</span>    <span class="number">$0x8000</span>,%eax</span><br></pre></td></tr></table></figure>
+<ul>
+<li>间址寻址：把寄存器上的值所代表的地址所指向的值放到寄存器中</li>
+</ul>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">movl</span>   <span class="number">$0x8000</span>,%ebx  </span><br><span class="line"><span class="symbol">movl</span>   (%ebx),%eax  <span class="comment">; 间址寻址, 把地址 0x8000（在寄存器 %ebx 中）上的值放到 %eax 中</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>基址寻址：以寄存器里的数值作为基址，加上一个常数得到最终地址，把地址上的值放到寄存器中</li>
+</ul>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">movl</span>   <span class="number">$0x8000</span>,%eax  </span><br><span class="line"><span class="symbol">movl</span>   <span class="number">4</span>(%eax),%ebx  <span class="comment">; 基址寻址, 把地址 0x8004（0x8000+4）上的值放到 %eax 中</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>变址寻址：以两个寄存器里的数值之和加上一个常数得到最终地址，把地址上的值放到寄存器中</li>
+</ul>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">movl</span>   <span class="number">$0x8000</span>,%eax</span><br><span class="line"><span class="symbol">movl</span>   <span class="number">$0x4</span>,%ebx</span><br><span class="line"><span class="symbol">movl</span>   (%eax,%ebx),%ecx    <span class="comment">; 变址寻址, 把地址 0x8004（0x8000+4）上的值放到 %ecx 中</span></span><br><span class="line"><span class="symbol">movl</span>   <span class="number">4</span>(%eax,%ebx),%ecx   <span class="comment">; 变址寻址, 把地址 0x8008（0x8000+4+4）上的值放到 %ecx 中</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>比例变址寻址：以一个寄存器里的数值加上另一个寄存器里的数字，乘以一个比例因子（1,2,4,8）再加上一个常数得到最终地址，把地址上的值放到寄存器中</li>
+</ul>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">movl</span>   <span class="number">$0x2000</span>,%eax   </span><br><span class="line"><span class="symbol">movl</span>   <span class="number">$0x2</span>,%ebx   </span><br><span class="line"><span class="symbol">movl</span>   (,%eax,<span class="number">4</span>),%ecx      <span class="comment">; 比例变址寻址, 把地址 0x8000（0 + 0x2000*4）上的值放到 %ecx 中</span></span><br><span class="line"><span class="symbol">movl</span>   <span class="number">6</span>(,%eax,<span class="number">4</span>), %ecx    <span class="comment">; 比例变址寻址, 把地址 0x8006（0 + 0x2000*4 + 6）上的值放到 %ecx 中</span></span><br><span class="line"><span class="symbol">movl</span>   (%ebx,%eax,<span class="number">4</span>),%ecx  <span class="comment">; 比例变址寻址, 把地址 0x8002（0x2 + 0x2000*4）上的值放到 %ecx 中</span></span><br><span class="line"><span class="symbol">movl</span>   <span class="number">6</span>(%ebx,%eax,<span class="number">4</span>),%ecx <span class="comment">; 比例变址寻址, 把地址 0x8008（0x2 + 0x2000*4 + 6）上的值放到 %ecx 中</span></span><br></pre></td></tr></table></figure>
+<h2 id="常见指令">常见指令</h2>
+<h3 id="1-mov-用于将源操作数移动到目的操作数">1. mov 用于将源操作数移动到目的操作数</h3>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">mov</span>    %rsp,%rbp      <span class="comment">; %rbp = %rsp</span></span><br></pre></td></tr></table></figure>
+<h3 id="2-add-用于将源操作数加给目的操作数">2. add 用于将源操作数加给目的操作数</h3>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">addl</span>   %eax,%ebx      <span class="comment">; %ebx = %ebx + %eax</span></span><br></pre></td></tr></table></figure>
+<h3 id="3-sub-用于将两个数相减">3. sub 用于将两个数相减</h3>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">subl</span>   %eax,%ebx      <span class="comment">; %ebx = %ebx - %eax</span></span><br></pre></td></tr></table></figure>
+<h3 id="4-inc-用于加一">4. inc 用于加一</h3>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">incl</span>   %eax           <span class="comment">; %eax = %eax + 1</span></span><br></pre></td></tr></table></figure>
+<h3 id="5-dec-用于减一">5. dec 用于减一</h3>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">decl</span>   %eax           <span class="comment">; %eax = %eax - 1</span></span><br></pre></td></tr></table></figure>
+<h3 id="6-push-用于将数据压入栈">6. push 用于将数据压入栈</h3>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">pushl</span>  %eax           <span class="comment">; 入栈，%esp = %esp - 0x4, %esp = %eax </span></span><br></pre></td></tr></table></figure>
+<h3 id="7-pop-用于将数据出栈">7. pop 用于将数据出栈</h3>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">popl</span>   %eax           <span class="comment">; 出栈，%eax = %esp, %esp = %esp + 0x4</span></span><br></pre></td></tr></table></figure>
+<h3 id="8-jmp-跳转">8. jmp 跳转</h3>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">jmp</span>    label          <span class="comment">; 无条件跳转为 label, %rip = label</span></span><br><span class="line"><span class="symbol">je</span>     label          <span class="comment">; 相等 ZF = 1, %rip = label</span></span><br><span class="line"><span class="symbol">jne</span>    label          <span class="comment">; 不相等 ZF = 0, %rip = label</span></span><br><span class="line"><span class="symbol">jg</span>     label          <span class="comment">; 大于 %rip = label</span></span><br><span class="line"><span class="symbol">jge</span>    label          <span class="comment">; 大于等于 %rip = label</span></span><br><span class="line"><span class="symbol">jl</span>     label          <span class="comment">; 小于 %rip = label</span></span><br><span class="line"><span class="symbol">jle</span>    label          <span class="comment">; 小于等于 %rip = label</span></span><br><span class="line"><span class="symbol">ja</span>     label          <span class="comment">; 无符号比较 大于 %rip = label</span></span><br><span class="line"><span class="symbol">jae</span>    label          <span class="comment">; 无符号比较 大于等于 %rip = label</span></span><br><span class="line"><span class="symbol">jb</span>     label          <span class="comment">; 无符号比较 小于 %rip = label</span></span><br><span class="line"><span class="symbol">jbe</span>    label          <span class="comment">; 无符号比较 小于等于 %rip = label</span></span><br></pre></td></tr></table></figure>
+<h3 id="9-mul-乘法">9. mul 乘法</h3>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">imull</span>  %eax,%ebx      <span class="comment">; %ebx = %eax * %ebx  用于有符号数</span></span><br><span class="line"><span class="symbol">mull</span>   %eax,%ebx      <span class="comment">; %ebx = %eax * %ebx  用于无符号数</span></span><br></pre></td></tr></table></figure>
+<h3 id="10-div-除法">10. div 除法</h3>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">idivl</span>  %ebx           <span class="comment">; %edx = %eax % %ebx, %eax = %eax / %ebx  用于有符号数</span></span><br><span class="line"><span class="symbol">divl</span>   %ebx           <span class="comment">; %edx = %eax % %ebx, %eax = %eax / %ebx  用于无符号数</span></span><br></pre></td></tr></table></figure>
+<h3 id="11-and-按位与">11. and 按位与</h3>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">andl</span>   %eax,%ebx      <span class="comment">; %ebx = %ebx &amp; %eax</span></span><br></pre></td></tr></table></figure>
+<h3 id="12-or-按位或">12. or 按位或</h3>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">orl</span>    %eax,%ebx      <span class="comment">; %ebx = %ebx | %eax</span></span><br></pre></td></tr></table></figure>
+<h3 id="13-xor-按位异位">13. xor 按位异位</h3>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">xorl</span>   %eax,%ebx      <span class="comment">; %ebx = %eax ^ %ebx</span></span><br></pre></td></tr></table></figure>
+<h3 id="14-shl-和-sal-位左移">14. shl 和 sal 位左移</h3>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">shll</span>   <span class="number">$1</span>,%eax        <span class="comment">; %eax = %eax &lt;&lt; 1  逻辑左移，填充 0</span></span><br><span class="line"><span class="symbol">sall</span>   <span class="number">$1</span>,%eax        <span class="comment">; %eax = %eax &lt;&lt; 1  算数左移，填充 0</span></span><br></pre></td></tr></table></figure>
+<h3 id="15-shr-和-sar-位右移">15. shr 和 sar 位右移</h3>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">shrl</span>   <span class="number">$1</span>,%eax        <span class="comment">; %eax = %eax &gt;&gt; 1  逻辑右移，填充 0</span></span><br><span class="line"><span class="symbol">sarl</span>   <span class="number">$1</span>,%eax        <span class="comment">; %eax = %eax &gt;&gt; 1  算数右移，填充 符号位</span></span><br></pre></td></tr></table></figure>
+<h3 id="16-lea-装载有效地址">16. lea 装载有效地址</h3>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">leal</span>   <span class="number">8</span>(%ebx),%eax   <span class="comment">; %eax = 8 + %ebx 可理解为 %eax = &amp;(*(%ebx)) + 8</span></span><br></pre></td></tr></table></figure>
+<h3 id="17-call-函数调用">17. call 函数调用</h3>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">call</span>   func_name      <span class="comment">; 将下一条指令的 %rip push 到栈中，之后 %rip = func_name </span></span><br></pre></td></tr></table></figure>
+<h3 id="18-ret-函数返回">18. ret 函数返回</h3>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">ret</span>                   <span class="comment">; 将函数返回地址的下一条要执行指令的值赋值给 %rip，push %rip</span></span><br></pre></td></tr></table></figure>
+<h3 id="19-test-与运算并设置标志寄存器">19. test 与运算并设置标志寄存器</h3>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">testl</span>  %eax,%ebx      <span class="comment">; %eax &amp; %ebx，不会改变这两个寄存器值，改变标志寄存器零标志位（ZF）、符号标志位（SF）、奇偶标志位（PF）和进位标志位（CF），但不会影响溢出标志位（OF）</span></span><br></pre></td></tr></table></figure>
+<h3 id="20-cmp-比较操作数大小">20. cmp 比较操作数大小</h3>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">cmpl</span>   %eax,%ebx      <span class="comment">; 根据 %ebx - %eax 的值来改变零标志位（ZF）、符号标志位（SF）、奇偶标志位（PF）、进位标志位（CF）和溢出标志位（OF）</span></span><br></pre></td></tr></table></figure>
+<h3 id="21-rep-重复执行指令直到某一条件">21. rep 重复执行指令直到某一条件</h3>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">repz</span>   movsb          <span class="comment">; 重复执行 movsb 直到 ZF = 0</span></span><br><span class="line"><span class="symbol">repne</span>  scasb          <span class="comment">; 重复执行 scasb 直到 ZF = 1</span></span><br></pre></td></tr></table></figure>
+<h3 id="22-lock-锁定总线">22. lock 锁定总线</h3>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">lock</span> addl <span class="number">$1</span>,(%eax)   <span class="comment">; 锁定总线，并使 *(%eax) = *(%eax) + 1，因为总线是锁定的，不会被其他处理器打断</span></span><br></pre></td></tr></table></figure>
+<h3 id="23-xadd-交换两个操作数值，使他们相加">23. xadd 交换两个操作数值，使他们相加</h3>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">xaddl</span>  %eax,%ebx      <span class="comment">; tmp = %eax，%eax = %ebx，%ebx = tmp + %ebx 交换两个数，并将和写到 %ebx</span></span><br></pre></td></tr></table></figure>
+<h3 id="24-nop-空操作">24. nop 空操作</h3>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">nop</span>                   <span class="comment">; 什么都不做，充当占位符或者插入延迟</span></span><br></pre></td></tr></table></figure>
+<h3 id="25-hlt-使处理器暂停直到收到中断信号">25. hlt 使处理器暂停直到收到中断信号</h3>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">hlt</span>                   <span class="comment">; 使处理器进入暂停状态，直到发生外部中断。它通常用于操作系统内核中，以降低功耗和发热量。只有特权级别为 0 （内核态） 才能使用，否则会导致异常</span></span><br></pre></td></tr></table></figure>
+<h3 id="26-xchg-交换两个操作数的值">26. xchg 交换两个操作数的值</h3>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">xchgl</span>  %eax,%ebx       <span class="comment">; tmp = %eax，%eax = %ebx，%ebx = tmp</span></span><br></pre></td></tr></table></figure>
+<h3 id="27-cld-清除方向寄存器（DF）">27. cld 清除方向寄存器（DF）</h3>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">cld</span>                    <span class="comment">; 清除方向寄存器，使 %rdi 递增</span></span><br></pre></td></tr></table></figure>
+<h3 id="28-movsb-移动字符串">28. movsb 移动字符串</h3>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">movsb</span>                  <span class="comment">; 以 %rsi 为源地址，%rdi 为目的地址，将字符以一个字节拷贝。每次执行 movsb，%rsi 和 %rdi 以方向标志寄存器（DF）自动递增或递减</span></span><br></pre></td></tr></table></figure>
+<h3 id="29-scasb-查找字符">29. scasb 查找字符</h3>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">scasb</span>                  <span class="comment">; 将被查找字符放到 %al 中，与 %rdi 地址的字符串依次比较，根据比较结果设置标志寄存器</span></span><br></pre></td></tr></table></figure>
+<h3 id="30-cli-禁用所有中断">30. cli 禁用所有中断</h3>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="symbol">cli</span>                    <span class="comment">; 禁用所用中断</span></span><br><span class="line"><span class="symbol">hlt</span>                    <span class="comment">; 使处理器保持暂停状态，直到中断被重新启用</span></span><br></pre></td></tr></table></figure>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20230526103802_4041215688/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -257,20 +536,20 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="问题"><a class="markdownIt-Anchor" href="#问题"></a> 问题</h2>
+          <h2 id="问题">问题</h2>
 <p>今天调试代码的时候看到地址的时候突然感到奇怪：我记得我之前看到的代码地址空间好多都是 0x400xxx 开头的，怎么这次的地址空间是 0x5562b845axxx 呢？是什么导致了这个差异？</p>
 <p>我换了地址空间为 0x400xxx 开头的机器，准备了相同的代码，在两台不同的机器上编译：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%p\n&quot;</span>, main);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>这个简单的程序可以打出 main 函数的地址。经测试，在不同的机上打出的结果有很大差异。</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # ./a.out </span><br><span class="line">0x5562b845a649</span><br><span class="line"></span><br><span class="line">@└────&gt; # ./b.out </span><br><span class="line">0x400596</span><br></pre></td></tr></table></figure>
-<h2 id="答案"><a class="markdownIt-Anchor" href="#答案"></a> 答案</h2>
+<h2 id="答案">答案</h2>
 <p>经查阅资料，这个问题是 Linux 的 ASLR （Address Space Layout Randomization）导致的。这项技术会在装载时，装载到随机地址，防止黑客利用固定地址注入恶意代码。对于 b.out，没有使用该技术。所以 b.out 的代码段虚拟地址一直是 0x400000 开头。</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # readelf -h b.out </span><br><span class="line">ELF Header:</span><br><span class="line">  Magic:   7f 45 4c 46 02 01 01 00 00 00 00 00 00 00 00 00 </span><br><span class="line">  Class:                             ELF64</span><br><span class="line">  Data:                              2&#x27;s complement, little endian</span><br><span class="line">  Version:                           1 (current)</span><br><span class="line">  OS/ABI:                            UNIX - System V</span><br><span class="line">  ABI Version:                       0</span><br><span class="line">  Type:                              EXEC (Executable file)        // 这里是 EXEC</span><br><span class="line">  Machine:                           Advanced Micro Devices X86-64</span><br><span class="line">  Version:                           0x1</span><br><span class="line">  Entry point address:               0x4004b0                      // 这里是 _start 的绝对地址</span><br><span class="line">  Start of program headers:          64 (bytes into file)</span><br><span class="line">  Start of section headers:          15608 (bytes into file)</span><br><span class="line">  Flags:                             0x0</span><br><span class="line">  Size of this header:               64 (bytes)</span><br><span class="line">  Size of program headers:           56 (bytes)</span><br><span class="line">  Number of program headers:         9</span><br><span class="line">  Size of section headers:           64 (bytes)</span><br><span class="line">  Number of section headers:         30</span><br><span class="line">  Section header string table index: 29</span><br></pre></td></tr></table></figure>
 <p>可以看到，对于 b.out，他的文件类型是 Executable file，_start 的地址是 0x400xxx 开头。这种就是没有使用 ASLR 技术的。而对于 a.out，结果如下：</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # readelf -h a.out </span><br><span class="line">ELF Header:</span><br><span class="line">  Magic:   7f 45 4c 46 02 01 01 00 00 00 00 00 00 00 00 00 </span><br><span class="line">  Class:                             ELF64</span><br><span class="line">  Data:                              2&#x27;s complement, little endian</span><br><span class="line">  Version:                           1 (current)</span><br><span class="line">  OS/ABI:                            UNIX - System V</span><br><span class="line">  ABI Version:                       0</span><br><span class="line">  Type:                              DYN (Shared object file)      // 这里是 DYN</span><br><span class="line">  Machine:                           Advanced Micro Devices X86-64</span><br><span class="line">  Version:                           0x1</span><br><span class="line">  Entry point address:               0x560                         // 这里是 _start 的相对地址</span><br><span class="line">  Start of program headers:          64 (bytes into file)</span><br><span class="line">  Start of section headers:          12744 (bytes into file)</span><br><span class="line">  Flags:                             0x0</span><br><span class="line">  Size of this header:               64 (bytes)</span><br><span class="line">  Size of program headers:           56 (bytes)</span><br><span class="line">  Number of program headers:         9</span><br><span class="line">  Size of section headers:           64 (bytes)</span><br><span class="line">  Number of section headers:         31</span><br><span class="line">  Section header string table index: 30</span><br></pre></td></tr></table></figure>
 <p>对于 a.out，文件类型为 Shared object file，而且 _start 的地址是个相对地址。就是这个导致的这个差异。每次装载 a.out 时，代码会被加载到随机的位置。可以看到，每次运行，得到的地址都不同。</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # ./a.out </span><br><span class="line">0x559536d9d649</span><br><span class="line">@└────&gt; # ./a.out </span><br><span class="line">0x559a7a6df649</span><br><span class="line">@└────&gt; # ./a.out </span><br><span class="line">0x55ca5dbd4649</span><br></pre></td></tr></table></figure>
-<h2 id="发生根因"><a class="markdownIt-Anchor" href="#发生根因"></a> 发生根因</h2>
+<h2 id="发生根因">发生根因</h2>
 <p>之所以发生这个原因，是因为操作系统版本导致的。低版本操作系统默认不使用 ASLR。想要在不同的操作系统上复现这两个方式也很简单：</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # gcc 1.c -fPIC -pie</span><br></pre></td></tr></table></figure>
 <p>这种方式编译出来的就是使用了 ASLR 技术的。其中 -pie 的意思是 position-independent executable，位置无关的可执行文件。编译时还需要加上 -fPIC （Position-Independent Code）生成位置无关代码。而</p>
@@ -363,7 +642,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="linux-中常用的文件描述符"><a class="markdownIt-Anchor" href="#linux-中常用的文件描述符"></a> Linux 中常用的文件描述符</h2>
+          <h2 id="Linux-中常用的文件描述符">Linux 中常用的文件描述符</h2>
 <ul>
 <li>0 文件描述符，表示标准输入。</li>
 <li>1 文件描述符，表示标准输出。</li>
@@ -375,15 +654,15 @@
 <li>1 正确返回值，返回给前端。</li>
 <li>2 错误返回值，返回给前端。</li>
 </ul>
-<h2 id="符号"><a class="markdownIt-Anchor" href="#符号"></a> &gt; 符号</h2>
+<h2 id="符号">&gt; 符号</h2>
 <p>在 shell 中，我们经常使用 &gt; 符号，把输出重定位到一个文件。例如：</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat /proc/xxx/maps &gt; memory.txt</span><br></pre></td></tr></table></figure>
 <p>以上输出是把某个进程的内存布局重定向到一个文件。其中，&gt; 是 1&gt; 的简写，实际意思是把标准输出重定向到后面的文件。这样屏幕上就不会有打印了，打印会重定向到文件中。</p>
-<h2 id="符号-2"><a class="markdownIt-Anchor" href="#符号-2"></a> &gt;&amp; 符号</h2>
+<h2 id="符号-2">&gt;&amp; 符号</h2>
 <p>本质上，&gt;&amp; 符号不是一个符号。我们经常见到 2&gt;&amp;1 符号，实际意义是，将<strong>标准错误</strong>重新定位到<strong>标准输出</strong>。那为什么要加个 &amp; 呢？因为不加 &amp; 的话操作系统不会认为你是想把标准错误重定位给标准输出，而是想重定向到一个叫 “1” 的文件。所以 &amp;1 表示 1 输出通道。举例，strace 命令可以查看系统调用，这个结果是输出到标准错误的。</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">strace ls &gt; log 2&gt;&amp;1</span><br></pre></td></tr></table></figure>
 <p>将标准输出重定向到 log 文件，并将标准错误重定向到标准输出。这样标准错误也会被重定向到 log 文件。</p>
-<h2 id="符号-3"><a class="markdownIt-Anchor" href="#符号-3"></a> &amp;&gt; 符号</h2>
+<h2 id="符号-3">&amp;&gt; 符号</h2>
 <p>&amp;&gt; 意思是把标准错误和标准输出都重定向到某个文件。</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">strace ls &amp;&gt; log</span><br></pre></td></tr></table></figure>
 <p>写起来比较简单，且省力。</p>
@@ -478,22 +757,22 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="函数调用时发生了什么"><a class="markdownIt-Anchor" href="#函数调用时发生了什么"></a> 函数调用时发生了什么</h2>
+          <h2 id="函数调用时发生了什么">函数调用时发生了什么</h2>
 <p>在 C 语言中，函数调用在底层汇编究竟发生了什么呢？示例如下：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">add</span><span class="params">(<span class="type">int</span> a, <span class="type">int</span> b)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> a + b;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="type">int</span> a = <span class="number">9</span>;</span><br><span class="line">    <span class="type">int</span> b = <span class="number">10</span>;</span><br><span class="line">    <span class="type">int</span> c = <span class="number">11</span>;</span><br><span class="line">    <span class="type">int</span> d = <span class="built_in">add</span>(a, b);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>对上面这个文件编译的结果进行反汇编，这两个函数的反汇编结果如下：</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # objdump -d a.out</span><br><span class="line"></span><br><span class="line">0000000000400536 &lt;add&gt;:</span><br><span class="line">  400536:       55                      push   %rbp              // rbp 是被调用者保存，把上一个函数的栈基址保存</span><br><span class="line">  400537:       48 89 e5                mov    %rsp,%rbp         // 将栈顶设为新的栈基址，至此本函数的栈已经初始化好了</span><br><span class="line">  40053a:       89 7d fc                mov    %edi,-0x4(%rbp)   // 将局部变量 a 放在栈上</span><br><span class="line">  40053d:       89 75 f8                mov    %esi,-0x8(%rbp)   // 将局部变量 b 放在栈上</span><br><span class="line">  400540:       8b 55 fc                mov    -0x4(%rbp),%edx</span><br><span class="line">  400543:       8b 45 f8                mov    -0x8(%rbp),%eax</span><br><span class="line">  400546:       01 d0                   add    %edx,%eax         // 相加两个数，并将返回值放在 eax</span><br><span class="line">  400548:       5d                      pop    %rbp              // 恢复 上一个函数的栈基址</span><br><span class="line">  400549:       c3                      retq                     // 恢复 rip 寄存器，返回调用该函数的下一条指令地址</span><br><span class="line"></span><br><span class="line">000000000040054a &lt;main&gt;:</span><br><span class="line">  40054a:       55                      push   %rbp</span><br><span class="line">  40054b:       48 89 e5                mov    %rsp,%rbp         // 同上，栈初始化</span><br><span class="line">  40054e:       48 83 ec 10             sub    $0x10,%rsp        // 栈的空间先摆好</span><br><span class="line">  400552:       c7 45 fc 09 00 00 00    movl   $0x9,-0x4(%rbp)   // a 初始化</span><br><span class="line">  400559:       c7 45 f8 0a 00 00 00    movl   $0xa,-0x8(%rbp)   // b 初始化</span><br><span class="line">  400560:       c7 45 f4 0b 00 00 00    movl   $0xb,-0xc(%rbp)   // c 初始化</span><br><span class="line">  400567:       8b 55 f8                mov    -0x8(%rbp),%edx</span><br><span class="line">  40056a:       8b 45 fc                mov    -0x4(%rbp),%eax</span><br><span class="line">  40056d:       89 d6                   mov    %edx,%esi         // 第二个入参，因为从右往左放入</span><br><span class="line">  40056f:       89 c7                   mov    %eax,%edi         // 第一个入参</span><br><span class="line">  400571:       e8 c0 ff ff ff          callq  400536 &lt;add&gt;</span><br><span class="line">  400576:       89 45 f0                mov    %eax,-0x10(%rbp)  // 返回值放入 d</span><br><span class="line">  400579:       b8 00 00 00 00          mov    $0x0,%eax         // return 0</span><br><span class="line">  40057e:       c9                      leaveq </span><br><span class="line">  40057f:       c3                      retq</span><br></pre></td></tr></table></figure>
 <p>可以看到，在函数调用时，发生了不同函数栈的切换。其中涉及到一些相关汇编指令。</p>
-<h2 id="汇编指令中的-push-pop-call-和-ret"><a class="markdownIt-Anchor" href="#汇编指令中的-push-pop-call-和-ret"></a> 汇编指令中的 push pop call 和 ret</h2>
-<h3 id="push-和-pop"><a class="markdownIt-Anchor" href="#push-和-pop"></a> push 和 pop</h3>
+<h2 id="汇编指令中的-push-pop-call-和-ret">汇编指令中的 push pop call 和 ret</h2>
+<h3 id="push-和-pop">push 和 pop</h3>
 <p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20230517171931_2797536300/1.png" alt="1"></p>
 <p>如上图所示，%rbp 寄存器和 %rsp 寄存器表示这一个栈的 “基址” 和 “栈顶”。因为栈是从高向低生长的，所以基址在栈顶上面。push 操作相当于，先将栈顶向下移动（因为存数据是向 %rsp 指向的位置写数据，而 %rsp 指向的是目前已有的栈顶数据），再将数据写入。pop 操作则相反。通过这两个寄存器，可以维护一个栈的存在。调用函数设计到栈的切换，所以就是通过改变这两个寄存器的值来达到切换的。</p>
-<h3 id="call-和-ret"><a class="markdownIt-Anchor" href="#call-和-ret"></a> call 和 ret</h3>
+<h3 id="call-和-ret">call 和 ret</h3>
 <p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20230517171931_2797536300/2.png" alt="2"></p>
 <p>如上图所示，调用函数涉及到执行指令的切换。将要执行的下一条指令又由 %rip 寄存器指出。</p>
 <p>call 指令可以改变 %rip 寄存器的值：将 call 汇编指令的下一条指令地址 push 到栈中，之后改变 %rip 为 call 的指令地址。</p>
 <p>ret 指令也可以改变 %rip 寄存器的值：将栈顶元素 pop 给 %rip，将其改为之前 call 时存的下一条要执行的指令地址。</p>
-<h2 id="二叉树遍历示例"><a class="markdownIt-Anchor" href="#二叉树遍历示例"></a> 二叉树遍历示例</h2>
+<h2 id="二叉树遍历示例">二叉树遍历示例</h2>
 <p>那么操作系统这一系列操作对于我们将递归算法转换为迭代算法有什么启发吗？</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">vector&lt;<span class="type">int</span>&gt; ret;</span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">helper</span><span class="params">(TreeNode* root)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (root == <span class="literal">nullptr</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">helper</span>(root-&gt;left);</span><br><span class="line">    ret.<span class="built_in">push_back</span>(root-&gt;val);</span><br><span class="line">    <span class="built_in">helper</span>(root-&gt;right);</span><br><span class="line">&#125;</span><br><span class="line"><span class="function">vector&lt;<span class="type">int</span>&gt; <span class="title">inorderTraversal</span><span class="params">(TreeNode* root)</span> </span>&#123;</span><br><span class="line">    ret.<span class="built_in">clear</span>();</span><br><span class="line">    <span class="built_in">helper</span>(root);</span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>上面是二叉树中序遍历的递归写法，非常简洁。其中可以看到在递归函数 helper 中，又调用了两次 helper。我们知道每次调用 helper，都有它自己的调用栈。那么我们向迭代转换时，就要注意不能让他们的调用栈互相冲突。那么我们可以自己定义一个状态变量，用来存储当前执行的函数栈。除此之外，还要知道当前栈执行到本次函数的哪个位置（%rip)。两次 helper 的执行，可以将整个调用结构分为三部分：</p>
@@ -590,11 +869,11 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="cpp列表初始化是什么"><a class="markdownIt-Anchor" href="#cpp列表初始化是什么"></a> cpp列表初始化是什么</h2>
+          <h2 id="cpp列表初始化是什么">cpp列表初始化是什么</h2>
 <p>形式：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">A</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">A</span>(<span class="type">int</span> num) : <span class="built_in">a_</span>(num) &#123;</span><br><span class="line">        cout &lt;&lt; a_ &lt;&lt; endl;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="type">const</span> <span class="type">int</span> a_;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="function">A <span class="title">a</span><span class="params">(<span class="number">12</span>)</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>即，在构造函数后，使用列表的方式来初始化成员变量。</p>
-<h2 id="构造函数内部执行顺序"><a class="markdownIt-Anchor" href="#构造函数内部执行顺序"></a> 构造函数内部执行顺序</h2>
+<h2 id="构造函数内部执行顺序">构造函数内部执行顺序</h2>
 <ol>
 <li>调用构造函数</li>
 <li>基类构造函数</li>
@@ -607,13 +886,13 @@
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Test</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">Test</span>() &#123;</span><br><span class="line">        cout &lt;&lt; <span class="string">&quot;constructor called&quot;</span> &lt;&lt; endl;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">Test</span>(<span class="type">const</span> Test&amp; t) &#123;</span><br><span class="line">        cout &lt;&lt; <span class="string">&quot;copy constructor called&quot;</span> &lt;&lt; endl;</span><br><span class="line">    &#125;</span><br><span class="line">    Test&amp; <span class="keyword">operator</span>=(<span class="type">const</span> Test&amp; t) &#123;</span><br><span class="line">        cout &lt;&lt; <span class="string">&quot;assignment operator called&quot;</span> &lt;&lt; endl;</span><br><span class="line">        <span class="keyword">return</span> *<span class="keyword">this</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Base</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">Base</span>() &#123;</span><br><span class="line">        cout &lt;&lt; <span class="string">&quot;call base constructor&quot;</span> &lt;&lt; endl;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">B</span> : <span class="keyword">public</span> Base &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">B</span>(Test ele) : <span class="built_in">t_</span>(ele) &#123;</span><br><span class="line">        cout &lt;&lt; <span class="string">&quot;call B constructor&quot;</span> &lt;&lt; endl;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    Test t_;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">    Test t;</span><br><span class="line">    cout &lt;&lt; <span class="string">&quot;==========&quot;</span> &lt;&lt; endl;</span><br><span class="line">    <span class="function">B <span class="title">b</span><span class="params">(t)</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>结果：</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # ./a.out </span><br><span class="line">constructor called</span><br><span class="line">==========</span><br><span class="line">copy constructor called // 传参的拷贝构造</span><br><span class="line">call base constructor   // 调用基类构造函数</span><br><span class="line">copy constructor called // 列表初始化</span><br><span class="line">call B constructor      // 子类构造函数内语句</span><br></pre></td></tr></table></figure>
-<h2 id="列表初始化顺序"><a class="markdownIt-Anchor" href="#列表初始化顺序"></a> 列表初始化顺序</h2>
+<h2 id="列表初始化顺序">列表初始化顺序</h2>
 <p>列表初始化顺序并不取决于在构造函数中列表的顺序，而取决于该成员在类中声明的顺序。</p>
 <p>示例：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Test1</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">Test1</span>() = <span class="keyword">default</span>;</span><br><span class="line">    <span class="built_in">Test1</span>(<span class="type">const</span> Test1&amp; t) &#123;</span><br><span class="line">        cout &lt;&lt; <span class="string">&quot;Test1 copy constructor called&quot;</span> &lt;&lt; endl;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Test2</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">Test2</span>() = <span class="keyword">default</span>;</span><br><span class="line">    <span class="built_in">Test2</span>(<span class="type">const</span> Test2&amp; t) &#123;</span><br><span class="line">        cout &lt;&lt; <span class="string">&quot;Test2 copy constructor called&quot;</span> &lt;&lt; endl;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Test3</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">Test3</span>() = <span class="keyword">default</span>;</span><br><span class="line">    <span class="built_in">Test3</span>(<span class="type">const</span> Test3&amp; t) &#123;</span><br><span class="line">        cout &lt;&lt; <span class="string">&quot;Test3 copy constructor called&quot;</span> &lt;&lt; endl;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">A</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">A</span>(Test1 ele1, Test2 ele2, Test3 ele3) : <span class="built_in">t2_</span>(ele2), <span class="built_in">t1_</span>(ele1), <span class="built_in">t3_</span>(ele3) &#123;&#125;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    Test3 t3_;</span><br><span class="line">    Test1 t1_;</span><br><span class="line">    Test2 t2_;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">    Test1 t1;</span><br><span class="line">    Test2 t2;</span><br><span class="line">    Test3 t3;</span><br><span class="line">    cout &lt;&lt; <span class="string">&quot;==========&quot;</span> &lt;&lt; endl;</span><br><span class="line">    <span class="function">A <span class="title">a</span><span class="params">(t1, t2, t3)</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>结果：</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # ./a.out </span><br><span class="line">==========</span><br><span class="line">Test3 copy constructor called  // A 的构造函数中的参数复制，因为是从右边的参数开始先拷贝，所以先构造 ele3，再 ele2，最后 ele1</span><br><span class="line">Test2 copy constructor called</span><br><span class="line">Test1 copy constructor called</span><br><span class="line">Test3 copy constructor called  // 按照类中声明的顺序，先拷贝给 t3_，再 t1_，最后 t2_。</span><br><span class="line">Test1 copy constructor called</span><br><span class="line">Test2 copy constructor called</span><br></pre></td></tr></table></figure>
-<h2 id="区别"><a class="markdownIt-Anchor" href="#区别"></a> 区别</h2>
+<h2 id="区别">区别</h2>
 <ol>
 <li>如上面所说，在构造函数中使用 :a_(num) 的形式，对成员变量进行初始化。而在大括号中用等号来对成员变量进行赋值，是赋值行为，并非初始化。这个可以使用下面的例子来验证：</li>
 </ol>
@@ -715,20 +994,20 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="通用线程池"><a class="markdownIt-Anchor" href="#通用线程池"></a> 通用线程池</h2>
+          <h2 id="通用线程池">通用线程池</h2>
 <p>通用线程池和简单线程池的区别就是，简单线程池对交给线程的任务函数入参和返回值有类型要求，而通用的没有。在本文中，将讲述和简单线程池提交函数的区别。本文需要一定的 C++ 模板泛型基础。</p>
-<h2 id="和简单线程池的区别"><a class="markdownIt-Anchor" href="#和简单线程池的区别"></a> 和简单线程池的区别</h2>
-<h3 id="简单线程池"><a class="markdownIt-Anchor" href="#简单线程池"></a> 简单线程池</h3>
+<h2 id="和简单线程池的区别">和简单线程池的区别</h2>
+<h3 id="简单线程池">简单线程池</h3>
 <p>在简单线程池中，增加任务给线程池的函数如下：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> std::function&lt;<span class="type">void</span>()&gt; <span class="type">task_t</span>;</span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">thread_pool::add_task</span><span class="params">(<span class="type">const</span> <span class="type">task_t</span>&amp; task)</span> </span>&#123;</span><br><span class="line">  <span class="function">std::unique_lock&lt;std::mutex&gt; <span class="title">lock</span><span class="params">(mutex_)</span></span>;</span><br><span class="line">  tasks_.<span class="built_in">push</span>(task);</span><br><span class="line">  wake_cond_.<span class="built_in">notify_one</span>(); <span class="comment">// 只唤醒一个线程</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>可见，task_t 就是我们能向线程池提交的函数类型。它是一个 function 类型，返回值为 void，并且没有入参。那如果我们想提交一个返回值为 int，也有 int 作为入参的函数这样就行不通了。</p>
-<h3 id="通用线程池-2"><a class="markdownIt-Anchor" href="#通用线程池-2"></a> 通用线程池</h3>
+<h3 id="通用线程池-2">通用线程池</h3>
 <p>于是我们将它略微改进下：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 向线程池加入任务</span></span><br><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="keyword">class</span> F, <span class="keyword">class</span>... Args&gt;</span></span><br><span class="line"><span class="function"><span class="keyword">auto</span> <span class="title">add_task</span><span class="params">(F&amp;&amp; f, Args&amp;&amp;... args)</span> -&gt; std::future&lt;<span class="title">decltype</span><span class="params">(f(args...))</span>&gt; </span>&#123;</span><br><span class="line">  <span class="keyword">using</span> return_type = <span class="keyword">decltype</span>(<span class="built_in">f</span>(args...));</span><br><span class="line">  <span class="keyword">auto</span> task_ptr = std::make_shared&lt;std::packaged_task&lt;<span class="built_in">return_type</span>()&gt;&gt;( <span class="comment">// 因为 packaged_task 无法拷贝构造，所以用 make_shared</span></span><br><span class="line">      std::<span class="built_in">bind</span>(std::forward&lt;F&gt;(f), std::forward&lt;Args&gt;(args)...)</span><br><span class="line">  );</span><br><span class="line"></span><br><span class="line">  std::future&lt;return_type&gt; res = task_ptr-&gt;<span class="built_in">get_future</span>();</span><br><span class="line">  &#123;</span><br><span class="line">    <span class="function">std::unique_lock&lt;std::mutex&gt; <span class="title">lock</span><span class="params">(mutex_)</span></span>;</span><br><span class="line">    tasks_.<span class="built_in">emplace</span>([task_ptr]() &#123;</span><br><span class="line">      (*task_ptr)();</span><br><span class="line">    &#125;);</span><br><span class="line">  &#125;</span><br><span class="line">  wake_cond_.<span class="built_in">notify_one</span>();</span><br><span class="line">  <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>这个函数有两个模板参数，第一个模板参数 F 代表的是一个函数，第二个模板参数 Args 代表的是这个函数执行时的参数。该函数的返回值是一个 std::future 对象，可以通过 future.get() 来获得执行函数的返回值。具体用法可以见 <a href="/20230326005424_31584/" title="cpp多线程之std::future">future用法</a>。</p>
 <p>因为不知道函数返回值是什么类型，所以需要用到 decltype，在编译时自动确定调用函数的返回值类型。届时从 future 对象中 get 到的数据类型就可以拿到了。在本函数中，先定义了一个指向 packaged_task 的智能指针（packaged_task 本质是个仿函数），之后把这个仿函数包装一层，让它变为一个<strong>返回值为 return_type，并且没有入参的函数</strong>。之所以用指针，是因为 packaged_task 无法进行拷贝构造，所以下面没法调用。之后在放入执行线程队列前，用 lambda 表达式封装它，让它变为<strong>返回值为 void 的函数</strong>，把它放到执行线程的队列中。最后该函数返回 packaged_task 对应的 future 对象，方便调用者拿到返回值。</p>
 <p>值得注意的是，该函数因为是有模板参数，所以这个实现应该放在头文件中。原因详见：<a href="/20230502100634_2223083831/" title="cpp模板类定义放在头文件原因">cpp模板类定义放在头文件原因</a></p>
-<h2 id="完整代码"><a class="markdownIt-Anchor" href="#完整代码"></a> 完整代码</h2>
+<h2 id="完整代码">完整代码</h2>
 <p>以下代码是对 <a href="/20230503112818_1492199803/" title="cpp11简单线程池">cpp11简单线程池</a> 基础上做的改进：</p>
 <p><a target="_blank" rel="noopener" href="http://main.cc">main.cc</a>：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;chrono&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;future&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;thread_pool.h&quot;</span></span></span><br><span class="line"></span><br><span class="line">std::mutex g_screen_mutex; <span class="comment">// 向终端打印信息的锁</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">test</span><span class="params">(<span class="type">int</span> a, <span class="type">int</span> b)</span> </span>&#123;</span><br><span class="line">  std::this_thread::<span class="built_in">sleep_for</span>(std::chrono::<span class="built_in">seconds</span>(<span class="number">1</span>));</span><br><span class="line">  <span class="function">std::lock_guard&lt;std::mutex&gt; <span class="title">lock</span><span class="params">(g_screen_mutex)</span></span>;</span><br><span class="line">  std::cout &lt;&lt; <span class="string">&quot;test() at thread [ &quot;</span> &lt;&lt; std::this_thread::<span class="built_in">get_id</span>() &lt;&lt; <span class="string">&quot;] output [&quot;</span> &lt;&lt; a + b &lt;&lt; <span class="string">&quot;]&quot;</span> &lt;&lt; std::endl;</span><br><span class="line">  <span class="keyword">return</span> a + b;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  thread_pool thread_pool;</span><br><span class="line">  std::vector&lt;std::future&lt;<span class="type">int</span>&gt;&gt; results;</span><br><span class="line">  <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">5</span> ; i++) &#123;</span><br><span class="line">    <span class="keyword">auto</span> fu = thread_pool.<span class="built_in">add_task</span>(test, i, <span class="number">2</span>);</span><br><span class="line">    results.<span class="built_in">emplace_back</span>(std::<span class="built_in">move</span>(fu));</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="built_in">getchar</span>(); <span class="comment">// 等待，不要让主进程退出</span></span><br><span class="line">  <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">5</span>; i++) &#123;</span><br><span class="line">    std::cout&lt;&lt; <span class="string">&quot;result of number &quot;</span> &lt;&lt; i &lt;&lt; <span class="string">&quot; :&quot;</span> &lt;&lt; results[i].<span class="built_in">get</span>() &lt;&lt; std::endl;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
@@ -828,9 +1107,9 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="线程池"><a class="markdownIt-Anchor" href="#线程池"></a> 线程池</h2>
+          <h2 id="线程池">线程池</h2>
 <p>为什么需要线程池？因为频繁的创建和销毁线程，都涉及系统调用。频繁的系统调用涉及到用户态和内核态之间的切换，开销大。线程池的作用就是先把线程创建好，有活干就让线程去干活，没活线程就阻塞着。这样不需要频繁创建销毁线程，提升效率。除此之外，还可以防止过分调度。</p>
-<h2 id="图解"><a class="markdownIt-Anchor" href="#图解"></a> 图解</h2>
+<h2 id="图解">图解</h2>
 <ol>
 <li>空闲时</li>
 </ol>
@@ -843,7 +1122,7 @@
 <li>在没有空闲线程时来任务，任务排队。</li>
 </ol>
 <p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20230503112818_1492199803/3.png" alt="3"></p>
-<h2 id="代码"><a class="markdownIt-Anchor" href="#代码"></a> 代码</h2>
+<h2 id="代码">代码</h2>
 <p><a target="_blank" rel="noopener" href="http://main.cc">main.cc</a>:</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;chrono&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;thread_pool.h&quot;</span></span></span><br><span class="line"></span><br><span class="line">std::mutex g_screen_mutex; <span class="comment">// 向终端打印信息的锁</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">testFunc</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  std::this_thread::<span class="built_in">sleep_for</span>(std::chrono::<span class="built_in">seconds</span>(<span class="number">1</span>));</span><br><span class="line">  <span class="function">std::lock_guard&lt;std::mutex&gt; <span class="title">lock</span><span class="params">(g_screen_mutex)</span></span>;</span><br><span class="line">  std::cout &lt;&lt; <span class="string">&quot;===============================================================&quot;</span> &lt;&lt; std::endl;</span><br><span class="line">  std::cout &lt;&lt; <span class="string">&quot;|       testFunc() at thread [ &quot;</span> &lt;&lt; std::this_thread::<span class="built_in">get_id</span>() &lt;&lt; <span class="string">&quot;] output [&quot;</span> &lt;&lt; <span class="number">0</span> &lt;&lt; <span class="string">&quot;]    |&quot;</span> &lt;&lt; std::endl;</span><br><span class="line">  std::cout &lt;&lt; <span class="string">&quot;===============================================================&quot;</span> &lt;&lt; std::endl;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  thread_pool thread_pool;</span><br><span class="line">  <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">5</span> ; i++) &#123; <span class="comment">// 往里面插入 5 个任务</span></span><br><span class="line">    thread_pool.<span class="built_in">add_task</span>(testFunc);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="built_in">getchar</span>(); <span class="comment">// 等待，不要让主进程退出</span></span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>thread_pool.h:</p>
@@ -941,11 +1220,11 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="编译单元"><a class="markdownIt-Anchor" href="#编译单元"></a> 编译单元</h2>
+          <h2 id="编译单元">编译单元</h2>
 <p>编译单元是指一个源文件（.c/.cpp）文件和包含展开的头文件，之后编译器会将该文件编译成一个 object 文件（在 linux 中是 .o 文件）。</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gcc xxx.cc -c</span><br></pre></td></tr></table></figure>
 <p>之后用可以看见当前目录下生成一个 xxx.o 的文件，这个文件就是 <a target="_blank" rel="noopener" href="http://xxx.cc">xxx.cc</a> 编译单元生成的对应二进制。这个二进制里面有该文件所对应的符号。</p>
-<h2 id="普通成员函数"><a class="markdownIt-Anchor" href="#普通成员函数"></a> 普通成员函数</h2>
+<h2 id="普通成员函数">普通成员函数</h2>
 <p>现在有如下例子，尝试编译对应的二进制文件，不链接：</p>
 <p><a target="_blank" rel="noopener" href="http://main.cc">main.cc</a>：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;A.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    A a;</span><br><span class="line">    a.<span class="built_in">print</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
@@ -956,7 +1235,7 @@
 <p>之后可以用 nm 命令查看二进制中的符号，如下：</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # g++ main.cc -c</span><br><span class="line">@└────&gt; # g++ A.cc -c</span><br><span class="line">@└────&gt; # nm main.o </span><br><span class="line">0000000000000000 T main</span><br><span class="line">                 U _ZN1A5printEv</span><br><span class="line">@└────&gt; # nm A.o </span><br><span class="line">                 U __cxa_atexit</span><br><span class="line">                 U __dso_handle</span><br><span class="line">000000000000006c t _GLOBAL__sub_I__ZN1A5printEv</span><br><span class="line">000000000000002e t _Z41__static_initialization_and_destruction_0ii</span><br><span class="line">0000000000000000 T _ZN1A5printEv</span><br><span class="line">                 U _ZNSolsEi</span><br><span class="line">                 U _ZNSolsEPFRSoS_E</span><br><span class="line">                 U _ZNSt8ios_base4InitC1Ev</span><br><span class="line">                 U _ZNSt8ios_base4InitD1Ev</span><br><span class="line">                 U _ZSt4cout</span><br><span class="line">                 U _ZSt4endlIcSt11char_traitsIcEERSt13basic_ostreamIT_T0_ES6_</span><br><span class="line">0000000000000000 r _ZStL19piecewise_construct</span><br><span class="line">0000000000000000 b _ZStL8__ioinit</span><br></pre></td></tr></table></figure>
 <p>可以看到，在 main.o 中，有一个 _ZN1A5printEv，是对 undefined，也就是说编译器在这个编译单元中找不到这个符号。在 main.o 中，看下反汇编，调用 print 函数的时候是类似 call print 这种形式跳转函数的。因为找不到这个符号，自然也就不知道这个函数的地址，所以需要链接器链接有这个符号的 A.o，就可以运行了。常规的成员函数这样运行的，那么如果换成模板成员函数会怎么样呢？</p>
-<h2 id="模板成员函数"><a class="markdownIt-Anchor" href="#模板成员函数"></a> 模板成员函数</h2>
+<h2 id="模板成员函数">模板成员函数</h2>
 <p>修改代码如下：</p>
 <p><a target="_blank" rel="noopener" href="http://main.cc">main.cc</a>：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;A.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    A a;</span><br><span class="line">    a.<span class="built_in">print</span>&lt;<span class="type">int</span>&gt;();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
@@ -967,7 +1246,7 @@
 <p>编译：</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # g++ main.cc -c</span><br><span class="line">@└────&gt; # g++ A.cc -c</span><br><span class="line">@└────&gt; # nm main.o </span><br><span class="line">0000000000000000 T main</span><br><span class="line">                 U _ZN1A5printIiEEvv</span><br><span class="line">@└────&gt; # nm A.o</span><br><span class="line">                 U __cxa_atexit</span><br><span class="line">                 U __dso_handle</span><br><span class="line">000000000000003e t _GLOBAL__sub_I_A.cc</span><br><span class="line">0000000000000000 t _Z41__static_initialization_and_destruction_0ii</span><br><span class="line">                 U _ZNSt8ios_base4InitC1Ev</span><br><span class="line">                 U _ZNSt8ios_base4InitD1Ev</span><br><span class="line">0000000000000000 r _ZStL19piecewise_construct</span><br><span class="line">0000000000000000 b _ZStL8__ioinit</span><br></pre></td></tr></table></figure>
 <p>可以看到，在换成模板函数后，A.o 中根本没有 print 的符号！尽管 <a target="_blank" rel="noopener" href="http://A.cc">A.cc</a> 中有定义。这是因为在 C++ 中，<strong>当一个模板不被用到的时侯它就不该被实例化出来</strong>，而在 <a target="_blank" rel="noopener" href="http://A.cc">A.cc</a> 中显然这个模板没有被用到。所以编译器在编译 main.o 的时候，没找到符号，就把希望寄托于链接器。而链接器在链接的时候也懵逼了，因为这个符号在 A.o 中也没有。所以这种情况下链接器会报找不到符号的错误。</p>
-<h2 id="解决方案"><a class="markdownIt-Anchor" href="#解决方案"></a> 解决方案</h2>
+<h2 id="解决方案">解决方案</h2>
 <p>所以回到主题，这就是为什么对于 C++ 的模板函数来说，要把模板函数的实现放到头文件中。</p>
 <p><a target="_blank" rel="noopener" href="http://main.cc">main.cc</a>：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;A.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    A a;</span><br><span class="line">    a.<span class="built_in">print</span>&lt;<span class="type">int</span>&gt;();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
@@ -1063,7 +1342,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="auto"><a class="markdownIt-Anchor" href="#auto"></a> auto</h2>
+          <h2 id="auto">auto</h2>
 <p>C++11 中，使用 auto 关键字来进行自动类型推导。语法如下：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">auto</span> name = value;</span><br></pre></td></tr></table></figure>
 <p>其中，name 是变量的名字。value 是变量的初始值。其中 auto 是一个占位符，会在<strong>编译期间</strong>由编译器推导出来。而且由 auto 推导的变量必须<strong>初始化</strong>，因为是占位符的原因，不能用作声明。</p>
@@ -1085,7 +1364,7 @@
 </ol>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">A</span> &#123;</span><br><span class="line">    <span class="comment">//<span class="doctag">TODO:</span></span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">    A&lt;<span class="type">int</span>&gt; C1;</span><br><span class="line">    A&lt;<span class="keyword">auto</span>&gt; C2 = C1;  <span class="comment">// 错误</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">error: invalid use of ‘auto’</span><br></pre></td></tr></table></figure>
-<h2 id="decltype"><a class="markdownIt-Anchor" href="#decltype"></a> decltype</h2>
+<h2 id="decltype">decltype</h2>
 <p>decltype 是 C++11 新增的一个关键字，它和 auto 的功能一样，都用来在<strong>编译时期</strong>进行自动类型推导。<br>
 auto 和 decltype 关键字都可以自动推导出变量的类型，但它们的用法是有区别的：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">auto</span> varname = value;</span><br><span class="line"><span class="keyword">decltype</span>(exp) varname = value;</span><br><span class="line"><span class="keyword">decltype</span>(exp) varname;</span><br></pre></td></tr></table></figure>
@@ -1187,23 +1466,23 @@ auto 和 decltype 关键字都可以自动推导出变量的类型，但它们�
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="多态"><a class="markdownIt-Anchor" href="#多态"></a> 多态</h2>
+          <h2 id="多态">多态</h2>
 <ol>
 <li>静态多态：相同对象接收到不同的消息，产生不同的结果 =&gt; 函数重载。</li>
 <li>动态多态：不同对象接收到相同的消息，产生不同的结果 =&gt; 虚函数。</li>
 </ol>
 <p>多态的作用就是为了提供高度统一的接口，实现代码复用，提高代码的可扩展性和可维护性。</p>
-<h2 id="虚函数"><a class="markdownIt-Anchor" href="#虚函数"></a> 虚函数</h2>
-<h3 id="虚函数表"><a class="markdownIt-Anchor" href="#虚函数表"></a> 虚函数表</h3>
+<h2 id="虚函数">虚函数</h2>
+<h3 id="虚函数表">虚函数表</h3>
 <p>虚函数的实现原理可见另一文章：<a href="/20230206005045_37741/" title="cpp虚函数表">关于cpp虚函数表的实现原理</a>。</p>
-<h3 id="使用限制"><a class="markdownIt-Anchor" href="#使用限制"></a> 使用限制</h3>
-<h4 id="0-virtual-具有继承性-父类中定义为-virtual-的函数在子类中重写的函数也自动成为虚函数-需要注意的是只有子类的虚函数和父类的虚函数定义完全一样才被认为是虚函数"><a class="markdownIt-Anchor" href="#0-virtual-具有继承性-父类中定义为-virtual-的函数在子类中重写的函数也自动成为虚函数-需要注意的是只有子类的虚函数和父类的虚函数定义完全一样才被认为是虚函数"></a> 0. virtual 具有继承性: 父类中定义为 virtual 的函数在子类中重写的函数也自动成为虚函数。需要注意的是，只有子类的虚函数和父类的虚函数<strong>定义完全一样</strong>才被认为是虚函数。</h4>
-<h4 id="1-virtual-不能修饰类外的普通函数只能修饰类中的成员函数普通函数和析构函数"><a class="markdownIt-Anchor" href="#1-virtual-不能修饰类外的普通函数只能修饰类中的成员函数普通函数和析构函数"></a> 1. virtual 不能修饰类外的普通函数，只能修饰类中的成员函数（普通函数和析构函数）。</h4>
+<h3 id="使用限制">使用限制</h3>
+<h4 id="0-virtual-具有继承性-父类中定义为-virtual-的函数在子类中重写的函数也自动成为虚函数。需要注意的是，只有子类的虚函数和父类的虚函数定义完全一样才被认为是虚函数。">0. virtual 具有继承性: 父类中定义为 virtual 的函数在子类中重写的函数也自动成为虚函数。需要注意的是，只有子类的虚函数和父类的虚函数<strong>定义完全一样</strong>才被认为是虚函数。</h4>
+<h4 id="1-virtual-不能修饰类外的普通函数，只能修饰类中的成员函数（普通函数和析构函数）。">1. virtual 不能修饰类外的普通函数，只能修饰类中的成员函数（普通函数和析构函数）。</h4>
 <p>这句话很好理解，就是 virtual 关键字不能修饰全局函数。</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">virtual</span> <span class="type">int</span> <span class="title">test</span> <span class="params">()</span> </span>&#123; <span class="comment">// 不正确，不能修饰全局函数</span></span><br><span class="line">    <span class="comment">// do some thing</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>编译报错：</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">error: ‘virtual’ outside class declaration</span><br></pre></td></tr></table></figure>
-<h4 id="2-virtual-不能修饰构造函数"><a class="markdownIt-Anchor" href="#2-virtual-不能修饰构造函数"></a> 2. virtual 不能修饰构造函数。</h4>
+<h4 id="2-virtual-不能修饰构造函数。">2. virtual 不能修饰构造函数。</h4>
 <ul>
 <li>从存储空间角度，虚函数的每个对象内部都有一个指向虚函数表的指针。那么虚函数表是什么时候初始化的呢？就是在调用构造函数的时候。cpp 调用 new 的步骤是，先申请所需的内存（malloc/operator new），再调用构造函数。如果构造函数是虚的，那必须通过虚函数表指针来找到虚构造函数的入口地址。然而此时申请的内存还没有初始化，不可能由虚函数表和虚函数表指针的。综上所述，构造函数不能为虚函数。</li>
 <li>从使用角度，构造函数是创建对象时调用的，不可能通过父类的指针或引用去调用。创建一个对象时，总是要明确指定对象的类型。但是析构函数不一样，可以通过基类指针进行析构。</li>
@@ -1211,16 +1490,16 @@ auto 和 decltype 关键字都可以自动推导出变量的类型，但它们�
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">A</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="title">A</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        cout &lt;&lt; <span class="string">&quot;construct&quot;</span> &lt;&lt; endl;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    A* a = <span class="keyword">new</span> <span class="built_in">A</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>编译报错：</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">error: constructors cannot be declared ‘virtual’</span><br></pre></td></tr></table></figure>
-<h4 id="3-virtual-不能修饰静态成员函数"><a class="markdownIt-Anchor" href="#3-virtual-不能修饰静态成员函数"></a> 3. virtual 不能修饰静态成员函数。</h4>
+<h4 id="3-virtual-不能修饰静态成员函数。">3. virtual 不能修饰静态成员函数。</h4>
 <p>虚函数的调用时经过对象内部的虚函数表指针，找到虚函数表，进而去调用对应的函数。但是静态成员函数和实例没有关系，只和类有关。所以调用时不会隐式传入 this 指针。题外话，因为没有 this 指针，静态函数也不能声明为 const 和 volatile。因为 void func() const {} 会被转换为 void func(const A *this) {};</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">A</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">A</span>() &#123;</span><br><span class="line">        cout &lt;&lt; <span class="string">&quot;construct&quot;</span> &lt;&lt; endl;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">static</span> <span class="type">void</span> <span class="title">print</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        cout &lt;&lt; <span class="string">&quot;print&quot;</span> &lt;&lt; endl;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    A* a = <span class="keyword">new</span> <span class="built_in">A</span>();</span><br><span class="line">    a-&gt;<span class="built_in">print</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>编译报错：</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">error: member ‘print’ cannot be declared both ‘virtual’ and ‘static’</span><br></pre></td></tr></table></figure>
-<h4 id="4-virtual-不能修饰内联函数"><a class="markdownIt-Anchor" href="#4-virtual-不能修饰内联函数"></a> 4. virtual 不能修饰内联函数。</h4>
+<h4 id="4-virtual-不能修饰内联函数。">4. virtual 不能修饰内联函数。</h4>
 <p>内联函数关键字 inline 是对编译器的一个建议：如果可能，请把此函数变为虚函数。虚函数是由虚函数表实现的，因为表中需要存放函数的地址。被内联展开的函数没有具体的地址，所以无法被 virtual 修饰。但是以下写法也不会报编译错误。</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">A</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">A</span>() &#123;</span><br><span class="line">        cout &lt;&lt; <span class="string">&quot;construct&quot;</span> &lt;&lt; endl;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">inline</span> <span class="type">void</span> <span class="title">print</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        cout &lt;&lt; <span class="string">&quot;print&quot;</span> &lt;&lt; endl;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
 <p>因为内联函数的建议编译器没有采纳，就和没有加 inline 关键字效果一样。</p>
-<h4 id="5-virtual-不能修饰友元函数"><a class="markdownIt-Anchor" href="#5-virtual-不能修饰友元函数"></a> 5. virtual 不能修饰友元函数。</h4>
+<h4 id="5-virtual-不能修饰友元函数。">5. virtual 不能修饰友元函数。</h4>
 <p>友元函数是可以访问类内私有成员的<strong>非成员函数</strong>，是定义在类外的<strong>普通函数</strong>。它不属于某个类，所以自然无法被 virtual 修饰。</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">A</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">A</span>() &#123;</span><br><span class="line">        cout &lt;&lt; <span class="string">&quot;construct&quot;</span> &lt;&lt; endl;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">friend</span> <span class="type">void</span> <span class="title">print</span><span class="params">()</span></span>;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">print</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    cout &lt;&lt; <span class="string">&quot;print&quot;</span> &lt;&lt; endl;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    A* a = <span class="keyword">new</span> <span class="built_in">A</span>();</span><br><span class="line">    <span class="built_in">print</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>编译报错：</p>
@@ -1239,116 +1518,10 @@ auto 和 decltype 关键字都可以自动推导出变量的类型，但它们�
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20230425104700_472535379/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/portrait.jpg">
-      <meta itemprop="name" content="caijizhuo">
-      <meta itemprop="description" content="Looks delicious">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="caijizhuo">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/20230425104700_472535379/" class="post-title-link" itemprop="url">cpp vector.push_back()时间复杂度证明</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2023-04-25 10:47:00" itemprop="dateCreated datePublished" datetime="2023-04-25T10:47:00+08:00">2023-04-25</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-05-11 11:13:46" itemprop="dateModified" datetime="2023-05-11T11:13:46+08:00">2023-05-11</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/cpp/" itemprop="url" rel="index"><span itemprop="name">cpp</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>232</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>vector 是 cpp 中常用的一种容器，是一种可以动态扩容的数组。他在每次插入的时候，当它的 capacity 不满足要求的时候，会重新申请一块两倍的内存，把之前的内容复制过来。在这种情况下，复制的时间复杂度为 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>O</mi><mo stretchy="false">(</mo><mi>n</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">O(n)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.02778em;">O</span><span class="mopen">(</span><span class="mord mathnormal">n</span><span class="mclose">)</span></span></span></span>。如果不涉及扩容，那么它只修改一个元素的内存，时间复杂度为 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>O</mi><mo stretchy="false">(</mo><mn>1</mn><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">O(1)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.02778em;">O</span><span class="mopen">(</span><span class="mord">1</span><span class="mclose">)</span></span></span></span>。</p>
-<p>也就是说，它扩容的时机为，容器大小达到以下时：</p>
-<blockquote>
-<p>1 2 4 8 16 32 64 128 256 512 1024 2048 4096 8192 16384 32768 65536 …</p>
-</blockquote>
-<p>则每次插入代价设为 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>c</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">c_i</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.58056em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">c</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.31166399999999994em;"><span style="top:-2.5500000000000003em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span>，则</p>
-<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>c</mi><mi>i</mi></msub><mo>=</mo><mrow><mo fence="true">{</mo><mtable rowspacing="0.3599999999999999em" columnalign="left left" columnspacing="1em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><mi>i</mi></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="false"><mrow><mi>i</mi><mtext>为</mtext><mn>2</mn><mtext>的幂</mtext></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><mn>1</mn></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="false"><mrow><mi>o</mi><mi>t</mi><mi>h</mi><mi>e</mi><mi>r</mi><mi>s</mi></mrow></mstyle></mtd></mtr></mtable></mrow></mrow><annotation encoding="application/x-tex">c_i = \begin{cases}
-i    &amp; i 为 2 的幂\\
-1     &amp; others \\
-\end{cases}
-</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.58056em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">c</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.31166399999999994em;"><span style="top:-2.5500000000000003em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:3.0000299999999998em;vertical-align:-1.25003em;"></span><span class="minner"><span class="mopen delimcenter" style="top:0em;"><span class="delimsizing size4">{</span></span><span class="mord"><span class="mtable"><span class="col-align-l"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.69em;"><span style="top:-3.69em;"><span class="pstrut" style="height:3.008em;"></span><span class="mord"><span class="mord mathnormal">i</span></span></span><span style="top:-2.25em;"><span class="pstrut" style="height:3.008em;"></span><span class="mord"><span class="mord">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.19em;"><span></span></span></span></span></span><span class="arraycolsep" style="width:1em;"></span><span class="col-align-l"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.69em;"><span style="top:-3.69em;"><span class="pstrut" style="height:3.008em;"></span><span class="mord"><span class="mord mathnormal">i</span><span class="mord cjk_fallback">为</span><span class="mord">2</span><span class="mord cjk_fallback">的</span><span class="mord cjk_fallback">幂</span></span></span><span style="top:-2.25em;"><span class="pstrut" style="height:3.008em;"></span><span class="mord"><span class="mord mathnormal">o</span><span class="mord mathnormal">t</span><span class="mord mathnormal">h</span><span class="mord mathnormal">e</span><span class="mord mathnormal" style="margin-right:0.02778em;">r</span><span class="mord mathnormal">s</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.19em;"><span></span></span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span></span></p>
-<p>那么则有：</p>
-<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mtable rowspacing="0.24999999999999992em" columnalign="right left" columnspacing="0em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>0</mn></mrow><mi>n</mi></munderover><msub><mi>c</mi><mi>i</mi></msub></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow><mrow></mrow><mo>≤</mo><mi>n</mi><mo>+</mo><munderover><mo>∑</mo><mrow><mi>j</mi><mo>=</mo><mn>0</mn></mrow><mrow><mo stretchy="false">⌊</mo><mi>l</mi><mi>o</mi><msub><mi>g</mi><mn>2</mn></msub><mi>n</mi><mo stretchy="false">⌋</mo></mrow></munderover><msup><mn>2</mn><mi>j</mi></msup></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow><mrow></mrow><mo>≤</mo><mi>n</mi><mo>+</mo><mn>2</mn><mi>n</mi></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow><mrow></mrow><mo>≤</mo><mn>3</mn><mi>n</mi></mrow></mstyle></mtd></mtr></mtable><annotation encoding="application/x-tex">\begin{aligned}
-\sum_{i = 0}^nc_i &amp;\le n + \sum_{j = 0}^{\lfloor log_2n \rfloor}2^j \\
-&amp;\le n + 2n\\
-&amp;\le 3n
-\end{aligned}
-</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:6.674782em;vertical-align:-3.087391em;"></span><span class="mord"><span class="mtable"><span class="col-align-r"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:3.587391em;"><span style="top:-5.587391em;"><span class="pstrut" style="height:3.9610050000000006em;"></span><span class="mord"><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.6513970000000002em;"><span style="top:-1.872331em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">i</span><span class="mrel mtight">=</span><span class="mord mtight">0</span></span></span></span><span style="top:-3.050005em;"><span class="pstrut" style="height:3.05em;"></span><span><span class="mop op-symbol large-op">∑</span></span></span><span style="top:-4.3000050000000005em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">n</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.277669em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord"><span class="mord mathnormal">c</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.31166399999999994em;"><span style="top:-2.5500000000000003em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span><span style="top:-3.0336140000000005em;"><span class="pstrut" style="height:3.9610050000000006em;"></span><span class="mord"></span></span><span style="top:-1.5336140000000005em;"><span class="pstrut" style="height:3.9610050000000006em;"></span><span class="mord"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:3.087391em;"><span></span></span></span></span></span><span class="col-align-l"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:3.587391em;"><span style="top:-5.587391em;"><span class="pstrut" style="height:3.9610050000000006em;"></span><span class="mord"><span class="mord"></span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">≤</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mord mathnormal">n</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.9610050000000006em;"><span style="top:-1.872331em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span><span class="mrel mtight">=</span><span class="mord mtight">0</span></span></span></span><span style="top:-3.050005em;"><span class="pstrut" style="height:3.05em;"></span><span><span class="mop op-symbol large-op">∑</span></span></span><span style="top:-4.386005em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mopen mtight">⌊</span><span class="mord mathnormal mtight" style="margin-right:0.01968em;">l</span><span class="mord mathnormal mtight">o</span><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.03588em;">g</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.31731428571428577em;"><span style="top:-2.357em;margin-left:-0.03588em;margin-right:0.07142857142857144em;"><span class="pstrut" style="height:2.5em;"></span><span class="sizing reset-size3 size1 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.143em;"><span></span></span></span></span></span></span><span class="mord mathnormal mtight">n</span><span class="mclose mtight">⌋</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.4137769999999998em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.874664em;"><span style="top:-3.1130000000000004em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span></span></span></span></span></span></span><span style="top:-3.0336140000000005em;"><span class="pstrut" style="height:3.9610050000000006em;"></span><span class="mord"><span class="mord"></span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">≤</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mord mathnormal">n</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mord">2</span><span class="mord mathnormal">n</span></span></span><span style="top:-1.5336140000000005em;"><span class="pstrut" style="height:3.9610050000000006em;"></span><span class="mord"><span class="mord"></span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">≤</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mord">3</span><span class="mord mathnormal">n</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:3.087391em;"><span></span></span></span></span></span></span></span></span></span></span></span></p>
-<p>因为共有 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi></mrow><annotation encoding="application/x-tex">n</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.43056em;vertical-align:0em;"></span><span class="mord mathnormal">n</span></span></span></span> 次插入，所以总时间复杂度为 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>O</mi><mo stretchy="false">(</mo><mn>3</mn><mi>n</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">O(3n)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.02778em;">O</span><span class="mopen">(</span><span class="mord">3</span><span class="mord mathnormal">n</span><span class="mclose">)</span></span></span></span>，均摊下来平均时间复杂度为 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>O</mi><mo stretchy="false">(</mo><mn>3</mn><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">O(3)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.02778em;">O</span><span class="mopen">(</span><span class="mord">3</span><span class="mclose">)</span></span></span></span>。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><span class="space">&hellip;</span><a class="page-number" href="/page/7/">7</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -1416,7 +1589,7 @@ i    &amp; i 为 2 的幂\\
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">60</span>
+          <span class="site-state-item-count">61</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1478,13 +1651,13 @@ i    &amp; i 为 2 的幂\\
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">52k</span>
+    <span title="站点总字数">54k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">3:10</span>
+    <span title="站点阅读时长">3:17</span>
 </div>
 
         
