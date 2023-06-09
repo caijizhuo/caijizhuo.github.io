@@ -22,12 +22,12 @@
     var CONFIG = {"hostname":"caijizhuo.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="CUDA 编程  CUDA 一种异构计算平台 CUDA 是 NVIDIA 推出的用于自家 GPU 的并行计算框架，也就是说 CUDA 只能在 NVIDIA 的 GPU 上运行，而且只有当要解决的计算问题是可以大量并行计算的时候才能发挥 CUDA 的作用。CUDA 的主要作用是连接 GPU 和 应用程序，方便用户通过 CUDA 的 API 调度 GPU 进行计算。 一个CUDA应用通常可以分解为两">
+  <meta name="description" content="CUDA 编程 CUDA 一种异构计算平台 CUDA 是 NVIDIA 推出的用于自家 GPU 的并行计算框架，也就是说 CUDA 只能在 NVIDIA 的 GPU 上运行，而且只有当要解决的计算问题是可以大量并行计算的时候才能发挥 CUDA 的作用。CUDA 的主要作用是连接 GPU 和 应用程序，方便用户通过 CUDA 的 API 调度 GPU 进行计算。 一个CUDA应用通常可以分解为两部分">
 <meta property="og:type" content="article">
 <meta property="og:title" content="cuda编程">
 <meta property="og:url" content="https://caijizhuo.github.io/20220523191254_3964297908/index.html">
 <meta property="og:site_name" content="caijizhuo">
-<meta property="og:description" content="CUDA 编程  CUDA 一种异构计算平台 CUDA 是 NVIDIA 推出的用于自家 GPU 的并行计算框架，也就是说 CUDA 只能在 NVIDIA 的 GPU 上运行，而且只有当要解决的计算问题是可以大量并行计算的时候才能发挥 CUDA 的作用。CUDA 的主要作用是连接 GPU 和 应用程序，方便用户通过 CUDA 的 API 调度 GPU 进行计算。 一个CUDA应用通常可以分解为两">
+<meta property="og:description" content="CUDA 编程 CUDA 一种异构计算平台 CUDA 是 NVIDIA 推出的用于自家 GPU 的并行计算框架，也就是说 CUDA 只能在 NVIDIA 的 GPU 上运行，而且只有当要解决的计算问题是可以大量并行计算的时候才能发挥 CUDA 的作用。CUDA 的主要作用是连接 GPU 和 应用程序，方便用户通过 CUDA 的 API 调度 GPU 进行计算。 一个CUDA应用通常可以分解为两部分">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://caijizhuo.github.io/20220523191254_3964297908/1.png">
 <meta property="og:image" content="https://caijizhuo.github.io/20220523191254_3964297908/2.png">
@@ -275,8 +275,8 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h1 id="cuda-编程"><a class="markdownIt-Anchor" href="#cuda-编程"></a> CUDA 编程</h1>
-<h2 id="cuda-一种异构计算平台"><a class="markdownIt-Anchor" href="#cuda-一种异构计算平台"></a> CUDA 一种异构计算平台</h2>
+        <h1>CUDA 编程</h1>
+<h2 id="CUDA-一种异构计算平台">CUDA 一种异构计算平台</h2>
 <p>CUDA 是 NVIDIA 推出的用于自家 GPU 的并行计算框架，也就是说 CUDA 只能在 NVIDIA 的 GPU 上运行，而且只有当要解决的计算问题是可以大量并行计算的时候才能发挥 CUDA 的作用。CUDA 的主要作用是连接 GPU 和 应用程序，方便用户通过 CUDA 的 API 调度 GPU 进行计算。</p>
 <p>一个CUDA应用通常可以分解为两部分，</p>
 <ol>
@@ -285,8 +285,8 @@
 </ol>
 <p>CUDA nvcc 编译器会自动分离你代码里面的不同部分，host 代码用 cpp 写成，使用本地的 g++ 编译器编译，设备端代码，也就是核函数，用 CUDA C 编写，通过 nvcc 编译，链接阶段，在内核程序调用或者明显的 GPU 设备操作时，添加运行时库。</p>
 <p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20220523191254_3964297908/1.png" alt="1"></p>
-<h2 id="cuda-编程-2"><a class="markdownIt-Anchor" href="#cuda-编程-2"></a> CUDA 编程</h2>
-<h3 id="简单示例代码"><a class="markdownIt-Anchor" href="#简单示例代码"></a> 简单示例代码</h3>
+<h2 id="CUDA-编程">CUDA 编程</h2>
+<h3 id="简单示例代码">简单示例代码</h3>
 <p>hello world 例子：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">*hello_world.cu</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span><span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="function">__global__ <span class="type">void</span> <span class="title">hello_world</span><span class="params">(<span class="type">void</span>)</span> </span>&#123;</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;GPU: Hello world! \n&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span> **argv)</span> </span>&#123;</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;CPU: Hello world!\n&quot;</span>);</span><br><span class="line">  hello_world&lt;&lt;&lt;<span class="number">1</span>,<span class="number">10</span>&gt;&gt;&gt;();</span><br><span class="line">  <span class="built_in">cudaDeviceReset</span>(); <span class="comment">//if no this line, it can not output hello world from gpu</span></span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>简单介绍其中几个关键字</p>
@@ -294,7 +294,7 @@
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hello_world&lt;&lt;&lt;<span class="number">1</span>, <span class="number">10</span>&gt;&gt;&gt;(); <span class="comment">// 其中变量的含义是&lt;&lt;&lt;线程块的个数,每个线程块中线程的个数&gt;&gt;&gt; 一个核函数被执行的次数就是两个参数的乘积</span></span><br></pre></td></tr></table></figure>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cudaDeviceReset</span>();</span><br></pre></td></tr></table></figure>
 <p>这句话如果没有，则不能正常的运行，因为这句话包含了隐式同步，GPU 和 CPU 执行程序是异步的，核函数调用后成立刻会到主机线程继续，而不管 GPU 端核函数是否执行完毕，所以上面的程序就是GPU 刚开始执行，CPU已经退出程序了，所以我们要等 GPU 执行完了，再退出主机线程。</p>
-<h3 id="调用核函数"><a class="markdownIt-Anchor" href="#调用核函数"></a> 调用核函数</h3>
+<h3 id="调用核函数">调用核函数</h3>
 <p>核函数就是在 CUDA 模型上诸多线程中运行的那段串行代码，这段代码在 GPU 上运行，用 NVCC 编译，产生的机器码是 GPU 的机器码，所以我们写 CUDA 程序就是写核函数，第一步我们要确保核函数能正确的运行产生正确的结果，第二优化 CUDA 程序的部分，无论是优化算法，还是调整内存结构，线程结构都是要调整核函数内的代码，来完成这些优化的。<br>
 我们一直把我们的 CPU 当做一个控制者，运行核函数，要从 CPU 发起。</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kernel_name&lt;&lt;&lt;grid, block, share_mem, stream&gt;&gt;&gt;(argument list);</span><br></pre></td></tr></table></figure>
@@ -312,7 +312,7 @@
 <p>可以用 threadIdx.x 和 blockIdx.x （dim3 类型，可以为x, y, z）来组合获得对应的线程的唯一标识。当主机启动了核函数，控制权马上回到主机（不阻塞），而不是主机等待设备完成核函数的运行。想要主机等待设备端执行可以用下面这个指令：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">cudaError_t <span class="title">cudaDeviceSynchronize</span><span class="params">(<span class="type">void</span>)</span></span>;</span><br></pre></td></tr></table></figure>
 <p>当然，有些操作要阻塞，比如内存拷贝，因为要用到 host。</p>
-<h3 id="编写核函数"><a class="markdownIt-Anchor" href="#编写核函数"></a> 编写核函数</h3>
+<h3 id="编写核函数">编写核函数</h3>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">__global__ <span class="type">void</span> <span class="title">sumArraysOnGPU</span><span class="params">(<span class="type">float</span> *A, <span class="type">float</span> *B, <span class="type">float</span> *C)</span> </span>&#123;</span><br><span class="line">  <span class="type">int</span> i = threadIdx.x;</span><br><span class="line">  C[i] = A[i] + B[i];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <table>
 <thead>
@@ -352,7 +352,7 @@
 <li>不支持静态变量</li>
 <li>显示异步行为</li>
 </ol>
-<h3 id="完整示例代码"><a class="markdownIt-Anchor" href="#完整示例代码"></a> 完整示例代码</h3>
+<h3 id="完整示例代码">完整示例代码</h3>
 <p>一般 CUDA 程序分成下面这些步骤：</p>
 <ol>
 <li>分配 GPU 内存</li>
@@ -462,7 +462,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#cuda-%E7%BC%96%E7%A8%8B"><span class="nav-number">1.</span> <span class="nav-text"> CUDA 编程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#cuda-%E4%B8%80%E7%A7%8D%E5%BC%82%E6%9E%84%E8%AE%A1%E7%AE%97%E5%B9%B3%E5%8F%B0"><span class="nav-number">1.1.</span> <span class="nav-text"> CUDA 一种异构计算平台</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#cuda-%E7%BC%96%E7%A8%8B-2"><span class="nav-number">1.2.</span> <span class="nav-text"> CUDA 编程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AE%80%E5%8D%95%E7%A4%BA%E4%BE%8B%E4%BB%A3%E7%A0%81"><span class="nav-number">1.2.1.</span> <span class="nav-text"> 简单示例代码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B0%83%E7%94%A8%E6%A0%B8%E5%87%BD%E6%95%B0"><span class="nav-number">1.2.2.</span> <span class="nav-text"> 调用核函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BC%96%E5%86%99%E6%A0%B8%E5%87%BD%E6%95%B0"><span class="nav-number">1.2.3.</span> <span class="nav-text"> 编写核函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%8C%E6%95%B4%E7%A4%BA%E4%BE%8B%E4%BB%A3%E7%A0%81"><span class="nav-number">1.2.4.</span> <span class="nav-text"> 完整示例代码</span></a></li></ol></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">1.</span> <span class="nav-text">CUDA 编程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#CUDA-%E4%B8%80%E7%A7%8D%E5%BC%82%E6%9E%84%E8%AE%A1%E7%AE%97%E5%B9%B3%E5%8F%B0"><span class="nav-number">1.1.</span> <span class="nav-text">CUDA 一种异构计算平台</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#CUDA-%E7%BC%96%E7%A8%8B"><span class="nav-number">1.2.</span> <span class="nav-text">CUDA 编程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AE%80%E5%8D%95%E7%A4%BA%E4%BE%8B%E4%BB%A3%E7%A0%81"><span class="nav-number">1.2.1.</span> <span class="nav-text">简单示例代码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B0%83%E7%94%A8%E6%A0%B8%E5%87%BD%E6%95%B0"><span class="nav-number">1.2.2.</span> <span class="nav-text">调用核函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BC%96%E5%86%99%E6%A0%B8%E5%87%BD%E6%95%B0"><span class="nav-number">1.2.3.</span> <span class="nav-text">编写核函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%8C%E6%95%B4%E7%A4%BA%E4%BE%8B%E4%BB%A3%E7%A0%81"><span class="nav-number">1.2.4.</span> <span class="nav-text">完整示例代码</span></a></li></ol></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -478,7 +478,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">62</span>
+          <span class="site-state-item-count">63</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -491,7 +491,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-count">16</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -540,13 +540,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">56k</span>
+    <span title="站点总字数">57k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">3:24</span>
+    <span title="站点阅读时长">3:26</span>
 </div>
 
         

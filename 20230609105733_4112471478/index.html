@@ -22,21 +22,20 @@
     var CONFIG = {"hostname":"caijizhuo.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="基础问题：求数字 $a$ 的 $n$ 次方。 最基本的想法，就是一次一次相乘，时间复杂度为 $O(n)$。 代码如下： 123456789using ll &#x3D; long long;ll pow(ll a, ll n)&amp;#123;    ll ret &#x3D; 1;    for (ll i &#x3D; 0; i &lt; n; i++) &amp;#123;        ret *&#x3D; a;    &amp;#125;">
+  <meta name="description" content="为什么要使用内嵌汇编？ 内嵌汇编通常用于在程序中实现一些高效、精确的操作。例如，在嵌入式平台上运行的程序，如果需要代码占用内存更小、程序运行的效率更高或需要准确地操作寄存器时，嵌入汇编会是不错的选择。 基本语法 12345678910111213141516asm(&quot;assembly code&quot;        &#x2F;* 汇编代码 *&#x2F;    :output_operand">
 <meta property="og:type" content="article">
-<meta property="og:title" content="快速幂cpp代码">
-<meta property="og:url" content="https://caijizhuo.github.io/20220226095439_17254/index.html">
+<meta property="og:title" content="内嵌汇编">
+<meta property="og:url" content="https://caijizhuo.github.io/20230609105733_4112471478/index.html">
 <meta property="og:site_name" content="caijizhuo">
-<meta property="og:description" content="基础问题：求数字 $a$ 的 $n$ 次方。 最基本的想法，就是一次一次相乘，时间复杂度为 $O(n)$。 代码如下： 123456789using ll &#x3D; long long;ll pow(ll a, ll n)&amp;#123;    ll ret &#x3D; 1;    for (ll i &#x3D; 0; i &lt; n; i++) &amp;#123;        ret *&#x3D; a;    &amp;#125;">
+<meta property="og:description" content="为什么要使用内嵌汇编？ 内嵌汇编通常用于在程序中实现一些高效、精确的操作。例如，在嵌入式平台上运行的程序，如果需要代码占用内存更小、程序运行的效率更高或需要准确地操作寄存器时，嵌入汇编会是不错的选择。 基本语法 12345678910111213141516asm(&quot;assembly code&quot;        &#x2F;* 汇编代码 *&#x2F;    :output_operand">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2022-02-26T01:54:39.000Z">
-<meta property="article:modified_time" content="2023-06-07T09:18:24.758Z">
+<meta property="article:published_time" content="2023-06-09T02:57:33.000Z">
+<meta property="article:modified_time" content="2023-06-09T09:10:16.099Z">
 <meta property="article:author" content="caijizhuo">
-<meta property="article:tag" content="cpp">
-<meta property="article:tag" content="math">
+<meta property="article:tag" content="asm">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="https://caijizhuo.github.io/20220226095439_17254/">
+<link rel="canonical" href="https://caijizhuo.github.io/20230609105733_4112471478/">
 
 
 <script id="page-configurations">
@@ -49,7 +48,7 @@
   };
 </script>
 
-  <title>快速幂cpp代码 | caijizhuo</title>
+  <title>内嵌汇编 | caijizhuo</title>
   
 
 
@@ -199,7 +198,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20220226095439_17254/">
+    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20230609105733_4112471478/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/portrait.jpg">
@@ -212,7 +211,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          快速幂cpp代码
+          内嵌汇编
         </h1>
 
         <div class="post-meta">
@@ -221,23 +220,17 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
+              
 
-              <time title="创建时间：2022-02-26 09:54:39" itemprop="dateCreated datePublished" datetime="2022-02-26T09:54:39+08:00">2022-02-26</time>
+              <time title="创建时间：2023-06-09 10:57:33 / 修改时间：17:10:16" itemprop="dateCreated datePublished" datetime="2023-06-09T10:57:33+08:00">2023-06-09</time>
             </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-06-07 17:18:24" itemprop="dateModified" datetime="2023-06-07T17:18:24+08:00">2023-06-07</time>
-              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/algorithm/" itemprop="url" rel="index"><span itemprop="name">algorithm</span></a>
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
                 </span>
             </span>
 
@@ -254,7 +247,7 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>491</span>
+              <span>469</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -273,17 +266,65 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>基础问题：求数字 $a$ 的 $n$ 次方。<br>
-最基本的想法，就是一次一次相乘，时间复杂度为 $O(n)$。<br>
-代码如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">using</span> ll = <span class="type">long</span> <span class="type">long</span>;</span><br><span class="line"><span class="function">ll <span class="title">pow</span><span class="params">(ll a, ll n)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    ll ret = <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">for</span> (ll i = <span class="number">0</span>; i &lt; n; i++) &#123;</span><br><span class="line">        ret *= a;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>稍微思考一下便可得知，计算一个数的$n$次方并不需要相乘 $n$ 次。我们如果知道 $a$ 的 $n/2$ 次方，便可以用两个 $a^{n/2}$ 相乘，获得 $a^n$。顺着这个思想往下想，可以考虑把 $n$ 拆成二进制的形式，这样只要把对应的二进制位数得到的幂相乘起来就可以得出答案了。举例：当 $n$ 为 7 时，我们要 $6^7$。$7$ 按照二进制可以拆成 $00000111$。那我们只要知道 $6^1$，$6^2$ 和 $6^4$，再把他们相乘就可以了。<br>
-代码如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">ll <span class="title">qpow</span><span class="params">(ll a, ll n)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (n == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (n % <span class="number">2</span> == <span class="number">1</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">qpow</span>(a, n - <span class="number">1</span>) * a;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        ll ret = <span class="built_in">qpow</span>(a, n / <span class="number">2</span>);</span><br><span class="line">        <span class="keyword">return</span> ret * ret;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function">ll <span class="title">qpow2</span><span class="params">(ll a, ll n)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    ll ret = <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">while</span> (n) &#123;</span><br><span class="line">        <span class="keyword">if</span> (n &amp; <span class="number">1</span>) &#123;</span><br><span class="line">            ret *= a;</span><br><span class="line">        &#125;</span><br><span class="line">        a *= a;</span><br><span class="line">        n &gt;&gt;= <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>一为递归的方式，二为迭代的方式。考虑到调用栈切换，方式二会快一些。这种把幂拆成二进制的方法，就被称为快速幂。<br>
-完整代码如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;time.h&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"><span class="keyword">using</span> ll = <span class="type">long</span> <span class="type">long</span>;</span><br><span class="line"><span class="function">ll <span class="title">pow</span><span class="params">(ll a, ll n)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    ll ret = <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">for</span> (ll i = <span class="number">0</span>; i &lt; n; i++) &#123;</span><br><span class="line">        ret *= a;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function">ll <span class="title">qpow</span><span class="params">(ll a, ll n)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (n == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (n % <span class="number">2</span> == <span class="number">1</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">qpow</span>(a, n - <span class="number">1</span>) * a;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        ll ret = <span class="built_in">qpow</span>(a, n / <span class="number">2</span>);</span><br><span class="line">        <span class="keyword">return</span> ret * ret;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function">ll <span class="title">qpow2</span><span class="params">(ll a, ll n)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    ll ret = <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">while</span> (n) &#123;</span><br><span class="line">        <span class="keyword">if</span> (n &amp; <span class="number">1</span>) &#123;</span><br><span class="line">            ret *= a;</span><br><span class="line">        &#125;</span><br><span class="line">        a *= a;</span><br><span class="line">        n &gt;&gt;= <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    ll a = <span class="number">7</span>, n = <span class="number">16</span>;</span><br><span class="line">    <span class="type">clock_t</span> startTime, endTime;</span><br><span class="line">    startTime = <span class="built_in">clock</span>(); <span class="comment">// cpu clock time</span></span><br><span class="line">    cout &lt;&lt; <span class="built_in">pow</span>(a, n) &lt;&lt; endl;</span><br><span class="line">    endTime = <span class="built_in">clock</span>();</span><br><span class="line">    cout &lt;&lt; (endTime - startTime) &lt;&lt; endl;</span><br><span class="line"></span><br><span class="line">    startTime = <span class="built_in">clock</span>(); <span class="comment">// cpu clock time</span></span><br><span class="line">    cout &lt;&lt; <span class="built_in">qpow</span>(a, n) &lt;&lt; endl;</span><br><span class="line">    endTime = <span class="built_in">clock</span>();</span><br><span class="line">    cout &lt;&lt; (endTime - startTime) &lt;&lt; endl;</span><br><span class="line"></span><br><span class="line">    startTime = <span class="built_in">clock</span>(); <span class="comment">// cpu clock time</span></span><br><span class="line">    cout &lt;&lt; <span class="built_in">qpow2</span>(a, n) &lt;&lt; endl;</span><br><span class="line">    endTime = <span class="built_in">clock</span>();</span><br><span class="line">    cout &lt;&lt; (endTime - startTime) &lt;&lt; endl;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>可以看到后面两种cpu周期普遍低于前一种。</p>
+        <h2 id="为什么要使用内嵌汇编？">为什么要使用内嵌汇编？</h2>
+<p>内嵌汇编通常用于在程序中实现一些高效、精确的操作。例如，在嵌入式平台上运行的程序，如果需要代码占用内存更小、程序运行的效率更高或需要准确地操作寄存器时，嵌入汇编会是不错的选择。</p>
+<h2 id="基本语法">基本语法</h2>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">asm</span>(<span class="string">&quot;assembly code&quot;</span>        <span class="comment">/* 汇编代码 */</span></span><br><span class="line">    :output_operand        <span class="comment">/* 输出参数列表 */</span>          </span><br><span class="line">    :input_operand         <span class="comment">/* 输入参数列表 */</span>          </span><br><span class="line">    :clobbered_operand     <span class="comment">/* 被改变的操作对象列表 */</span>      </span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 举例</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">value_assignment</span><span class="params">(<span class="type">int</span> input)</span> &#123;</span><br><span class="line">    <span class="type">int</span> ret = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">asm</span> <span class="title function_">volatile</span><span class="params">(</span></span><br><span class="line"><span class="params">        <span class="string">&quot;movl %1, %0\n&quot;</span>   <span class="comment">// 超过一条指令就要用 \n 来分割，排版整齐还要加 \t</span></span></span><br><span class="line"><span class="params">        :<span class="string">&quot;=r&quot;</span>(ret)</span></span><br><span class="line"><span class="params">        :<span class="string">&quot;r&quot;</span>(input)</span></span><br><span class="line"><span class="params">    )</span>;</span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="被改变的操作对象列表">被改变的操作对象列表</h3>
+<p>在被改变的参数列表 clobbered_operand 中有一个比较有用的标识符：memory。指定 memory，相当于对编译器形成了一个内存读写的屏障，保证<strong>在内联汇编执行前，编译器将某些寄存器里的值刷新进内存，同时在内联汇编执行后，编译器重新加载相关变量的值</strong>。<br>
+所以我们可以见到这样的代码：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">asm</span> <span class="title function_">volatile</span> <span class="params">(<span class="string">&quot;&quot;</span> ::: <span class="string">&quot;memory&quot;</span>)</span>;</span><br></pre></td></tr></table></figure>
+<p>作为内存屏障，保证编译器的优化不会跨过这道屏障。加上 volatile 告诉编译器不要优化汇编。</p>
+<h3 id="修饰符">修饰符</h3>
+<p>修饰符一般跟在参数列表前面。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">修饰符</th>
+<th style="text-align:center">含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">=</td>
+<td style="text-align:center">只写，常用于修饰所有输出操作数</td>
+</tr>
+<tr>
+<td style="text-align:center">无</td>
+<td style="text-align:center">只读</td>
+</tr>
+<tr>
+<td style="text-align:center">+</td>
+<td style="text-align:center">可读可写</td>
+</tr>
+<tr>
+<td style="text-align:center">r</td>
+<td style="text-align:center">可以是任意通用寄存器存储其值</td>
+</tr>
+<tr>
+<td style="text-align:center">m</td>
+<td style="text-align:center">一个有效的内存地址</td>
+</tr>
+<tr>
+<td style="text-align:center">i</td>
+<td style="text-align:center">是立即数</td>
+</tr>
+<tr>
+<td style="text-align:center">%</td>
+<td style="text-align:center">被修饰的操作数可以和下一个互换</td>
+</tr>
+<tr>
+<td style="text-align:center">&amp;</td>
+<td style="text-align:center">只能做输出，一般和 “=” 一起使用，如 “=&amp;r(val)”</td>
+</tr>
+<tr>
+<td style="text-align:center">x</td>
+<td style="text-align:center">只能做输入</td>
+</tr>
+</tbody>
+</table>
+<h3 id="占位符">占位符</h3>
+<p>%0 表示输入和输出列表合并的第 1 个操作数，%1 表示第 2 个，以此类推。</p>
 
     </div>
 
@@ -299,7 +340,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="https://caijizhuo.github.io/20220226095439_17254/" title="快速幂cpp代码">https://caijizhuo.github.io/20220226095439_17254/</a>
+    <a href="https://caijizhuo.github.io/20230609105733_4112471478/" title="内嵌汇编">https://caijizhuo.github.io/20230609105733_4112471478/</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
@@ -310,8 +351,7 @@
 
       <footer class="post-footer">
           <div class="post-tags">
-              <a href="/tags/cpp/" rel="tag"># cpp</a>
-              <a href="/tags/math/" rel="tag"># math</a>
+              <a href="/tags/asm/" rel="tag"># asm</a>
           </div>
 
         
@@ -320,13 +360,10 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/20220225095132_3023/" rel="prev" title="cpp STL: priority_queue自定义排序函数">
-      <i class="fa fa-chevron-left"></i> cpp STL: priority_queue自定义排序函数
+    <a href="/20230607171855_854612321/" rel="prev" title="内存模型与内存序">
+      <i class="fa fa-chevron-left"></i> 内存模型与内存序
     </a></div>
-      <div class="post-nav-item">
-    <a href="/20220226151634_25991/" rel="next" title="矩阵快速幂">
-      矩阵快速幂 <i class="fa fa-chevron-right"></i>
-    </a></div>
+      <div class="post-nav-item"></div>
     </div>
       </footer>
     
@@ -385,6 +422,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E4%BD%BF%E7%94%A8%E5%86%85%E5%B5%8C%E6%B1%87%E7%BC%96%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">为什么要使用内嵌汇编？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E8%AF%AD%E6%B3%95"><span class="nav-number">2.</span> <span class="nav-text">基本语法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A2%AB%E6%94%B9%E5%8F%98%E7%9A%84%E6%93%8D%E4%BD%9C%E5%AF%B9%E8%B1%A1%E5%88%97%E8%A1%A8"><span class="nav-number">2.1.</span> <span class="nav-text">被改变的操作对象列表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E9%A5%B0%E7%AC%A6"><span class="nav-number">2.2.</span> <span class="nav-text">修饰符</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8D%A0%E4%BD%8D%E7%AC%A6"><span class="nav-number">2.3.</span> <span class="nav-text">占位符</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
