@@ -22,12 +22,12 @@
     var CONFIG = {"hostname":"caijizhuo.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="硬件结构 现代机器都是多个处理器，每个处理器有自己的 cache。这个结构如下所示:  可以看到，每个 CPU 都有自己的缓存，之后再写到内存中。并且由于编译器的优化，你写的代码可能和你执行的代码顺序有所不同。他们优化的规则是：保证对于一个单核情况下，执行结果不会发生变化。但是多线程就不一定了。 那么在多线程情况下，如何协调这些 CPU 缓存的数据一致性就成了一个问题。 常见优化 再谈保证数据的一">
+  <meta name="description" content="硬件结构 现代机器都是多个处理器，每个处理器有自己的 cache。这个结构如下所示:  可以看到，每个 CPU 都有自己的缓存，之后再写到内存中。并且由于编译器的优化，你写的代码可能和你执行的代码顺序有所不同。他们优化的规则是：保证对于一个单核情况下，执行结果不会发生变化。但是多线程就不一定了。 那么在多线程情况下，如何协调这些 CPU 缓存的数据一致性就成了一个问题。  常见优化 再谈保证数据">
 <meta property="og:type" content="article">
 <meta property="og:title" content="内存模型与内存序">
 <meta property="og:url" content="https://caijizhuo.github.io/20230607171855_854612321/index.html">
 <meta property="og:site_name" content="caijizhuo">
-<meta property="og:description" content="硬件结构 现代机器都是多个处理器，每个处理器有自己的 cache。这个结构如下所示:  可以看到，每个 CPU 都有自己的缓存，之后再写到内存中。并且由于编译器的优化，你写的代码可能和你执行的代码顺序有所不同。他们优化的规则是：保证对于一个单核情况下，执行结果不会发生变化。但是多线程就不一定了。 那么在多线程情况下，如何协调这些 CPU 缓存的数据一致性就成了一个问题。 常见优化 再谈保证数据的一">
+<meta property="og:description" content="硬件结构 现代机器都是多个处理器，每个处理器有自己的 cache。这个结构如下所示:  可以看到，每个 CPU 都有自己的缓存，之后再写到内存中。并且由于编译器的优化，你写的代码可能和你执行的代码顺序有所不同。他们优化的规则是：保证对于一个单核情况下，执行结果不会发生变化。但是多线程就不一定了。 那么在多线程情况下，如何协调这些 CPU 缓存的数据一致性就成了一个问题。  常见优化 再谈保证数据">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://caijizhuo.github.io/20230607171855_854612321/1.png">
 <meta property="og:image" content="https://caijizhuo.github.io/20230607171855_854612321/2.png">
@@ -275,14 +275,14 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="硬件结构">硬件结构</h2>
+        <h2 id="硬件结构"><a class="markdownIt-Anchor" href="#硬件结构"></a> 硬件结构</h2>
 <p>现代机器都是多个处理器，每个处理器有自己的 cache。这个结构如下所示:<br>
 <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20230607171855_854612321/1.png" alt="1"><br>
 可以看到，每个 CPU 都有自己的缓存，之后再写到内存中。并且由于编译器的优化，你写的代码可能和你执行的代码顺序有所不同。他们优化的规则是：保证对于一个单核情况下，执行结果不会发生变化。但是多线程就不一定了。</p>
 <p>那么在多线程情况下，如何协调这些 CPU 缓存的数据一致性就成了一个问题。</p>
-<h2 id="常见优化">常见优化</h2>
+<h2 id="常见优化"><a class="markdownIt-Anchor" href="#常见优化"></a> 常见优化</h2>
 <p>再谈保证数据的一致性之前，先谈谈编译器能做的优化。</p>
-<h3 id="重排-Reordering">重排 Reordering</h3>
+<h3 id="重排-reordering"><a class="markdownIt-Anchor" href="#重排-reordering"></a> 重排 Reordering</h3>
 <p>编译器和 CPU 都会发生重排，为了提升代码的效率。采用乱序执行、流水线、分支预测以及多级缓存等方法来提升程序性能。编译器会基于这些规则来提升自己代码的速度，所以就会对指令进行优化。例子如下：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> a = <span class="number">0</span>;</span><br><span class="line"><span class="type">int</span> b = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">fun</span><span class="params">()</span> &#123;</span><br><span class="line">    a = b + <span class="number">1</span>; <span class="comment">// L5</span></span><br><span class="line">    b = <span class="number">1</span>;     <span class="comment">// L6</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    fun();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">@└────&gt; # gcc 1.c -O0 -g</span></span><br><span class="line"><span class="comment">@└────&gt; # objdump -d a.out</span></span><br><span class="line"><span class="number">0000000000400536</span> &lt;fun&gt;:</span><br><span class="line">  <span class="number">400536</span>:       <span class="number">55</span>                      <span class="keyword">push</span>   %rbp</span><br><span class="line">  <span class="number">400537</span>:       <span class="number">48</span> <span class="number">89</span> e5                <span class="keyword">mov</span>    %rsp,%rbp</span><br><span class="line">  <span class="number">40053</span>a:       <span class="number">8</span>b <span class="number">05</span> e4 <span class="number">0</span>a <span class="number">20</span> <span class="number">00</span>       <span class="keyword">mov</span>    <span class="number">0x200ae4</span>(%rip),%eax        # <span class="number">601024</span> &lt;b&gt;</span><br><span class="line">  <span class="number">400540</span>:       <span class="number">83</span> <span class="built_in">c0</span> <span class="number">01</span>                <span class="keyword">add</span>    <span class="number">$0x1</span>,%eax</span><br><span class="line">  <span class="number">400543</span>:       <span class="number">89</span> <span class="number">05</span> <span class="built_in">d7</span> <span class="number">0</span>a <span class="number">20</span> <span class="number">00</span>       <span class="keyword">mov</span>    %eax,<span class="number">0x200ad7</span>(%rip)        # <span class="number">601020</span> &lt;__TMC_END__&gt;</span><br><span class="line">  <span class="number">400549</span>:       <span class="built_in">c7</span> <span class="number">05</span> <span class="built_in">d1</span> <span class="number">0</span>a <span class="number">20</span> <span class="number">00</span> <span class="number">01</span>    movl   <span class="number">$0x1</span>,<span class="number">0x200ad1</span>(%rip)        # <span class="number">601024</span> &lt;b&gt;</span><br><span class="line">  <span class="number">400550</span>:       <span class="number">00</span> <span class="number">00</span> <span class="number">00</span> </span><br><span class="line">  <span class="number">400553</span>:       <span class="number">90</span>                      <span class="keyword">nop</span></span><br><span class="line">  <span class="number">400554</span>:       <span class="number">5</span>d                      <span class="keyword">pop</span>    %rbp</span><br><span class="line">  <span class="number">400555</span>:       <span class="built_in">c3</span>                      retq</span><br><span class="line"></span><br><span class="line"><span class="comment">@└────&gt; # gcc 1.c -O2 -g</span></span><br><span class="line"><span class="comment">@└────&gt; # objdump -d a.out</span></span><br><span class="line"><span class="number">0000000000400560</span> &lt;fun&gt;:</span><br><span class="line">  <span class="number">400560</span>:       <span class="number">8</span>b <span class="number">05</span> ba <span class="number">0</span>a <span class="number">20</span> <span class="number">00</span>       <span class="keyword">mov</span>    <span class="number">0x200aba</span>(%rip),%eax        # <span class="number">601020</span> &lt;__TMC_END__&gt;</span><br><span class="line">  <span class="number">400566</span>:       <span class="built_in">c7</span> <span class="number">05</span> b0 <span class="number">0</span>a <span class="number">20</span> <span class="number">00</span> <span class="number">01</span>    movl   <span class="number">$0x1</span>,<span class="number">0x200ab0</span>(%rip)        # <span class="number">601020</span> &lt;__TMC_END__&gt;</span><br><span class="line">  <span class="number">40056</span>d:       <span class="number">00</span> <span class="number">00</span> <span class="number">00</span> </span><br><span class="line">  <span class="number">400570</span>:       <span class="number">83</span> <span class="built_in">c0</span> <span class="number">01</span>                <span class="keyword">add</span>    <span class="number">$0x1</span>,%eax</span><br><span class="line">  <span class="number">400573</span>:       <span class="number">89</span> <span class="number">05</span> ab <span class="number">0</span>a <span class="number">20</span> <span class="number">00</span>       <span class="keyword">mov</span>    %eax,<span class="number">0x200aab</span>(%rip)        # <span class="number">601024</span> &lt;a&gt;</span><br><span class="line">  <span class="number">400579</span>:       <span class="built_in">c3</span>                      retq   </span><br><span class="line">  <span class="number">40057</span>a:       <span class="number">66</span> <span class="number">0</span>f <span class="number">1</span>f <span class="number">44</span> <span class="number">00</span> <span class="number">00</span>       nopw   <span class="number">0x0</span>(%rax,%rax,<span class="number">1</span>)</span><br></pre></td></tr></table></figure>
@@ -291,30 +291,30 @@
 <li>但是对于 O2 等级的优化，执行顺序是 L6-&gt;L5，但是结果是不影响的。</li>
 </ol>
 <p>为什么要这么做呢？因为 CPU 读取数据从 cache 中读取。如果不优化的话，先读 b，再读 a 的时候可能把 b 的缓存换出去了，那么再写 b 的时候还需要把 b 换进来。但是如果优化了，就是读 b，写 b，再写 a，就不存在缓存的换入换出了。</p>
-<h3 id="插入-Invention">插入 Invention</h3>
+<h3 id="插入-invention"><a class="markdownIt-Anchor" href="#插入-invention"></a> 插入 Invention</h3>
 <p>假设有如下代码：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; n; ++i) &#123;</span><br><span class="line">    x[i] = y[i] + z[i];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>可能优化成如下：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; n; ++i) &#123;</span><br><span class="line">    __builtin_prefetch(&amp;y[i + <span class="number">16</span>]);</span><br><span class="line">    __builtin_prefetch(&amp;z[i + <span class="number">16</span>]);</span><br><span class="line">    x[i] = y[i] + z[i];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>预读取这些数据来减少缓存未命中次数。</p>
-<h3 id="删除-Removal">删除 Removal</h3>
+<h3 id="删除-removal"><a class="markdownIt-Anchor" href="#删除-removal"></a> 删除 Removal</h3>
 <p>删除很好理解了，删除没用的变量赋值。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> x = <span class="number">1</span>;</span><br><span class="line"><span class="type">int</span> y = <span class="number">2</span>;</span><br><span class="line"><span class="type">int</span> z = x + y;</span><br><span class="line">x = <span class="number">3</span>;</span><br><span class="line">y = <span class="number">4</span>;</span><br></pre></td></tr></table></figure>
 <p>优化后：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> x;</span><br><span class="line"><span class="type">int</span> y;</span><br><span class="line">x = <span class="number">3</span>;</span><br><span class="line">y = <span class="number">4</span>;</span><br></pre></td></tr></table></figure>
-<h2 id="关系术语">关系术语</h2>
-<h3 id="sequence-before">sequence-before</h3>
+<h2 id="关系术语"><a class="markdownIt-Anchor" href="#关系术语"></a> 关系术语</h2>
+<h3 id="sequence-before"><a class="markdownIt-Anchor" href="#sequence-before"></a> sequence-before</h3>
 <p>sequence-before 是对一个线程内，求值顺序关系的描述：</p>
 <ul>
 <li>A sequence-before B，先对 A 求值，再对 B 求值。</li>
 <li>A not sequence-before B，并且 B not sequence-before A，那么 A 和 B 谁先求值是未知的。</li>
 </ul>
-<h3 id="synchronizes-with">synchronizes-with</h3>
+<h3 id="synchronizes-with"><a class="markdownIt-Anchor" href="#synchronizes-with"></a> synchronizes-with</h3>
 <p>描述的是不同线程内的执行关系。在两个线程分别执行时，即使线程 A 先执行，线程 B 后执行，A 中写了某个共享变量，由于<strong>指令重排</strong>或者<strong>写到了 cache</strong> 或<strong>寄存器没来得及写入内存</strong>导致 B 读到了错误的值。</p>
 <ul>
 <li>A synchronizes-with B，在线程 A 中的写操作结果对线程 B 可见。</li>
 </ul>
-<h3 id="happens-before">happens-before</h3>
+<h3 id="happens-before"><a class="markdownIt-Anchor" href="#happens-before"></a> happens-before</h3>
 <p>是 sequence-before 的扩展，包括了不同线程的关系。</p>
 <ul>
 <li>A happens-before B，那么不但 A 先于 B 执行，并且 A 的结果对 B 可见。
@@ -324,7 +324,7 @@
 </ul>
 </li>
 </ul>
-<h2 id="内存序">内存序</h2>
+<h2 id="内存序"><a class="markdownIt-Anchor" href="#内存序"></a> 内存序</h2>
 <p>C++11 中引入了 6 种内存序：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">enum</span> <span class="title class_">memory_order</span> &#123;</span><br><span class="line">    memory_order_relaxed,</span><br><span class="line">    memory_order_consume,</span><br><span class="line">    memory_order_acquire,</span><br><span class="line">    memory_order_release,</span><br><span class="line">    memory_order_acq_rel,</span><br><span class="line">    memory_order_seq_cst</span><br><span class="line">&#125; memory_order;</span><br></pre></td></tr></table></figure>
 <table>
@@ -371,7 +371,7 @@
 <p>值得一提的是，若一个原子变量在一个线程中施加了 memory_order_release，但是在其他线程中没有使用 memory_order_acquire 或 memory_order_consume 读取，那么他就不会具备 memory_order_release 所赋予的屏障功能。（即只有被观测才会起作用，读操作也是如此）</p>
 <p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20230607171855_854612321/2.png" alt="2"><br>
 如上图所示，就像加锁一样会构成临界区。但是外面的变量可以移入临界区，却不能移出去，所以称 memory_order_acquire 和 memory_order_release 如同单向屏障一般。</p>
-<h2 id="内存模型">内存模型</h2>
+<h2 id="内存模型"><a class="markdownIt-Anchor" href="#内存模型"></a> 内存模型</h2>
 <p>一言以蔽之，引入内存模型的原因，有以下几个原因：</p>
 <ol>
 <li>编译器优化：在某些情况下，即使是简单的语句，也不能保证是原子操作。</li>
@@ -385,7 +385,7 @@
 <li>Relax 模型</li>
 </ol>
 <p>其中，Sequential Consistency 模型约束最强，Acquire-Release 次之，Relax 模型最弱。</p>
-<h3 id="Sequential-Consistency-模型">Sequential Consistency 模型</h3>
+<h3 id="sequential-consistency-模型"><a class="markdownIt-Anchor" href="#sequential-consistency-模型"></a> Sequential Consistency 模型</h3>
 <p>对应 memory_order_seq_cst 内存序。Sequential Consistency 模型有以下特点：</p>
 <ul>
 <li>每个线程的执行顺序与代码顺序严格一致</li>
@@ -450,9 +450,9 @@
 </tbody>
 </table>
 <p>std::atomic 默认值都是使用 memory_order_seq_cst，保证不出错。但是相对的，限制了 CPU 并行处理的能力，会降低效率。这个模型的所有线程都参考全局的内存修改顺序。因此，我们可<strong>认为</strong>所有变量的读写都<strong>直接从内存</strong>进行，从而完全不用考虑 Cache，Store Buffer 这些因素。</p>
-<h3 id="Acquire-Release-模型">Acquire-Release 模型</h3>
+<h3 id="acquire-release-模型"><a class="markdownIt-Anchor" href="#acquire-release-模型"></a> Acquire-Release 模型</h3>
 <p>对应 memory_order_consume、memory_order_acquire、memory_order_release、memory_order_acq_rel 内存序。对于一个原子变量 A，对 A 的写操作（Release）和读操作（Acquire）之间进行同步，并建立排序约束关系，即对于写操作（release）X，在写操作 X 之前的所有读写指令都不能放到写操作 X 之后；对于读操作（acquire）Y，在读操作 Y 之后的所有读写指令都不能放到读操作 Y 之前。</p>
-<h3 id="Relax-模型">Relax 模型</h3>
+<h3 id="relax-模型"><a class="markdownIt-Anchor" href="#relax-模型"></a> Relax 模型</h3>
 <p>对应的是 memory_order_relaxed 内存序。其对于内存序的限制最小，也就是说这种方式只能保证当前的数据访问是原子操作（不会被其他线程的操作打断），但是对内存访问顺序没有任何约束，也就是说对不同的数据的读写可能会被重新排序。</p>
 
     </div>
@@ -554,7 +554,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A1%AC%E4%BB%B6%E7%BB%93%E6%9E%84"><span class="nav-number">1.</span> <span class="nav-text">硬件结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E4%BC%98%E5%8C%96"><span class="nav-number">2.</span> <span class="nav-text">常见优化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%87%8D%E6%8E%92-Reordering"><span class="nav-number">2.1.</span> <span class="nav-text">重排 Reordering</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8F%92%E5%85%A5-Invention"><span class="nav-number">2.2.</span> <span class="nav-text">插入 Invention</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%A0%E9%99%A4-Removal"><span class="nav-number">2.3.</span> <span class="nav-text">删除 Removal</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B3%E7%B3%BB%E6%9C%AF%E8%AF%AD"><span class="nav-number">3.</span> <span class="nav-text">关系术语</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#sequence-before"><span class="nav-number">3.1.</span> <span class="nav-text">sequence-before</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#synchronizes-with"><span class="nav-number">3.2.</span> <span class="nav-text">synchronizes-with</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#happens-before"><span class="nav-number">3.3.</span> <span class="nav-text">happens-before</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E5%BA%8F"><span class="nav-number">4.</span> <span class="nav-text">内存序</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B"><span class="nav-number">5.</span> <span class="nav-text">内存模型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Sequential-Consistency-%E6%A8%A1%E5%9E%8B"><span class="nav-number">5.1.</span> <span class="nav-text">Sequential Consistency 模型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Acquire-Release-%E6%A8%A1%E5%9E%8B"><span class="nav-number">5.2.</span> <span class="nav-text">Acquire-Release 模型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Relax-%E6%A8%A1%E5%9E%8B"><span class="nav-number">5.3.</span> <span class="nav-text">Relax 模型</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A1%AC%E4%BB%B6%E7%BB%93%E6%9E%84"><span class="nav-number">1.</span> <span class="nav-text"> 硬件结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E4%BC%98%E5%8C%96"><span class="nav-number">2.</span> <span class="nav-text"> 常见优化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%87%8D%E6%8E%92-reordering"><span class="nav-number">2.1.</span> <span class="nav-text"> 重排 Reordering</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8F%92%E5%85%A5-invention"><span class="nav-number">2.2.</span> <span class="nav-text"> 插入 Invention</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%A0%E9%99%A4-removal"><span class="nav-number">2.3.</span> <span class="nav-text"> 删除 Removal</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B3%E7%B3%BB%E6%9C%AF%E8%AF%AD"><span class="nav-number">3.</span> <span class="nav-text"> 关系术语</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#sequence-before"><span class="nav-number">3.1.</span> <span class="nav-text"> sequence-before</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#synchronizes-with"><span class="nav-number">3.2.</span> <span class="nav-text"> synchronizes-with</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#happens-before"><span class="nav-number">3.3.</span> <span class="nav-text"> happens-before</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E5%BA%8F"><span class="nav-number">4.</span> <span class="nav-text"> 内存序</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B"><span class="nav-number">5.</span> <span class="nav-text"> 内存模型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#sequential-consistency-%E6%A8%A1%E5%9E%8B"><span class="nav-number">5.1.</span> <span class="nav-text"> Sequential Consistency 模型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#acquire-release-%E6%A8%A1%E5%9E%8B"><span class="nav-number">5.2.</span> <span class="nav-text"> Acquire-Release 模型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#relax-%E6%A8%A1%E5%9E%8B"><span class="nav-number">5.3.</span> <span class="nav-text"> Relax 模型</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -570,7 +570,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">63</span>
+          <span class="site-state-item-count">64</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -632,13 +632,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">57k</span>
+    <span title="站点总字数">58k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">3:26</span>
+    <span title="站点阅读时长">3:32</span>
 </div>
 
         

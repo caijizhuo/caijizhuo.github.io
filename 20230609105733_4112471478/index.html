@@ -22,12 +22,12 @@
     var CONFIG = {"hostname":"caijizhuo.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="为什么要使用内嵌汇编？ 内嵌汇编通常用于在程序中实现一些高效、精确的操作。例如，在嵌入式平台上运行的程序，如果需要代码占用内存更小、程序运行的效率更高或需要准确地操作寄存器时，嵌入汇编会是不错的选择。 基本语法 12345678910111213141516asm(&quot;assembly code&quot;        &#x2F;* 汇编代码 *&#x2F;    :output_operand">
+  <meta name="description" content="为什么要使用内嵌汇编？ 内嵌汇编通常用于在程序中实现一些高效、精确的操作。例如，在嵌入式平台上运行的程序，如果需要代码占用内存更小、程序运行的效率更高或需要准确地操作寄存器时，嵌入汇编会是不错的选择。  基本语法 12345678910111213141516asm(&quot;assembly code&quot;        &#x2F;* 汇编代码 *&#x2F;    :output_operand">
 <meta property="og:type" content="article">
 <meta property="og:title" content="内嵌汇编">
 <meta property="og:url" content="https://caijizhuo.github.io/20230609105733_4112471478/index.html">
 <meta property="og:site_name" content="caijizhuo">
-<meta property="og:description" content="为什么要使用内嵌汇编？ 内嵌汇编通常用于在程序中实现一些高效、精确的操作。例如，在嵌入式平台上运行的程序，如果需要代码占用内存更小、程序运行的效率更高或需要准确地操作寄存器时，嵌入汇编会是不错的选择。 基本语法 12345678910111213141516asm(&quot;assembly code&quot;        &#x2F;* 汇编代码 *&#x2F;    :output_operand">
+<meta property="og:description" content="为什么要使用内嵌汇编？ 内嵌汇编通常用于在程序中实现一些高效、精确的操作。例如，在嵌入式平台上运行的程序，如果需要代码占用内存更小、程序运行的效率更高或需要准确地操作寄存器时，嵌入汇编会是不错的选择。  基本语法 12345678910111213141516asm(&quot;assembly code&quot;        &#x2F;* 汇编代码 *&#x2F;    :output_operand">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2023-06-09T02:57:33.000Z">
 <meta property="article:modified_time" content="2023-06-09T09:10:16.099Z">
@@ -266,16 +266,16 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="为什么要使用内嵌汇编？">为什么要使用内嵌汇编？</h2>
+        <h2 id="为什么要使用内嵌汇编"><a class="markdownIt-Anchor" href="#为什么要使用内嵌汇编"></a> 为什么要使用内嵌汇编？</h2>
 <p>内嵌汇编通常用于在程序中实现一些高效、精确的操作。例如，在嵌入式平台上运行的程序，如果需要代码占用内存更小、程序运行的效率更高或需要准确地操作寄存器时，嵌入汇编会是不错的选择。</p>
-<h2 id="基本语法">基本语法</h2>
+<h2 id="基本语法"><a class="markdownIt-Anchor" href="#基本语法"></a> 基本语法</h2>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">asm</span>(<span class="string">&quot;assembly code&quot;</span>        <span class="comment">/* 汇编代码 */</span></span><br><span class="line">    :output_operand        <span class="comment">/* 输出参数列表 */</span>          </span><br><span class="line">    :input_operand         <span class="comment">/* 输入参数列表 */</span>          </span><br><span class="line">    :clobbered_operand     <span class="comment">/* 被改变的操作对象列表 */</span>      </span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 举例</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">value_assignment</span><span class="params">(<span class="type">int</span> input)</span> &#123;</span><br><span class="line">    <span class="type">int</span> ret = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">asm</span> <span class="title function_">volatile</span><span class="params">(</span></span><br><span class="line"><span class="params">        <span class="string">&quot;movl %1, %0\n&quot;</span>   <span class="comment">// 超过一条指令就要用 \n 来分割，排版整齐还要加 \t</span></span></span><br><span class="line"><span class="params">        :<span class="string">&quot;=r&quot;</span>(ret)</span></span><br><span class="line"><span class="params">        :<span class="string">&quot;r&quot;</span>(input)</span></span><br><span class="line"><span class="params">    )</span>;</span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="被改变的操作对象列表">被改变的操作对象列表</h3>
+<h3 id="被改变的操作对象列表"><a class="markdownIt-Anchor" href="#被改变的操作对象列表"></a> 被改变的操作对象列表</h3>
 <p>在被改变的参数列表 clobbered_operand 中有一个比较有用的标识符：memory。指定 memory，相当于对编译器形成了一个内存读写的屏障，保证<strong>在内联汇编执行前，编译器将某些寄存器里的值刷新进内存，同时在内联汇编执行后，编译器重新加载相关变量的值</strong>。<br>
 所以我们可以见到这样的代码：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">asm</span> <span class="title function_">volatile</span> <span class="params">(<span class="string">&quot;&quot;</span> ::: <span class="string">&quot;memory&quot;</span>)</span>;</span><br></pre></td></tr></table></figure>
 <p>作为内存屏障，保证编译器的优化不会跨过这道屏障。加上 volatile 告诉编译器不要优化汇编。</p>
-<h3 id="修饰符">修饰符</h3>
+<h3 id="修饰符"><a class="markdownIt-Anchor" href="#修饰符"></a> 修饰符</h3>
 <p>修饰符一般跟在参数列表前面。</p>
 <table>
 <thead>
@@ -323,7 +323,7 @@
 </tr>
 </tbody>
 </table>
-<h3 id="占位符">占位符</h3>
+<h3 id="占位符"><a class="markdownIt-Anchor" href="#占位符"></a> 占位符</h3>
 <p>%0 表示输入和输出列表合并的第 1 个操作数，%1 表示第 2 个，以此类推。</p>
 
     </div>
@@ -363,7 +363,10 @@
     <a href="/20230607171855_854612321/" rel="prev" title="内存模型与内存序">
       <i class="fa fa-chevron-left"></i> 内存模型与内存序
     </a></div>
-      <div class="post-nav-item"></div>
+      <div class="post-nav-item">
+    <a href="/20230613093018_2903084538/" rel="next" title="plt表链接过程">
+      plt表链接过程 <i class="fa fa-chevron-right"></i>
+    </a></div>
     </div>
       </footer>
     
@@ -422,7 +425,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E4%BD%BF%E7%94%A8%E5%86%85%E5%B5%8C%E6%B1%87%E7%BC%96%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">为什么要使用内嵌汇编？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E8%AF%AD%E6%B3%95"><span class="nav-number">2.</span> <span class="nav-text">基本语法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A2%AB%E6%94%B9%E5%8F%98%E7%9A%84%E6%93%8D%E4%BD%9C%E5%AF%B9%E8%B1%A1%E5%88%97%E8%A1%A8"><span class="nav-number">2.1.</span> <span class="nav-text">被改变的操作对象列表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E9%A5%B0%E7%AC%A6"><span class="nav-number">2.2.</span> <span class="nav-text">修饰符</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8D%A0%E4%BD%8D%E7%AC%A6"><span class="nav-number">2.3.</span> <span class="nav-text">占位符</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E4%BD%BF%E7%94%A8%E5%86%85%E5%B5%8C%E6%B1%87%E7%BC%96"><span class="nav-number">1.</span> <span class="nav-text"> 为什么要使用内嵌汇编？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E8%AF%AD%E6%B3%95"><span class="nav-number">2.</span> <span class="nav-text"> 基本语法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A2%AB%E6%94%B9%E5%8F%98%E7%9A%84%E6%93%8D%E4%BD%9C%E5%AF%B9%E8%B1%A1%E5%88%97%E8%A1%A8"><span class="nav-number">2.1.</span> <span class="nav-text"> 被改变的操作对象列表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E9%A5%B0%E7%AC%A6"><span class="nav-number">2.2.</span> <span class="nav-text"> 修饰符</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8D%A0%E4%BD%8D%E7%AC%A6"><span class="nav-number">2.3.</span> <span class="nav-text"> 占位符</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -438,7 +441,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">63</span>
+          <span class="site-state-item-count">64</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -500,13 +503,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">57k</span>
+    <span title="站点总字数">58k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">3:26</span>
+    <span title="站点阅读时长">3:32</span>
 </div>
 
         
