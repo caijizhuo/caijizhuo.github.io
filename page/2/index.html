@@ -195,6 +195,119 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20230504192009_3746130536/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/portrait.jpg">
+      <meta itemprop="name" content="caijizhuo">
+      <meta itemprop="description" content="Looks delicious">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="caijizhuo">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/20230504192009_3746130536/" class="post-title-link" itemprop="url">cpp11通用线程池</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-05-04 19:20:09" itemprop="dateCreated datePublished" datetime="2023-05-04T19:20:09+08:00">2023-05-04</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-10-07 10:56:27" itemprop="dateModified" datetime="2023-10-07T10:56:27+08:00">2023-10-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/cpp/" itemprop="url" rel="index"><span itemprop="name">cpp</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/concurrent-programming/" itemprop="url" rel="index"><span itemprop="name">concurrent-programming</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.5k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>5 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="通用线程池"><a class="markdownIt-Anchor" href="#通用线程池"></a> 通用线程池</h2>
+<p>通用线程池和简单线程池的区别就是，简单线程池对交给线程的任务函数入参和返回值有类型要求，而通用的没有。在本文中，将讲述和简单线程池提交函数的区别。本文需要一定的 C++ 模板泛型基础。</p>
+<h2 id="和简单线程池的区别"><a class="markdownIt-Anchor" href="#和简单线程池的区别"></a> 和简单线程池的区别</h2>
+<h3 id="简单线程池"><a class="markdownIt-Anchor" href="#简单线程池"></a> 简单线程池</h3>
+<p>在简单线程池中，增加任务给线程池的函数如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> std::function&lt;<span class="type">void</span>()&gt; <span class="type">task_t</span>;</span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">thread_pool::add_task</span><span class="params">(<span class="type">const</span> <span class="type">task_t</span>&amp; task)</span> </span>&#123;</span><br><span class="line">  <span class="function">std::unique_lock&lt;std::mutex&gt; <span class="title">lock</span><span class="params">(mutex_)</span></span>;</span><br><span class="line">  tasks_.<span class="built_in">push</span>(task);</span><br><span class="line">  wake_cond_.<span class="built_in">notify_one</span>(); <span class="comment">// 只唤醒一个线程</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可见，task_t 就是我们能向线程池提交的函数类型。它是一个 function 类型，返回值为 void，并且没有入参。那如果我们想提交一个返回值为 int，也有 int 作为入参的函数这样就行不通了。</p>
+<h3 id="通用线程池-2"><a class="markdownIt-Anchor" href="#通用线程池-2"></a> 通用线程池</h3>
+<p>于是我们将它略微改进下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 向线程池加入任务</span></span><br><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="keyword">class</span> F, <span class="keyword">class</span>... Args&gt;</span></span><br><span class="line"><span class="function"><span class="keyword">auto</span> <span class="title">add_task</span><span class="params">(F&amp;&amp; f, Args&amp;&amp;... args)</span> -&gt; std::future&lt;<span class="title">decltype</span><span class="params">(f(args...))</span>&gt; </span>&#123;</span><br><span class="line">  <span class="keyword">using</span> return_type = <span class="keyword">decltype</span>(<span class="built_in">f</span>(args...));</span><br><span class="line">  <span class="keyword">auto</span> task_ptr = std::make_shared&lt;std::packaged_task&lt;<span class="built_in">return_type</span>()&gt;&gt;( <span class="comment">// 因为 packaged_task 无法拷贝构造，所以用 make_shared</span></span><br><span class="line">      std::<span class="built_in">bind</span>(std::forward&lt;F&gt;(f), std::forward&lt;Args&gt;(args)...)</span><br><span class="line">  );</span><br><span class="line"></span><br><span class="line">  std::future&lt;return_type&gt; res = task_ptr-&gt;<span class="built_in">get_future</span>();</span><br><span class="line">  &#123;</span><br><span class="line">    <span class="function">std::unique_lock&lt;std::mutex&gt; <span class="title">lock</span><span class="params">(mutex_)</span></span>;</span><br><span class="line">    tasks_.<span class="built_in">emplace</span>([task_ptr]() &#123;</span><br><span class="line">      (*task_ptr)();</span><br><span class="line">    &#125;);</span><br><span class="line">  &#125;</span><br><span class="line">  wake_cond_.<span class="built_in">notify_one</span>();</span><br><span class="line">  <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个函数有两个模板参数，第一个模板参数 F 代表的是一个函数，第二个模板参数 Args 代表的是这个函数执行时的参数。该函数的返回值是一个 std::future 对象，可以通过 future.get() 来获得执行函数的返回值。具体用法可以见 <a href="/20230326005424_31584/" title="cpp多线程之std::future">future用法</a>。</p>
+<p>因为不知道函数返回值是什么类型，所以需要用到 decltype，在编译时自动确定调用函数的返回值类型。届时从 future 对象中 get 到的数据类型就可以拿到了。在本函数中，先定义了一个指向 packaged_task 的智能指针（packaged_task 本质是个仿函数），之后把这个仿函数包装一层，让它变为一个<strong>返回值为 return_type，并且没有入参的函数</strong>。之所以用指针，是因为 packaged_task 无法进行拷贝构造，所以下面没法调用。之后在放入执行线程队列前，用 lambda 表达式封装它，让它变为<strong>返回值为 void 的函数</strong>，把它放到执行线程的队列中。最后该函数返回 packaged_task 对应的 future 对象，方便调用者拿到返回值。</p>
+<p>值得注意的是，该函数因为是有模板参数，所以这个实现应该放在头文件中。原因详见：<a href="/20230502100634_2223083831/" title="cpp模板类定义放在头文件原因">cpp模板类定义放在头文件原因</a></p>
+<h2 id="完整代码"><a class="markdownIt-Anchor" href="#完整代码"></a> 完整代码</h2>
+<p>以下代码是对 <a href="/20230503112818_1492199803/" title="cpp11简单线程池">cpp11简单线程池</a> 基础上做的改进：</p>
+<p><a target="_blank" rel="noopener" href="http://main.cc">main.cc</a>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;chrono&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;future&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;thread_pool.h&quot;</span></span></span><br><span class="line"></span><br><span class="line">std::mutex g_screen_mutex; <span class="comment">// 向终端打印信息的锁</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">test</span><span class="params">(<span class="type">int</span> a, <span class="type">int</span> b)</span> </span>&#123;</span><br><span class="line">  std::this_thread::<span class="built_in">sleep_for</span>(std::chrono::<span class="built_in">seconds</span>(<span class="number">1</span>));</span><br><span class="line">  <span class="function">std::lock_guard&lt;std::mutex&gt; <span class="title">lock</span><span class="params">(g_screen_mutex)</span></span>;</span><br><span class="line">  std::cout &lt;&lt; <span class="string">&quot;test() at thread [ &quot;</span> &lt;&lt; std::this_thread::<span class="built_in">get_id</span>() &lt;&lt; <span class="string">&quot;] output [&quot;</span> &lt;&lt; a + b &lt;&lt; <span class="string">&quot;]&quot;</span> &lt;&lt; std::endl;</span><br><span class="line">  <span class="keyword">return</span> a + b;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  thread_pool thread_pool;</span><br><span class="line">  std::vector&lt;std::future&lt;<span class="type">int</span>&gt;&gt; results;</span><br><span class="line">  <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">5</span> ; i++) &#123;</span><br><span class="line">    <span class="keyword">auto</span> fu = thread_pool.<span class="built_in">add_task</span>(test, i, <span class="number">2</span>);</span><br><span class="line">    results.<span class="built_in">emplace_back</span>(std::<span class="built_in">move</span>(fu));</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="built_in">getchar</span>(); <span class="comment">// 等待，不要让主进程退出</span></span><br><span class="line">  <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">5</span>; i++) &#123;</span><br><span class="line">    std::cout&lt;&lt; <span class="string">&quot;result of number &quot;</span> &lt;&lt; i &lt;&lt; <span class="string">&quot; :&quot;</span> &lt;&lt; results[i].<span class="built_in">get</span>() &lt;&lt; std::endl;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>thread_pool.h：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">ifndef</span> _THREAD_POOL_H_</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> _THREAD_POOL_H_</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;vector&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;queue&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;thread&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;functional&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;mutex&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;condition_variable&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">thread_pool</span> &#123;</span><br><span class="line"> <span class="keyword">public</span>:</span><br><span class="line">  <span class="comment">// 定义为一个函数类型，返回值为 void，没有入参</span></span><br><span class="line">  <span class="keyword">typedef</span> std::function&lt;<span class="type">void</span>()&gt; <span class="type">task_t</span>;</span><br><span class="line"></span><br><span class="line">  <span class="built_in">thread_pool</span>(<span class="type">int</span> init_size = <span class="number">3</span>);</span><br><span class="line">  ~<span class="built_in">thread_pool</span>();</span><br><span class="line">  <span class="comment">// 停止线程池</span></span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">stop</span><span class="params">()</span></span>;</span><br><span class="line">  <span class="comment">// 向线程池加入任务</span></span><br><span class="line">  <span class="function"><span class="keyword">template</span>&lt;<span class="keyword">class</span> F, <span class="keyword">class</span>... Args&gt;</span></span><br><span class="line"><span class="function">  <span class="keyword">auto</span> <span class="title">add_task</span><span class="params">(F&amp;&amp; f, Args&amp;&amp;... args)</span> -&gt; std::future&lt;<span class="title">decltype</span><span class="params">(f(args...))</span>&gt; </span>&#123;</span><br><span class="line">    <span class="keyword">using</span> return_type = <span class="keyword">decltype</span>(<span class="built_in">f</span>(args...));</span><br><span class="line">    <span class="keyword">auto</span> task_ptr = std::make_shared&lt;std::packaged_task&lt;<span class="built_in">return_type</span>()&gt;&gt;(</span><br><span class="line">        std::<span class="built_in">bind</span>(std::forward&lt;F&gt;(f), std::forward&lt;Args&gt;(args)...)</span><br><span class="line">    );</span><br><span class="line">    std::future&lt;return_type&gt; res = task_ptr-&gt;<span class="built_in">get_future</span>();</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="function">std::unique_lock&lt;std::mutex&gt; <span class="title">lock</span><span class="params">(mutex_)</span></span>;</span><br><span class="line">      tasks_.<span class="built_in">emplace</span>([task_ptr]() &#123;</span><br><span class="line">        (*task_ptr)();</span><br><span class="line">      &#125;);</span><br><span class="line">    &#125;</span><br><span class="line">    wake_cond_.<span class="built_in">notify_one</span>();</span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">  &#125;</span><br><span class="line"> <span class="keyword">private</span>:</span><br><span class="line">  <span class="built_in">thread_pool</span>(<span class="type">const</span> thread_pool&amp;) = <span class="keyword">delete</span>; <span class="comment">// 禁止复制拷贝</span></span><br><span class="line">  <span class="type">const</span> thread_pool&amp; <span class="keyword">operator</span>=(<span class="type">const</span> thread_pool&amp;) = <span class="keyword">delete</span>;</span><br><span class="line">  <span class="comment">// 线程池启动函数</span></span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">start</span><span class="params">()</span></span>;</span><br><span class="line">  <span class="comment">// 每个线程的循环函数</span></span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">thread_loop</span><span class="params">()</span></span>;</span><br><span class="line">  <span class="comment">// 从线程池里拿一个线程</span></span><br><span class="line">  <span class="function"><span class="type">task_t</span> <span class="title">take</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="type">int</span> init_threads_size_; <span class="comment">// 初始线程数量</span></span><br><span class="line">  std::vector&lt;std::thread*&gt; threads_; <span class="comment">// 已经创建的线程列表</span></span><br><span class="line">  std::queue&lt;<span class="type">task_t</span>&gt; tasks_; <span class="comment">// 待执行任务列表</span></span><br><span class="line">  std::mutex mutex_; <span class="comment">// 操作线程池共有变量之前先上锁</span></span><br><span class="line">  std::condition_variable wake_cond_; <span class="comment">// 唤醒线程的条件</span></span><br><span class="line">  <span class="type">bool</span> is_started_; <span class="comment">// 线程池是否已经启动</span></span><br><span class="line">&#125;;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br></pre></td></tr></table></figure>
+<p>thread_pool.cc：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;assert.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;future&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;thread_pool.h&quot;</span></span></span><br><span class="line"></span><br><span class="line">thread_pool::<span class="built_in">thread_pool</span>(<span class="type">int</span> init_size)</span><br><span class="line">    : <span class="built_in">init_threads_size_</span>(init_size), <span class="built_in">mutex_</span>(), <span class="built_in">wake_cond_</span>(), <span class="built_in">is_started_</span>(<span class="literal">false</span>) &#123;</span><br><span class="line">  <span class="built_in">start</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">thread_pool::~<span class="built_in">thread_pool</span>() &#123;</span><br><span class="line">  <span class="keyword">if</span> (is_started_) &#123;</span><br><span class="line">    <span class="built_in">stop</span>();</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">thread_pool::start</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="built_in">assert</span>(threads_.<span class="built_in">empty</span>());</span><br><span class="line">  is_started_ = <span class="literal">true</span>;</span><br><span class="line">  threads_.<span class="built_in">reserve</span>(init_threads_size_);</span><br><span class="line">  <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; init_threads_size_; ++i) &#123;</span><br><span class="line">    threads_.<span class="built_in">push_back</span>(<span class="keyword">new</span> std::<span class="built_in">thread</span>(std::<span class="built_in">bind</span>(&amp;thread_pool::thread_loop, <span class="keyword">this</span>)));</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">thread_pool::stop</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  std::cout &lt;&lt; <span class="string">&quot;thread_pool::stop() stop.&quot;</span> &lt;&lt; std::endl;</span><br><span class="line">  &#123;</span><br><span class="line">    <span class="function">std::unique_lock&lt;std::mutex&gt; <span class="title">lock</span><span class="params">(mutex_)</span></span>;</span><br><span class="line">    is_started_ = <span class="literal">false</span>;</span><br><span class="line">    wake_cond_.<span class="built_in">notify_all</span>();</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;thread_pool::stop() notifyAll().&quot;</span> &lt;&lt; std::endl;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">auto</span> thread : threads_) &#123;</span><br><span class="line">    thread-&gt;<span class="built_in">join</span>();</span><br><span class="line">    <span class="keyword">delete</span> thread;</span><br><span class="line">  &#125;</span><br><span class="line">  threads_.<span class="built_in">clear</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">thread_pool::thread_loop</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  std::cout &lt;&lt; <span class="string">&quot;thread_pool::threadLoop() tid : &quot;</span> &lt;&lt; std::this_thread::<span class="built_in">get_id</span>() &lt;&lt; <span class="string">&quot; start.&quot;</span> &lt;&lt; std::endl;</span><br><span class="line">  <span class="keyword">while</span> (is_started_) &#123;</span><br><span class="line">    <span class="type">task_t</span> task = <span class="built_in">take</span>();</span><br><span class="line">    <span class="keyword">if</span> (task) &#123;</span><br><span class="line">      <span class="built_in">task</span>();</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  std::cout &lt;&lt; <span class="string">&quot;thread_pool::threadLoop() tid : &quot;</span> &lt;&lt; std::this_thread::<span class="built_in">get_id</span>() &lt;&lt; <span class="string">&quot; exit.&quot;</span> &lt;&lt; std::endl;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function">thread_pool::<span class="type">task_t</span> <span class="title">thread_pool::take</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="function">std::unique_lock&lt;std::mutex&gt; <span class="title">lock</span><span class="params">(mutex_)</span></span>;</span><br><span class="line">  <span class="comment">// 使用 while 循环，防止假唤醒</span></span><br><span class="line">  <span class="keyword">while</span> (tasks_.<span class="built_in">empty</span>() &amp;&amp; is_started_) &#123;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;thread_pool::take() tid : &quot;</span> &lt;&lt; std::this_thread::<span class="built_in">get_id</span>() &lt;&lt; <span class="string">&quot; wait.&quot;</span> &lt;&lt; std::endl;</span><br><span class="line">    wake_cond_.<span class="built_in">wait</span>(lock);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  std::cout &lt;&lt; <span class="string">&quot;thread_pool::take() tid : &quot;</span> &lt;&lt; std::this_thread::<span class="built_in">get_id</span>() &lt;&lt; <span class="string">&quot; wakeup.&quot;</span> &lt;&lt; std::endl;</span><br><span class="line">  <span class="type">task_t</span> task;</span><br><span class="line">  <span class="type">size_t</span> size = tasks_.<span class="built_in">size</span>();</span><br><span class="line">  <span class="keyword">if</span> (!tasks_.<span class="built_in">empty</span>() &amp;&amp; is_started_) &#123;</span><br><span class="line">    task = tasks_.<span class="built_in">front</span>();</span><br><span class="line">    tasks_.<span class="built_in">pop</span>();</span><br><span class="line">    <span class="built_in">assert</span>(size - <span class="number">1</span> == tasks_.<span class="built_in">size</span>());</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> (task != <span class="literal">nullptr</span>) &#123;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;thread_pool::take() tid : &quot;</span> &lt;&lt; std::this_thread::<span class="built_in">get_id</span>() &lt;&lt; <span class="string">&quot; took a task!&quot;</span> &lt;&lt; std::endl;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> task;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>运行结果：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # ./test.out </span><br><span class="line">thread_pool::threadLoop() tid : 139812637472512 start.</span><br><span class="line">thread_pool::take() tid : 139812637472512 wakeup.</span><br><span class="line">thread_pool::take() tid : 139812637472512 took a task!</span><br><span class="line">thread_pool::threadLoop() tid : 139812629079808 start.</span><br><span class="line">thread_pool::take() tid : 139812629079808 wakeup.</span><br><span class="line">thread_pool::take() tid : 139812629079808 took a task!</span><br><span class="line">thread_pool::threadLoop() tid : 139812620687104 start.</span><br><span class="line">thread_pool::take() tid : 139812620687104 wakeup.</span><br><span class="line">thread_pool::take() tid : 139812620687104 took a task!</span><br><span class="line">test() at thread [ 139812637472512] output [2]</span><br><span class="line">thread_pool::take() tid : 139812637472512 wakeup.</span><br><span class="line">thread_pool::take() tid : 139812637472512 took a task!</span><br><span class="line">test() at thread [ 139812629079808] output [3]</span><br><span class="line">thread_pool::take() tid : 139812629079808 wakeup.</span><br><span class="line">thread_pool::take() tid : 139812629079808 took a task!</span><br><span class="line">test() at thread [ 139812620687104] output [4]</span><br><span class="line">thread_pool::take() tid : 139812620687104 wait.</span><br><span class="line">test() at thread [ 139812637472512] output [5]</span><br><span class="line">thread_pool::take() tid : 139812637472512 wait.</span><br><span class="line">test() at thread [ 139812629079808] output [6]</span><br><span class="line">thread_pool::take() tid : 139812629079808 wait.</span><br><span class="line">(键入回车)</span><br><span class="line">result of number 0 :2</span><br><span class="line">result of number 1 :3</span><br><span class="line">result of number 2 :4</span><br><span class="line">result of number 3 :5</span><br><span class="line">result of number 4 :6</span><br><span class="line">thread_pool::stop() stop.</span><br><span class="line">thread_pool::stop() notifyAll().</span><br><span class="line">thread_pool::take() tid : 139812620687104 wakeup.</span><br><span class="line">thread_pool::threadLoop() tid : 139812620687104 exit.</span><br><span class="line">thread_pool::take() tid : 139812637472512 wakeup.</span><br><span class="line">thread_pool::threadLoop() tid : 139812637472512 exit.</span><br><span class="line">thread_pool::take() tid : 139812629079808 wakeup.</span><br><span class="line">thread_pool::threadLoop() tid : 139812629079808 exit.</span><br></pre></td></tr></table></figure>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20230503112818_1492199803/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1351,161 +1464,6 @@ const_cast 在调用第三方函数中的使用：<br>
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20230416004015_2260001540/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/portrait.jpg">
-      <meta itemprop="name" content="caijizhuo">
-      <meta itemprop="description" content="Looks delicious">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="caijizhuo">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/20230416004015_2260001540/" class="post-title-link" itemprop="url">cpp之lock_guard和unique_lock</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2023-04-16 00:40:15" itemprop="dateCreated datePublished" datetime="2023-04-16T00:40:15+08:00">2023-04-16</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-10-07 10:56:27" itemprop="dateModified" datetime="2023-10-07T10:56:27+08:00">2023-10-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/cpp/" itemprop="url" rel="index"><span itemprop="name">cpp</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/concurrent-programming/" itemprop="url" rel="index"><span itemprop="name">concurrent-programming</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>1k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>4 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id="锁"><a class="markdownIt-Anchor" href="#锁"></a> 锁</h1>
-<p>锁是用来防止不同线程访问同一个共享资源时发生数据竞争风险，保证访问的先后顺序而达到数据的一致性访问。本文介绍的 lock_guard 和 unique_lock，都是对 std::mutex 进行封装，实现 RAII 的效果。这两种锁本质差不多，而 unique_lock 的功能比 lock_guard 多一些。</p>
-<h1 id="lock_guard"><a class="markdownIt-Anchor" href="#lock_guard"></a> lock_guard</h1>
-<p>lock_guard 用来管理一个 std::mutext 类型的对象，定义一个 lock_guard 对象同时调用构造函数，对 std::mutex 进行上锁，退出作用域时析构，从而进行解锁。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">std::lock_guard&lt;std::mutex&gt; <span class="title">lock</span><span class="params">(mutex_name)</span></span>;</span><br></pre></td></tr></table></figure>
-<p>特点如下：</p>
-<ol>
-<li>创建即加锁，退出作用域自动解锁，避免忘记解锁。</li>
-<li>无需手工解锁。不能中途解锁。</li>
-<li>无法复制。</li>
-<li>并不管理 std::mutex 的生命周期，如果在作用域内的时候 std::mutex 被释放了，那就会出现空指针错误。</li>
-</ol>
-<p>使用示例：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;thread&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;mutex&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"> </span><br><span class="line"><span class="type">int</span> g_i = <span class="number">0</span>;</span><br><span class="line">std::mutex g_i_mutex;  </span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">safe_increment</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="type">const</span> std::lock_guard&lt;std::mutex&gt; <span class="title">lock</span><span class="params">(g_i_mutex)</span></span>;</span><br><span class="line">    ++g_i;</span><br><span class="line">    std::cout &lt;&lt; std::this_thread::<span class="built_in">get_id</span>() &lt;&lt; <span class="string">&quot;: &quot;</span> &lt;&lt; g_i &lt;&lt; std::endl;</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;start: &quot;</span> &lt;&lt; g_i &lt;&lt; <span class="string">&#x27;\n&#x27;</span>;</span><br><span class="line">    <span class="function">std::thread <span class="title">t1</span><span class="params">(safe_increment)</span></span>;</span><br><span class="line">    <span class="function">std::thread <span class="title">t2</span><span class="params">(safe_increment)</span></span>;</span><br><span class="line">    t1.<span class="built_in">join</span>();</span><br><span class="line">    t2.<span class="built_in">join</span>();</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;end: &quot;</span> &lt;&lt; g_i &lt;&lt; <span class="string">&#x27;\n&#x27;</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>输出：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # ./a.out </span><br><span class="line">start: 0</span><br><span class="line">140365627524864: 1</span><br><span class="line">140365619132160: 2</span><br><span class="line">end: 2</span><br></pre></td></tr></table></figure>
-<h1 id="unique_lock"><a class="markdownIt-Anchor" href="#unique_lock"></a> unique_lock</h1>
-<p>虽然 lock_guard 挺好用的，但是有个很大的缺陷，在定义 lock_guard 的地方会调用构造函数加锁，在离开定义域的话 lock_guard 就会被销毁，调用析构函数解锁。这就产生了一个问题，如果这个定义域范围很大的话，那么锁的粒度就很大，很大程序上会影响效率。<br>
-所以为了解决 lock_guard 锁的<strong>粒度过大</strong>的问题，unique_lock 就出现了。</p>
-<table>
-<thead>
-<tr>
-<th style="text-align:left">方法</th>
-<th style="text-align:left">说明</th>
-<th style="text-align:left">详细说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left"><code>explicit unique_lock(mutex_type&amp; m);</code></td>
-<td style="text-align:left">加锁</td>
-<td style="text-align:left">新创建的 unique_lock 对象，管理 Mutex 对象 m，并尝试调用 m.lock() 对 Mutex 对象进行上锁，如果此时另外某个 unique_lock 对象已经管理了该 Mutex 对象 m，则当前线程将<strong>会被阻塞</strong>。</td>
-</tr>
-<tr>
-<td style="text-align:left"><code>unique_lock(mutex_type&amp; m, try_to_lock_t tag);</code></td>
-<td style="text-align:left">尝试加锁</td>
-<td style="text-align:left">try-locking 初始化新创建的 unique_lock 对象，管理 Mutex 对象 m，并尝试调用 m.try_lock() 对 Mutex 对象进行上锁，但如果上锁不成功，并<strong>不会阻塞</strong>当前线程。</td>
-</tr>
-<tr>
-<td style="text-align:left"><code>unique_lock(mutex_type&amp; m, defer_lock_t tag) noexcept;</code></td>
-<td style="text-align:left">延迟加锁</td>
-<td style="text-align:left">初始化新创建的 unique_lock 对象，管理 Mutex 对象 m，但是在初始化的时候并<strong>不锁住</strong> Mutex 对象。 m 应该是一个没有当前线程锁住的 Mutex 对象。</td>
-</tr>
-<tr>
-<td style="text-align:left"><code>unique_lock(mutex_type&amp; m, adopt_lock_t tag);</code></td>
-<td style="text-align:left">递归加锁</td>
-<td style="text-align:left">初始化新创建的 unique_lock 对象管理 Mutex 对象 m， m 应该是一个<strong>已经被当前线程锁住</strong>的 Mutex 对象。(并且当前新创建的 unique_lock 对象拥有对锁(Lock)的所有权)。</td>
-</tr>
-</tbody>
-</table>
-<p>特点如下：</p>
-<ol>
-<li>创建时可以不锁定（通过指定第二个参数为 std::defer_lock），而在需要时再锁定。</li>
-<li>可以随时加锁解锁（调用 lock 或者 unlock 成员函数）。</li>
-<li>作用域规则同 lock_grard，析构的时候会判断当前锁的状态来决定是否解锁，如果当前状态已经是解锁状态了，那么就不会再次解锁，而如果当前状态是加锁状态，就会自动调用unique.unlock()来解锁。</li>
-<li>不可复制，可移动</li>
-<li>条件变量需要该类型的锁作为参数（此时必须使用 unique_lock）</li>
-</ol>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">condition_variable cv;</span><br><span class="line">cv.<span class="built_in">wait</span>(unique_lock);  <span class="comment">// 会做两件事1：使线程进入等待状态 2:unique_lock.unlock 把mtx给释放掉</span></span><br></pre></td></tr></table></figure>
-<p>unique_lock 示例：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;mutex&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;thread&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;chrono&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"> </span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">Box</span> &#123;</span><br><span class="line">    <span class="function"><span class="keyword">explicit</span> <span class="title">Box</span><span class="params">(<span class="type">int</span> num)</span> : num_things&#123;</span>num&#125; &#123;&#125;</span><br><span class="line">    <span class="type">int</span> num_things;</span><br><span class="line">    std::mutex m;</span><br><span class="line">&#125;;</span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">transfer</span><span class="params">(Box &amp;from, Box &amp;to, <span class="type">int</span> num)</span> </span>&#123;</span><br><span class="line">    <span class="function">std::unique_lock&lt;std::mutex&gt; <span class="title">lock1</span><span class="params">(from.m, std::defer_lock)</span></span>;</span><br><span class="line">    <span class="function">std::unique_lock&lt;std::mutex&gt; <span class="title">lock2</span><span class="params">(to.m, std::defer_lock)</span></span>;</span><br><span class="line">    std::<span class="built_in">lock</span>(lock1, lock2);</span><br><span class="line">    from.num_things -= num;</span><br><span class="line">    to.num_things += num; </span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="function">Box <span class="title">box1</span><span class="params">(<span class="number">100</span>)</span></span>;</span><br><span class="line">    <span class="function">Box <span class="title">box2</span><span class="params">(<span class="number">50</span>)</span></span>;</span><br><span class="line">    <span class="function">std::thread <span class="title">t1</span><span class="params">(transfer, std::ref(box1), std::ref(box2), <span class="number">10</span>)</span></span>;</span><br><span class="line">    <span class="function">std::thread <span class="title">t2</span><span class="params">(transfer, std::ref(box2), std::ref(box1), <span class="number">5</span>)</span></span>;</span><br><span class="line">    t1.<span class="built_in">join</span>();</span><br><span class="line">    t2.<span class="built_in">join</span>();</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;box1:&quot;</span> &lt;&lt; box1.num_things &lt;&lt; std::endl;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;box2:&quot;</span> &lt;&lt; box2.num_things &lt;&lt; std::endl;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # ./a.out </span><br><span class="line">box1:95</span><br><span class="line">box2:55</span><br></pre></td></tr></table></figure>
-<h1 id="总结"><a class="markdownIt-Anchor" href="#总结"></a> 总结</h1>
-<p>unique_lock 内部会维护一个锁的状态，所以在效率上肯定会比 lock_guard 慢。所以在能使用 lock_guard 的情况下尽量优先使用 lock_guard。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1577,7 +1535,7 @@ const_cast 在调用第三方函数中的使用：<br>
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">65</span>
+          <span class="site-state-item-count">66</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1590,7 +1548,7 @@ const_cast 在调用第三方函数中的使用：<br>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-count">17</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -1645,7 +1603,7 @@ const_cast 在调用第三方函数中的使用：<br>
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">3:33</span>
+    <span title="站点阅读时长">3:34</span>
 </div>
 
         

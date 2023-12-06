@@ -195,6 +195,161 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20230416004015_2260001540/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/portrait.jpg">
+      <meta itemprop="name" content="caijizhuo">
+      <meta itemprop="description" content="Looks delicious">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="caijizhuo">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/20230416004015_2260001540/" class="post-title-link" itemprop="url">cpp之lock_guard和unique_lock</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-04-16 00:40:15" itemprop="dateCreated datePublished" datetime="2023-04-16T00:40:15+08:00">2023-04-16</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-10-07 10:56:27" itemprop="dateModified" datetime="2023-10-07T10:56:27+08:00">2023-10-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/cpp/" itemprop="url" rel="index"><span itemprop="name">cpp</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/concurrent-programming/" itemprop="url" rel="index"><span itemprop="name">concurrent-programming</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="锁"><a class="markdownIt-Anchor" href="#锁"></a> 锁</h1>
+<p>锁是用来防止不同线程访问同一个共享资源时发生数据竞争风险，保证访问的先后顺序而达到数据的一致性访问。本文介绍的 lock_guard 和 unique_lock，都是对 std::mutex 进行封装，实现 RAII 的效果。这两种锁本质差不多，而 unique_lock 的功能比 lock_guard 多一些。</p>
+<h1 id="lock_guard"><a class="markdownIt-Anchor" href="#lock_guard"></a> lock_guard</h1>
+<p>lock_guard 用来管理一个 std::mutext 类型的对象，定义一个 lock_guard 对象同时调用构造函数，对 std::mutex 进行上锁，退出作用域时析构，从而进行解锁。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">std::lock_guard&lt;std::mutex&gt; <span class="title">lock</span><span class="params">(mutex_name)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>特点如下：</p>
+<ol>
+<li>创建即加锁，退出作用域自动解锁，避免忘记解锁。</li>
+<li>无需手工解锁。不能中途解锁。</li>
+<li>无法复制。</li>
+<li>并不管理 std::mutex 的生命周期，如果在作用域内的时候 std::mutex 被释放了，那就会出现空指针错误。</li>
+</ol>
+<p>使用示例：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;thread&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;mutex&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"> </span><br><span class="line"><span class="type">int</span> g_i = <span class="number">0</span>;</span><br><span class="line">std::mutex g_i_mutex;  </span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">safe_increment</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="type">const</span> std::lock_guard&lt;std::mutex&gt; <span class="title">lock</span><span class="params">(g_i_mutex)</span></span>;</span><br><span class="line">    ++g_i;</span><br><span class="line">    std::cout &lt;&lt; std::this_thread::<span class="built_in">get_id</span>() &lt;&lt; <span class="string">&quot;: &quot;</span> &lt;&lt; g_i &lt;&lt; std::endl;</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;start: &quot;</span> &lt;&lt; g_i &lt;&lt; <span class="string">&#x27;\n&#x27;</span>;</span><br><span class="line">    <span class="function">std::thread <span class="title">t1</span><span class="params">(safe_increment)</span></span>;</span><br><span class="line">    <span class="function">std::thread <span class="title">t2</span><span class="params">(safe_increment)</span></span>;</span><br><span class="line">    t1.<span class="built_in">join</span>();</span><br><span class="line">    t2.<span class="built_in">join</span>();</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;end: &quot;</span> &lt;&lt; g_i &lt;&lt; <span class="string">&#x27;\n&#x27;</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>输出：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # ./a.out </span><br><span class="line">start: 0</span><br><span class="line">140365627524864: 1</span><br><span class="line">140365619132160: 2</span><br><span class="line">end: 2</span><br></pre></td></tr></table></figure>
+<h1 id="unique_lock"><a class="markdownIt-Anchor" href="#unique_lock"></a> unique_lock</h1>
+<p>虽然 lock_guard 挺好用的，但是有个很大的缺陷，在定义 lock_guard 的地方会调用构造函数加锁，在离开定义域的话 lock_guard 就会被销毁，调用析构函数解锁。这就产生了一个问题，如果这个定义域范围很大的话，那么锁的粒度就很大，很大程序上会影响效率。<br>
+所以为了解决 lock_guard 锁的<strong>粒度过大</strong>的问题，unique_lock 就出现了。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">方法</th>
+<th style="text-align:left">说明</th>
+<th style="text-align:left">详细说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>explicit unique_lock(mutex_type&amp; m);</code></td>
+<td style="text-align:left">加锁</td>
+<td style="text-align:left">新创建的 unique_lock 对象，管理 Mutex 对象 m，并尝试调用 m.lock() 对 Mutex 对象进行上锁，如果此时另外某个 unique_lock 对象已经管理了该 Mutex 对象 m，则当前线程将<strong>会被阻塞</strong>。</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>unique_lock(mutex_type&amp; m, try_to_lock_t tag);</code></td>
+<td style="text-align:left">尝试加锁</td>
+<td style="text-align:left">try-locking 初始化新创建的 unique_lock 对象，管理 Mutex 对象 m，并尝试调用 m.try_lock() 对 Mutex 对象进行上锁，但如果上锁不成功，并<strong>不会阻塞</strong>当前线程。</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>unique_lock(mutex_type&amp; m, defer_lock_t tag) noexcept;</code></td>
+<td style="text-align:left">延迟加锁</td>
+<td style="text-align:left">初始化新创建的 unique_lock 对象，管理 Mutex 对象 m，但是在初始化的时候并<strong>不锁住</strong> Mutex 对象。 m 应该是一个没有当前线程锁住的 Mutex 对象。</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>unique_lock(mutex_type&amp; m, adopt_lock_t tag);</code></td>
+<td style="text-align:left">递归加锁</td>
+<td style="text-align:left">初始化新创建的 unique_lock 对象管理 Mutex 对象 m， m 应该是一个<strong>已经被当前线程锁住</strong>的 Mutex 对象。(并且当前新创建的 unique_lock 对象拥有对锁(Lock)的所有权)。</td>
+</tr>
+</tbody>
+</table>
+<p>特点如下：</p>
+<ol>
+<li>创建时可以不锁定（通过指定第二个参数为 std::defer_lock），而在需要时再锁定。</li>
+<li>可以随时加锁解锁（调用 lock 或者 unlock 成员函数）。</li>
+<li>作用域规则同 lock_grard，析构的时候会判断当前锁的状态来决定是否解锁，如果当前状态已经是解锁状态了，那么就不会再次解锁，而如果当前状态是加锁状态，就会自动调用unique.unlock()来解锁。</li>
+<li>不可复制，可移动</li>
+<li>条件变量需要该类型的锁作为参数（此时必须使用 unique_lock）</li>
+</ol>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">condition_variable cv;</span><br><span class="line">cv.<span class="built_in">wait</span>(unique_lock);  <span class="comment">// 会做两件事1：使线程进入等待状态 2:unique_lock.unlock 把mtx给释放掉</span></span><br></pre></td></tr></table></figure>
+<p>unique_lock 示例：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;mutex&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;thread&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;chrono&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"> </span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">Box</span> &#123;</span><br><span class="line">    <span class="function"><span class="keyword">explicit</span> <span class="title">Box</span><span class="params">(<span class="type">int</span> num)</span> : num_things&#123;</span>num&#125; &#123;&#125;</span><br><span class="line">    <span class="type">int</span> num_things;</span><br><span class="line">    std::mutex m;</span><br><span class="line">&#125;;</span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">transfer</span><span class="params">(Box &amp;from, Box &amp;to, <span class="type">int</span> num)</span> </span>&#123;</span><br><span class="line">    <span class="function">std::unique_lock&lt;std::mutex&gt; <span class="title">lock1</span><span class="params">(from.m, std::defer_lock)</span></span>;</span><br><span class="line">    <span class="function">std::unique_lock&lt;std::mutex&gt; <span class="title">lock2</span><span class="params">(to.m, std::defer_lock)</span></span>;</span><br><span class="line">    std::<span class="built_in">lock</span>(lock1, lock2);</span><br><span class="line">    from.num_things -= num;</span><br><span class="line">    to.num_things += num; </span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="function">Box <span class="title">box1</span><span class="params">(<span class="number">100</span>)</span></span>;</span><br><span class="line">    <span class="function">Box <span class="title">box2</span><span class="params">(<span class="number">50</span>)</span></span>;</span><br><span class="line">    <span class="function">std::thread <span class="title">t1</span><span class="params">(transfer, std::ref(box1), std::ref(box2), <span class="number">10</span>)</span></span>;</span><br><span class="line">    <span class="function">std::thread <span class="title">t2</span><span class="params">(transfer, std::ref(box2), std::ref(box1), <span class="number">5</span>)</span></span>;</span><br><span class="line">    t1.<span class="built_in">join</span>();</span><br><span class="line">    t2.<span class="built_in">join</span>();</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;box1:&quot;</span> &lt;&lt; box1.num_things &lt;&lt; std::endl;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;box2:&quot;</span> &lt;&lt; box2.num_things &lt;&lt; std::endl;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # ./a.out </span><br><span class="line">box1:95</span><br><span class="line">box2:55</span><br></pre></td></tr></table></figure>
+<h1 id="总结"><a class="markdownIt-Anchor" href="#总结"></a> 总结</h1>
+<p>unique_lock 内部会维护一个锁的状态，所以在效率上肯定会比 lock_guard 慢。所以在能使用 lock_guard 的情况下尽量优先使用 lock_guard。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20230414004940_59277/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1262,163 +1417,6 @@ A类占用8字节，B类占用8字节，C类占用8字节，D类占用28字节((
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20221225154730_448578471/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/portrait.jpg">
-      <meta itemprop="name" content="caijizhuo">
-      <meta itemprop="description" content="Looks delicious">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="caijizhuo">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/20221225154730_448578471/" class="post-title-link" itemprop="url">cpp之std::atomic</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-12-25 15:47:30" itemprop="dateCreated datePublished" datetime="2022-12-25T15:47:30+08:00">2022-12-25</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-10-07 10:56:27" itemprop="dateModified" datetime="2023-10-07T10:56:27+08:00">2023-10-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/cpp/" itemprop="url" rel="index"><span itemprop="name">cpp</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/concurrent-programming/" itemprop="url" rel="index"><span itemprop="name">concurrent-programming</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>1.5k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>5 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id="stdatomic"><a class="markdownIt-Anchor" href="#stdatomic"></a> std::atomic</h1>
-<p>原子类型是对数据的一种封装，可以防止数据竞争，达到同步多线程的内存访问的目的。对该变量的读写是原子的。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;atomic&gt;</span></span></span><br></pre></td></tr></table></figure>
-<p>使用前需要包含头文件。该头文件中主要包含两个类：atomic 和 atomic_flag。本文主要讲解 std::atomic。</p>
-<h2 id="构造函数和赋值"><a class="markdownIt-Anchor" href="#构造函数和赋值"></a> 构造函数和赋值</h2>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">atomic</span>() <span class="keyword">noexcept</span> = <span class="keyword">default</span>;</span><br><span class="line"><span class="function"><span class="keyword">constexpr</span> <span class="title">atomic</span> <span class="params">(T val)</span> <span class="keyword">noexcept</span></span>;</span><br><span class="line"><span class="built_in">atomic</span> (<span class="type">const</span> atomic&amp;) = <span class="keyword">delete</span>;</span><br><span class="line"></span><br><span class="line">T <span class="keyword">operator</span>= (T val) <span class="keyword">noexcept</span>;</span><br><span class="line">T <span class="keyword">operator</span>= (T val) <span class="keyword">volatile</span> <span class="keyword">noexcept</span>;</span><br><span class="line">atomic&amp; <span class="keyword">operator</span>= (<span class="type">const</span> atomic&amp;) = <span class="keyword">delete</span>;</span><br><span class="line">atomic&amp; <span class="keyword">operator</span>= (<span class="type">const</span> atomic&amp;) <span class="keyword">volatile</span> = <span class="keyword">delete</span>;</span><br></pre></td></tr></table></figure>
-<ol>
-<li>构造一个未初始化的原子对象。</li>
-<li>构造一个用 val 初始化的原子对象。</li>
-<li>禁用拷贝构造函数，<strong>原子对象不可复制、移动</strong>。</li>
-<li>可以赋值（val）。</li>
-</ol>
-<h2 id="memory_order"><a class="markdownIt-Anchor" href="#memory_order"></a> memory_order</h2>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">enum</span> <span class="title class_">memory_order</span> &#123;</span><br><span class="line">    memory_order_relaxed,</span><br><span class="line">    memory_order_consume,</span><br><span class="line">    memory_order_acquire,</span><br><span class="line">    memory_order_release,</span><br><span class="line">    memory_order_acq_rel,</span><br><span class="line">    memory_order_seq_cst</span><br><span class="line">&#125; memory_order;</span><br></pre></td></tr></table></figure>
-<p>它们的目的是为了做线程间的同步，原理是在线程内限制变量操作的顺序：</p>
-<ol>
-<li>memory_order_relaxed：用于读写，不做任何限制。</li>
-<li>memory_order_acquire：用于读，如果一个原子变量的 load 用了该选项，那么可以保证，<strong>在本线程内</strong>，该 load 语句<strong>之后的所有变量</strong>（不论是否原子变量）的读写语句，都实际在该 load 操作执行后执行。</li>
-<li>memory_order_release：用于写，如果一个原子变量的 store 用了该选项，那么可以保证，<strong>在本线程内</strong>，该 store 语句<strong>之前的所有变量</strong>（不论是否原子变量）的读写语句，都实际在该 store 操作执行前执行。</li>
-<li>memory_order_consume：用于读，如果一个原子变量的 load 用了该选项，那么可以保证，在本线程内，该 load 语句<strong>之后的所有依赖该变量的变量</strong>的读写语句，都实际在该 load 操作执行后执行。但是，它只保证与当前操作相关的数据依赖关系。从 2016 年后，所有编译器实现中，memory_order_consume 和 memory_order_acquire 完全一致。</li>
-<li>memory_order_acq_rel：memory_order_acquire + memory_order_release</li>
-<li>memory_order_seq_cst：sequence consistent，顺序一致，要求所有变量的读写执行顺序都和代码中的顺序一致。</li>
-</ol>
-<p>memory_order_acquire 和 memory_order_release 直观上就像一个栅栏：在调用处设置一个栅栏，acquire 是拦住代码中在它后边的变量读写操作，不让其跑到它前边；release则相反，不让前边的跑到后边。（cpu 提供 memory_barrier 或者 memory_fence 指令）关于为什么 cpu 会进行内存重排，请见<a href="/20230607171855_854612321/" title="内存模型与内存序">内存模型与内存序</a>。</p>
-<h2 id="atomicstore"><a class="markdownIt-Anchor" href="#atomicstore"></a> atomic::store()</h2>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">store</span> <span class="params">(T val, memory_order sync = memory_order_seq_cst)</span> <span class="keyword">volatile</span> <span class="keyword">noexcept</span></span>;</span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">store</span> <span class="params">(T val, memory_order sync = memory_order_seq_cst)</span> <span class="keyword">noexcept</span></span>;</span><br></pre></td></tr></table></figure>
-<p>用 val 替换原子对象中的值。该操作是原子性的，通过 sync 指定内存顺序。sync 可选项见上文。</p>
-<h2 id="atomicload"><a class="markdownIt-Anchor" href="#atomicload"></a> atomic::load()</h2>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">T <span class="title">load</span> <span class="params">(memory_order sync = memory_order_seq_cst)</span> <span class="type">const</span> <span class="keyword">volatile</span> <span class="keyword">noexcept</span></span>;</span><br><span class="line"><span class="function">T <span class="title">load</span> <span class="params">(memory_order sync = memory_order_seq_cst)</span> <span class="type">const</span> <span class="keyword">noexcept</span></span>;</span><br></pre></td></tr></table></figure>
-<p>返回原子对象中的值。该操作为原子性。</p>
-<h2 id="atomicexchange"><a class="markdownIt-Anchor" href="#atomicexchange"></a> atomic::exchange</h2>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">T <span class="title">exchange</span> <span class="params">(T val, memory_order sync = memory_order_seq_cst)</span> <span class="keyword">volatile</span> <span class="keyword">noexcept</span></span>;</span><br><span class="line"><span class="function">T <span class="title">exchange</span> <span class="params">(T val, memory_order sync = memory_order_seq_cst)</span> <span class="keyword">noexcept</span></span>;</span><br></pre></td></tr></table></figure>
-<p>用 val 替换原子对象中的值，并返回替换前的值。操作为原子性。整个过程完成之前，其他线程无法访问。</p>
-<h2 id="atomiccompare_exchange_weak"><a class="markdownIt-Anchor" href="#atomiccompare_exchange_weak"></a> atomic::compare_exchange_weak</h2>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">bool</span> <span class="title">compare_exchange_weak</span> <span class="params">(T &amp;expected, T val, memory_order sync = memory_order_seq_cst)</span> <span class="keyword">volatile</span> <span class="keyword">noexcept</span></span>;</span><br><span class="line"><span class="function"><span class="type">bool</span> <span class="title">compare_exchange_weak</span> <span class="params">(T &amp;expected, T val, memory_order sync = memory_order_seq_cst)</span> <span class="keyword">noexcept</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">bool</span> <span class="title">compare_exchange_weak</span> <span class="params">(T &amp;expected, T val, memory_order success, memory_order failure)</span> <span class="keyword">volatile</span> <span class="keyword">noexcept</span></span>;</span><br><span class="line"><span class="function"><span class="type">bool</span> <span class="title">compare_exchange_weak</span> <span class="params">(T &amp;expected, T val, memory_order success, memory_order failure)</span> <span class="keyword">noexcept</span></span>;</span><br></pre></td></tr></table></figure>
-<p>将原子对象的存储值和预期值比较：</p>
-<ul>
-<li>若为 true，用 val 替换原子对象值。</li>
-<li>若为 false， 用包含的值替换预期值。</li>
-</ul>
-<p>整个过程是原子性的。</p>
-<p>下面版本使用的内存顺序取决于比较结果：true 则使用 success; false 则使用 failure。该函数比较的是原子对象和预期值中的物理内容，这可能导致使用操作符 == 比较相等的值的在这里比较失败。</p>
-<p>与 compare_exchange_strong 不同，该 weak 版本<strong>允许错误的返回 false</strong>，即使原子对象存储值与预期值相等。对于某些循环算法，这可能是可接受的行为，并且可能在某些平台上显著提高性能。对于这些虚假的失败，函数返回 false，但不修改预期的值。对于非循环算法，通常首选 compare_exchange_strong。</p>
-<h2 id="atomiccompare_exchange_strong"><a class="markdownIt-Anchor" href="#atomiccompare_exchange_strong"></a> atomic::compare_exchange_strong</h2>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">bool</span> <span class="title">compare_exchange_strong</span> <span class="params">(T &amp;expected, T val, memory_order sync = memory_order_seq_cst)</span> <span class="keyword">volatile</span> <span class="keyword">noexcept</span></span>;</span><br><span class="line"><span class="function"><span class="type">bool</span> <span class="title">compare_exchange_strong</span> <span class="params">(T &amp;expected, T val, memory_order sync = memory_order_seq_cst)</span> <span class="keyword">noexcept</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">bool</span> <span class="title">compare_exchange_strong</span> <span class="params">(T &amp;expected, T val, memory_order success, memory_order failure)</span> <span class="keyword">volatile</span> <span class="keyword">noexcept</span></span>;</span><br><span class="line"><span class="function"><span class="type">bool</span> <span class="title">compare_exchange_strong</span> <span class="params">(T &amp;expected, T val, memory_order success, memory_order failure)</span> <span class="keyword">noexcept</span></span>;</span><br></pre></td></tr></table></figure>
-<p>原子操作。与 compare_exchange_week 不同，当期望值与对象存储的值相等时，这个强版本必须始终返回 true，不允许虚假的失败。但是，在某些机器上，对于某些在循环中检查这个的算法，compare_exchange_weak 可能有更高的性能表现。</p>
-<h2 id="专门化计算操作"><a class="markdownIt-Anchor" href="#专门化计算操作"></a> 专门化计算操作</h2>
-<h3 id="atomicfetch_addt-val-memory_order-sync-memory_order_seq_cst"><a class="markdownIt-Anchor" href="#atomicfetch_addt-val-memory_order-sync-memory_order_seq_cst"></a> atomic::fetch_add(T val, memory_order sync = memory_order_seq_cst)</h3>
-<p>存储的值 + val 并返回之前的值，整个操作是原子性的。如果第二个参数使用默认值，那么这个函数相当于 atomic::operator+=。</p>
-<h3 id="atomicfetch_subt-val-memory_order-sync-memory_order_seq_cst"><a class="markdownIt-Anchor" href="#atomicfetch_subt-val-memory_order-sync-memory_order_seq_cst"></a> atomic::fetch_sub(T val, memory_order sync = memory_order_seq_cst)</h3>
-<p>存储的值 - val 并返回之前的值，整个操作是原子性的。如果第二个参数使用默认值，那么这个函数相当于 atomic::operator-=。</p>
-<h3 id="atomicfetch_andt-val-memory_order-sync-memory_order_seq_cst"><a class="markdownIt-Anchor" href="#atomicfetch_andt-val-memory_order-sync-memory_order_seq_cst"></a> atomic::fetch_and(T val, memory_order sync = memory_order_seq_cst)</h3>
-<p>（存储的值 &amp; val）并返回之前的值，整个操作是原子性的。如果第二个参数使用默认值，那么这个函数相当于 atomic::operator&amp;=。</p>
-<h3 id="atomicfetch_ort-val-memory_order-sync-memory_order_seq_cst"><a class="markdownIt-Anchor" href="#atomicfetch_ort-val-memory_order-sync-memory_order_seq_cst"></a> atomic::fetch_or(T val, memory_order sync = memory_order_seq_cst)</h3>
-<p>（存储的值 | val）并返回之前的值，整个操作是原子性的。如果第二个参数使用默认值，那么这个函数相当于 atomic::operator|=。</p>
-<h3 id="atomicfetch_xort-val-memory_order-sync-memory_order_seq_cst"><a class="markdownIt-Anchor" href="#atomicfetch_xort-val-memory_order-sync-memory_order_seq_cst"></a> atomic::fetch_xor(T val, memory_order sync = memory_order_seq_cst)</h3>
-<p>（存储的值 ^ val）并返回之前的值，整个操作是原子性的。如果第二个参数使用默认值，那么这个函数相当于 atomic::operator^=。</p>
-<h3 id="atomicoperator"><a class="markdownIt-Anchor" href="#atomicoperator"></a> atomic::operator++ ()</h3>
-<p>递增保存的值，返回递增后的值。</p>
-<h3 id="atomicoperator-int"><a class="markdownIt-Anchor" href="#atomicoperator-int"></a> atomic::operator++ (int)</h3>
-<p>递增保存的值，返回递增前的值。</p>
-<h3 id="atomicoperator-"><a class="markdownIt-Anchor" href="#atomicoperator-"></a> atomic::operator-- ()</h3>
-<p>递减保存的值，返回递减后的值。</p>
-<h3 id="atomicoperator-int-2"><a class="markdownIt-Anchor" href="#atomicoperator-int-2"></a> atomic::operator-- (int)</h3>
-<p>递减保存的值，返回递减前的值。</p>
-<p>reference：<a target="_blank" rel="noopener" href="https://blog.csdn.net/u014673282/article/details/89789139">https://blog.csdn.net/u014673282/article/details/89789139</a></p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1490,7 +1488,7 @@ A类占用8字节，B类占用8字节，C类占用8字节，D类占用28字节((
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">65</span>
+          <span class="site-state-item-count">66</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1503,7 +1501,7 @@ A类占用8字节，B类占用8字节，C类占用8字节，D类占用28字节((
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-count">17</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -1558,7 +1556,7 @@ A类占用8字节，B类占用8字节，C类占用8字节，D类占用28字节((
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">3:33</span>
+    <span title="站点阅读时长">3:34</span>
 </div>
 
         
