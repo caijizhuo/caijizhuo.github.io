@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="EJdwSJxhW67liN5YZTmxFCA9mRU0UJt_B2-JNAGGU0Y">
+  <meta name="baidu-site-verification" content="codeva-hPTFkf6vHb">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"caijizhuo.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="硬件结构 现代机器都是多个处理器，每个处理器有自己的 cache。这个结构如下所示:  可以看到，每个 CPU 都有自己的缓存，之后再写到内存中。并且由于编译器的优化，你写的代码可能和你执行的代码顺序有所不同。他们优化的规则是：保证对于一个单核情况下，执行结果不会发生变化。但是多线程就不一定了。 那么在多线程情况下，如何协调这些 CPU 缓存的数据一致性就成了一个问题。 常见优化 再谈保证数据的一">
+<meta property="og:type" content="article">
+<meta property="og:title" content="内存模型与内存序">
+<meta property="og:url" content="https://caijizhuo.github.io/20230607171855_854612321/index.html">
+<meta property="og:site_name" content="caijizhuo">
+<meta property="og:description" content="硬件结构 现代机器都是多个处理器，每个处理器有自己的 cache。这个结构如下所示:  可以看到，每个 CPU 都有自己的缓存，之后再写到内存中。并且由于编译器的优化，你写的代码可能和你执行的代码顺序有所不同。他们优化的规则是：保证对于一个单核情况下，执行结果不会发生变化。但是多线程就不一定了。 那么在多线程情况下，如何协调这些 CPU 缓存的数据一致性就成了一个问题。 常见优化 再谈保证数据的一">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://caijizhuo.github.io/20230607171855_854612321/1.png">
+<meta property="og:image" content="https://caijizhuo.github.io/20230607171855_854612321/2.png">
+<meta property="article:published_time" content="2023-06-07T09:18:55.000Z">
+<meta property="article:modified_time" content="2025-03-08T05:45:05.784Z">
+<meta property="article:author" content="caijizhuo">
+<meta property="article:tag" content="compiler">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://caijizhuo.github.io/20230607171855_854612321/1.png">
+
+<link rel="canonical" href="https://caijizhuo.github.io/20230607171855_854612321/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>内存模型与内存序 | caijizhuo</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<style>.darkmode--activated{--body-bg-color:#282828;--content-bg-color:#333;--card-bg-color:#555;--text-color:#ccc;--blockquote-color:#bbb;--link-color:#ccc;--link-hover-color:#eee;--brand-color:#ddd;--brand-hover-color:#ddd;--table-row-odd-bg-color:#282828;--table-row-hover-bg-color:#363636;--menu-item-bg-color:#555;--btn-default-bg:#222;--btn-default-color:#ccc;--btn-default-border-color:#555;--btn-default-hover-bg:#666;--btn-default-hover-color:#ccc;--btn-default-hover-border-color:#666;--highlight-background:#282b2e;--highlight-foreground:#a9b7c6;--highlight-gutter-background:#34393d;--highlight-gutter-foreground:#9ca9b6}.darkmode--activated img{opacity:.75}.darkmode--activated img:hover{opacity:.9}.darkmode--activated code{color:#69dbdc;background:0 0}button.darkmode-toggle{z-index:9999}.darkmode-ignore,img{display:flex!important}.beian img{display:inline-block!important}</style></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">caijizhuo</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20230607171855_854612321/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/portrait.jpg">
+      <meta itemprop="name" content="caijizhuo">
+      <meta itemprop="description" content="Looks delicious">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="caijizhuo">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          内存模型与内存序
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-06-07 17:18:55" itemprop="dateCreated datePublished" datetime="2023-06-07T17:18:55+08:00">2023-06-07</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-03-08 13:45:05" itemprop="dateModified" datetime="2025-03-08T13:45:05+08:00">2025-03-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/compiler/" itemprop="url" rel="index"><span itemprop="name">compiler</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.9k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>7 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="硬件结构">硬件结构</h2>
+<p>现代机器都是多个处理器，每个处理器有自己的 cache。这个结构如下所示:<br>
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20230607171855_854612321/1.png" alt="1"><br>
+可以看到，每个 CPU 都有自己的缓存，之后再写到内存中。并且由于编译器的优化，你写的代码可能和你执行的代码顺序有所不同。他们优化的规则是：保证对于一个单核情况下，执行结果不会发生变化。但是多线程就不一定了。</p>
+<p>那么在多线程情况下，如何协调这些 CPU 缓存的数据一致性就成了一个问题。</p>
+<h2 id="常见优化">常见优化</h2>
+<p>再谈保证数据的一致性之前，先谈谈编译器能做的优化。</p>
+<h3 id="重排-Reordering">重排 Reordering</h3>
+<p>编译器和 CPU 都会发生重排，为了提升代码的效率。采用乱序执行、流水线、分支预测以及多级缓存等方法来提升程序性能。编译器会基于这些规则来提升自己代码的速度，所以就会对指令进行优化。例子如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> a = <span class="number">0</span>;</span><br><span class="line"><span class="type">int</span> b = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">fun</span><span class="params">()</span> &#123;</span><br><span class="line">    a = b + <span class="number">1</span>; <span class="comment">// L5</span></span><br><span class="line">    b = <span class="number">1</span>;     <span class="comment">// L6</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    fun();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">@└────&gt; # gcc 1.c -O0 -g</span></span><br><span class="line"><span class="comment">@└────&gt; # objdump -d a.out</span></span><br><span class="line"><span class="number">0000000000400536</span> &lt;fun&gt;:</span><br><span class="line">  <span class="number">400536</span>:       <span class="number">55</span>                      <span class="keyword">push</span>   %rbp</span><br><span class="line">  <span class="number">400537</span>:       <span class="number">48</span> <span class="number">89</span> e5                <span class="keyword">mov</span>    %rsp,%rbp</span><br><span class="line">  <span class="number">40053</span>a:       <span class="number">8</span>b <span class="number">05</span> e4 <span class="number">0</span>a <span class="number">20</span> <span class="number">00</span>       <span class="keyword">mov</span>    <span class="number">0x200ae4</span>(%rip),%eax        # <span class="number">601024</span> &lt;b&gt;</span><br><span class="line">  <span class="number">400540</span>:       <span class="number">83</span> <span class="built_in">c0</span> <span class="number">01</span>                <span class="keyword">add</span>    <span class="number">$0x1</span>,%eax</span><br><span class="line">  <span class="number">400543</span>:       <span class="number">89</span> <span class="number">05</span> <span class="built_in">d7</span> <span class="number">0</span>a <span class="number">20</span> <span class="number">00</span>       <span class="keyword">mov</span>    %eax,<span class="number">0x200ad7</span>(%rip)        # <span class="number">601020</span> &lt;__TMC_END__&gt;</span><br><span class="line">  <span class="number">400549</span>:       <span class="built_in">c7</span> <span class="number">05</span> <span class="built_in">d1</span> <span class="number">0</span>a <span class="number">20</span> <span class="number">00</span> <span class="number">01</span>    movl   <span class="number">$0x1</span>,<span class="number">0x200ad1</span>(%rip)        # <span class="number">601024</span> &lt;b&gt;</span><br><span class="line">  <span class="number">400550</span>:       <span class="number">00</span> <span class="number">00</span> <span class="number">00</span> </span><br><span class="line">  <span class="number">400553</span>:       <span class="number">90</span>                      <span class="keyword">nop</span></span><br><span class="line">  <span class="number">400554</span>:       <span class="number">5</span>d                      <span class="keyword">pop</span>    %rbp</span><br><span class="line">  <span class="number">400555</span>:       <span class="built_in">c3</span>                      retq</span><br><span class="line"></span><br><span class="line"><span class="comment">@└────&gt; # gcc 1.c -O2 -g</span></span><br><span class="line"><span class="comment">@└────&gt; # objdump -d a.out</span></span><br><span class="line"><span class="number">0000000000400560</span> &lt;fun&gt;:</span><br><span class="line">  <span class="number">400560</span>:       <span class="number">8</span>b <span class="number">05</span> ba <span class="number">0</span>a <span class="number">20</span> <span class="number">00</span>       <span class="keyword">mov</span>    <span class="number">0x200aba</span>(%rip),%eax        # <span class="number">601020</span> &lt;__TMC_END__&gt;</span><br><span class="line">  <span class="number">400566</span>:       <span class="built_in">c7</span> <span class="number">05</span> b0 <span class="number">0</span>a <span class="number">20</span> <span class="number">00</span> <span class="number">01</span>    movl   <span class="number">$0x1</span>,<span class="number">0x200ab0</span>(%rip)        # <span class="number">601020</span> &lt;__TMC_END__&gt;</span><br><span class="line">  <span class="number">40056</span>d:       <span class="number">00</span> <span class="number">00</span> <span class="number">00</span> </span><br><span class="line">  <span class="number">400570</span>:       <span class="number">83</span> <span class="built_in">c0</span> <span class="number">01</span>                <span class="keyword">add</span>    <span class="number">$0x1</span>,%eax</span><br><span class="line">  <span class="number">400573</span>:       <span class="number">89</span> <span class="number">05</span> ab <span class="number">0</span>a <span class="number">20</span> <span class="number">00</span>       <span class="keyword">mov</span>    %eax,<span class="number">0x200aab</span>(%rip)        # <span class="number">601024</span> &lt;a&gt;</span><br><span class="line">  <span class="number">400579</span>:       <span class="built_in">c3</span>                      retq   </span><br><span class="line">  <span class="number">40057</span>a:       <span class="number">66</span> <span class="number">0</span>f <span class="number">1</span>f <span class="number">44</span> <span class="number">00</span> <span class="number">00</span>       nopw   <span class="number">0x0</span>(%rax,%rax,<span class="number">1</span>)</span><br></pre></td></tr></table></figure>
+<ol>
+<li>对于 O0 等级的优化，执行顺序是 L5-&gt;L6。</li>
+<li>但是对于 O2 等级的优化，执行顺序是 L6-&gt;L5，但是结果是不影响的。</li>
+</ol>
+<p>为什么要这么做呢？因为 CPU 读取数据从 cache 中读取。如果不优化的话，先读 b，再读 a 的时候可能把 b 的缓存换出去了，那么再写 b 的时候还需要把 b 换进来。但是如果优化了，就是读 b，写 b，再写 a，就不存在缓存的换入换出了。</p>
+<h3 id="插入-Invention">插入 Invention</h3>
+<p>假设有如下代码：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; n; ++i) &#123;</span><br><span class="line">    x[i] = y[i] + z[i];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可能优化成如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; n; ++i) &#123;</span><br><span class="line">    __builtin_prefetch(&amp;y[i + <span class="number">16</span>]);</span><br><span class="line">    __builtin_prefetch(&amp;z[i + <span class="number">16</span>]);</span><br><span class="line">    x[i] = y[i] + z[i];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>预读取这些数据来减少缓存未命中次数。</p>
+<h3 id="删除-Removal">删除 Removal</h3>
+<p>删除很好理解了，删除没用的变量赋值。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> x = <span class="number">1</span>;</span><br><span class="line"><span class="type">int</span> y = <span class="number">2</span>;</span><br><span class="line"><span class="type">int</span> z = x + y;</span><br><span class="line">x = <span class="number">3</span>;</span><br><span class="line">y = <span class="number">4</span>;</span><br></pre></td></tr></table></figure>
+<p>优化后：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> x;</span><br><span class="line"><span class="type">int</span> y;</span><br><span class="line">x = <span class="number">3</span>;</span><br><span class="line">y = <span class="number">4</span>;</span><br></pre></td></tr></table></figure>
+<h2 id="关系术语">关系术语</h2>
+<h3 id="sequence-before">sequence-before</h3>
+<p>sequence-before 是对一个线程内，求值顺序关系的描述：</p>
+<ul>
+<li>A sequence-before B，先对 A 求值，再对 B 求值。</li>
+<li>A not sequence-before B，并且 B not sequence-before A，那么 A 和 B 谁先求值是未知的。</li>
+</ul>
+<h3 id="synchronizes-with">synchronizes-with</h3>
+<p>描述的是不同线程内的执行关系。在两个线程分别执行时，即使线程 A 先执行，线程 B 后执行，A 中写了某个共享变量，由于<strong>指令重排</strong>或者<strong>写到了 cache</strong> 或<strong>寄存器没来得及写入内存</strong>导致 B 读到了错误的值。</p>
+<ul>
+<li>A synchronizes-with B，在线程 A 中的写操作结果对线程 B 可见。</li>
+</ul>
+<h3 id="happens-before">happens-before</h3>
+<p>是 sequence-before 的扩展，包括了不同线程的关系。</p>
+<ul>
+<li>A happens-before B，那么不但 A 先于 B 执行，并且 A 的结果对 B 可见。
+<ul>
+<li>同线程：和 sequence-before 一样。</li>
+<li>不同线程：和 synchronizes-with 一样。</li>
+</ul>
+</li>
+</ul>
+<h2 id="内存序">内存序</h2>
+<p>C++11 中引入了 6 种内存序：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">enum</span> <span class="title class_">memory_order</span> &#123;</span><br><span class="line">    memory_order_relaxed,</span><br><span class="line">    memory_order_consume,</span><br><span class="line">    memory_order_acquire,</span><br><span class="line">    memory_order_release,</span><br><span class="line">    memory_order_acq_rel,</span><br><span class="line">    memory_order_seq_cst</span><br><span class="line">&#125; memory_order;</span><br></pre></td></tr></table></figure>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">内存序类型</th>
+<th style="text-align:center">用于读/写</th>
+<th style="text-align:center">含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">memory_order_relaxed</td>
+<td style="text-align:center">读/写</td>
+<td style="text-align:center">仅要求<strong>原子性</strong>和<strong>内存一致性</strong></td>
+</tr>
+<tr>
+<td style="text-align:center">memory_order_consume</td>
+<td style="text-align:center">读</td>
+<td style="text-align:center">读操作所在线程该操作<strong>后面的和该变量</strong> <em><strong>有依赖关系的</strong></em> <strong>读写操作不会被优化到先于该操作执行</strong></td>
+</tr>
+<tr>
+<td style="text-align:center">memory_order_acquire</td>
+<td style="text-align:center">读</td>
+<td style="text-align:center">读操作所在线程该操作<strong>后面的读写操作不会被优化到先于该操作执行</strong></td>
+</tr>
+<tr>
+<td style="text-align:center">memory_order_release</td>
+<td style="text-align:center">写</td>
+<td style="text-align:center">写操作所在线程该操作<strong>前面的读写操作不会被优化到后于该操作执行</strong></td>
+</tr>
+<tr>
+<td style="text-align:center">memory_order_acq_rel</td>
+<td style="text-align:center">读/写</td>
+<td style="text-align:center">是 memory_order_acquire 和 memory_order_release 组成的双向屏障，<strong>上下皆不能跨过该指令</strong></td>
+</tr>
+<tr>
+<td style="text-align:center">memory_order_seq_cst</td>
+<td style="text-align:center">读/写</td>
+<td style="text-align:center">双向屏障，并且<strong>该线程所有原子指令并且也指定为 memory_order_seq_cst 的都已全局内存修改顺序为参照</strong></td>
+</tr>
+</tbody>
+</table>
+<p>值得一提的是，若一个原子变量在一个线程中施加了 memory_order_release，但是在其他线程中没有使用 memory_order_acquire 或 memory_order_consume 读取，那么他就不会具备 memory_order_release 所赋予的屏障功能。（即只有被观测才会起作用，读操作也是如此）</p>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20230607171855_854612321/2.png" alt="2"><br>
+如上图所示，就像加锁一样会构成临界区。但是外面的变量可以移入临界区，却不能移出去，所以称 memory_order_acquire 和 memory_order_release 如同单向屏障一般。</p>
+<h2 id="内存模型">内存模型</h2>
+<p>一言以蔽之，引入内存模型的原因，有以下几个原因：</p>
+<ol>
+<li>编译器优化：在某些情况下，即使是简单的语句，也不能保证是原子操作。</li>
+<li>CPU out-of-order：CPU 为了提升计算性能，可能会调整指令的执行顺序。</li>
+<li>CPU Cache 不一致：在 CPU Cache 的影响下，在某个 CPU 下执行了指令，不会立即被其它 CPU 所看到。</li>
+</ol>
+<p>从上面的内存序中，按照访问控制的角度可以分为三种模型：</p>
+<ol>
+<li>Sequential Consistency 模型</li>
+<li>Acquire-Release 模型</li>
+<li>Relax 模型</li>
+</ol>
+<p>其中，Sequential Consistency 模型约束最强，Acquire-Release 次之，Relax 模型最弱。</p>
+<h3 id="Sequential-Consistency-模型">Sequential Consistency 模型</h3>
+<p>对应 memory_order_seq_cst 内存序。Sequential Consistency 模型有以下特点：</p>
+<ul>
+<li>每个线程的执行顺序与代码顺序严格一致</li>
+<li>线程的执行顺序可能会交替进行，但是从单个线程的角度来看，仍然是顺序执行</li>
+</ul>
+<p>例如：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">x = y = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">thread1:</span><br><span class="line">x = <span class="number">1</span>;</span><br><span class="line">r1 = y;</span><br><span class="line"></span><br><span class="line">thread2:</span><br><span class="line">y = <span class="number">1</span>;</span><br><span class="line">r2 = x;</span><br></pre></td></tr></table></figure>
+<p>那么可能的执行顺序为：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">可能性</th>
+<th style="text-align:center">第一步</th>
+<th style="text-align:center">第二步</th>
+<th style="text-align:center">第三步</th>
+<th style="text-align:center">第四步</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">1</td>
+<td style="text-align:center">x = 1</td>
+<td style="text-align:center">r1 = y</td>
+<td style="text-align:center">y = 1</td>
+<td style="text-align:center">r2 = x</td>
+</tr>
+<tr>
+<td style="text-align:center">2</td>
+<td style="text-align:center">y = 1</td>
+<td style="text-align:center">r2 = x</td>
+<td style="text-align:center">x = 1</td>
+<td style="text-align:center">r1 = y</td>
+</tr>
+<tr>
+<td style="text-align:center">3</td>
+<td style="text-align:center">x = 1</td>
+<td style="text-align:center">y = 1</td>
+<td style="text-align:center">r1 = y</td>
+<td style="text-align:center">r2 = x</td>
+</tr>
+<tr>
+<td style="text-align:center">4</td>
+<td style="text-align:center">x = 1</td>
+<td style="text-align:center">r2 = x</td>
+<td style="text-align:center">y = 1</td>
+<td style="text-align:center">r1 = y</td>
+</tr>
+<tr>
+<td style="text-align:center">5</td>
+<td style="text-align:center">y = 1</td>
+<td style="text-align:center">x = 1</td>
+<td style="text-align:center">r1 = y</td>
+<td style="text-align:center">r2 = x</td>
+</tr>
+<tr>
+<td style="text-align:center">6</td>
+<td style="text-align:center">y = 1</td>
+<td style="text-align:center">x = 1</td>
+<td style="text-align:center">r2 = x</td>
+<td style="text-align:center">r1 = y</td>
+</tr>
+</tbody>
+</table>
+<p>std::atomic 默认值都是使用 memory_order_seq_cst，保证不出错。但是相对的，限制了 CPU 并行处理的能力，会降低效率。这个模型的所有线程都参考全局的内存修改顺序。因此，我们可<strong>认为</strong>所有变量的读写都<strong>直接从内存</strong>进行，从而完全不用考虑 Cache，Store Buffer 这些因素。</p>
+<h3 id="Acquire-Release-模型">Acquire-Release 模型</h3>
+<p>对应 memory_order_consume、memory_order_acquire、memory_order_release、memory_order_acq_rel 内存序。对于一个原子变量 A，对 A 的写操作（Release）和读操作（Acquire）之间进行同步，并建立排序约束关系，即对于写操作（release）X，在写操作 X 之前的所有读写指令都不能放到写操作 X 之后；对于读操作（acquire）Y，在读操作 Y 之后的所有读写指令都不能放到读操作 Y 之前。</p>
+<h3 id="Relax-模型">Relax 模型</h3>
+<p>对应的是 memory_order_relaxed 内存序。其对于内存序的限制最小，也就是说这种方式只能保证当前的数据访问是原子操作（不会被其他线程的操作打断），但是对内存访问顺序没有任何约束，也就是说对不同的数据的读写可能会被重新排序。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>caijizhuo
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://caijizhuo.github.io/20230607171855_854612321/" title="内存模型与内存序">https://caijizhuo.github.io/20230607171855_854612321/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/compiler/" rel="tag"># compiler</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/20230530190403_3280945033/" rel="prev" title="x86_64常用汇编">
+      <i class="fa fa-chevron-left"></i> x86_64常用汇编
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/20230609105733_4112471478/" rel="next" title="内嵌汇编">
+      内嵌汇编 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A1%AC%E4%BB%B6%E7%BB%93%E6%9E%84"><span class="nav-number">1.</span> <span class="nav-text">硬件结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E4%BC%98%E5%8C%96"><span class="nav-number">2.</span> <span class="nav-text">常见优化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%87%8D%E6%8E%92-Reordering"><span class="nav-number">2.1.</span> <span class="nav-text">重排 Reordering</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8F%92%E5%85%A5-Invention"><span class="nav-number">2.2.</span> <span class="nav-text">插入 Invention</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%A0%E9%99%A4-Removal"><span class="nav-number">2.3.</span> <span class="nav-text">删除 Removal</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B3%E7%B3%BB%E6%9C%AF%E8%AF%AD"><span class="nav-number">3.</span> <span class="nav-text">关系术语</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#sequence-before"><span class="nav-number">3.1.</span> <span class="nav-text">sequence-before</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#synchronizes-with"><span class="nav-number">3.2.</span> <span class="nav-text">synchronizes-with</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#happens-before"><span class="nav-number">3.3.</span> <span class="nav-text">happens-before</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E5%BA%8F"><span class="nav-number">4.</span> <span class="nav-text">内存序</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B"><span class="nav-number">5.</span> <span class="nav-text">内存模型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Sequential-Consistency-%E6%A8%A1%E5%9E%8B"><span class="nav-number">5.1.</span> <span class="nav-text">Sequential Consistency 模型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Acquire-Release-%E6%A8%A1%E5%9E%8B"><span class="nav-number">5.2.</span> <span class="nav-text">Acquire-Release 模型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Relax-%E6%A8%A1%E5%9E%8B"><span class="nav-number">5.3.</span> <span class="nav-text">Relax 模型</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="caijizhuo"
+      src="/images/portrait.jpg">
+  <p class="site-author-name" itemprop="name">caijizhuo</p>
+  <div class="site-description" itemprop="description">Looks delicious</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">67</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">12</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/caijizhuo" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;caijizhuo" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:zhao_yingzhuo@foxmail.com" title="E-Mail → mailto:zhao_yingzhuo@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">caijizhuo</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">61k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">3:40</span>
+</div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+      
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/katex@0/dist/katex.min.css">
+
+
+  
+<script src="https://unpkg.com/darkmode-js@1.5.7/lib/darkmode-js.min.js"></script>
+
+<script>
+var options = {
+  bottom: '72px',
+  right: 'unset',
+  left: '16px',
+  time: '0.5s',
+  mixColor: 'transparent',
+  backgroundColor: 'transparent',
+  buttonColorDark: '#100f2c',
+  buttonColorLight: '#fff',
+  saveInCookies: true,
+  label: '🌓',
+  autoMatchOsTheme: false
+}
+const darkmode = new Darkmode(options);
+window.darkmode = darkmode;
+darkmode.showWidget();
+</script>
+
+    </div>
+
+  <link rel="stylesheet" href="/dist/APlayer.min.css">
+  <div id="aplayer"></div>
+  <script type="text/javascript" src="/dist/APlayer.min.js"></script>
+  <script type="text/javascript" src="/dist/music.js"></script>
+
+        <style>
+            [bg-lazy] {
+                background-image: none !important;
+                background-color: #eee !important;
+            }
+        </style>
+        <script>
+            window.imageLazyLoadSetting = {
+                isSPA: true,
+                preloadRatio: 3,
+                processImages: null,
+            };
+        </script><script>window.addEventListener("load",function(){var t=/\.(gif|jpg|jpeg|tiff|png)$/i,r=/^data:image\/[a-z]+;base64,/;Array.prototype.slice.call(document.querySelectorAll("img[data-original]")).forEach(function(a){var e=a.parentNode;"A"===e.tagName&&(e.href.match(t)||e.href.match(r))&&(e.href=a.dataset.original)})});</script><script>!function(r){r.imageLazyLoadSetting.processImages=t;var e=r.imageLazyLoadSetting.isSPA,n=r.imageLazyLoadSetting.preloadRatio||1,c=a();function a(){var t=Array.prototype.slice.call(document.querySelectorAll("img[data-original]")),e=Array.prototype.slice.call(document.querySelectorAll("[bg-lazy]"));return t.concat(e)}function t(){e&&(c=a());for(var t,o=0;o<c.length;o++)0<=(t=(t=c[o]).getBoundingClientRect()).bottom&&0<=t.left&&t.top<=(r.innerHeight*n||document.documentElement.clientHeight*n)&&function(){var t,e,n,a,i=c[o];e=function(){c=c.filter(function(t){return i!==t}),r.imageLazyLoadSetting.onImageLoaded&&r.imageLazyLoadSetting.onImageLoaded(i)},(t=i).hasAttribute("bg-lazy")?(t.removeAttribute("bg-lazy"),e&&e()):(n=new Image,a=t.getAttribute("data-original"),n.onload=function(){t.src=a,t.removeAttribute("data-original"),e&&e()},t.src!==a&&(n.src=a))}()}function i(){clearTimeout(t.tId),t.tId=setTimeout(t,500)}t(),document.addEventListener("scroll",i),r.addEventListener("resize",i),r.addEventListener("orientationchange",i)}(this);</script></body>
+</html>

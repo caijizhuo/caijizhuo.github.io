@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="EJdwSJxhW67liN5YZTmxFCA9mRU0UJt_B2-JNAGGU0Y">
+  <meta name="baidu-site-verification" content="codeva-hPTFkf6vHb">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"caijizhuo.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="概念 在 ELF 文件中，查看可以获得它的节的名字。其中有几个带有 plt 和 got 的节。 在此处，给出各节的定义如下：  .got：Global Offset Table，全局偏移表。这是链接器为外部符号填充的实际偏移表。 .plt：Procedure Linkage Table，程序链接表。他有两个作用，要么在 .got.plt 中拿到链接地址跳转，要么触发链接器去寻找地址。 .got.p">
+<meta property="og:type" content="article">
+<meta property="og:title" content="plt表链接过程">
+<meta property="og:url" content="https://caijizhuo.github.io/20230613093018_2903084538/index.html">
+<meta property="og:site_name" content="caijizhuo">
+<meta property="og:description" content="概念 在 ELF 文件中，查看可以获得它的节的名字。其中有几个带有 plt 和 got 的节。 在此处，给出各节的定义如下：  .got：Global Offset Table，全局偏移表。这是链接器为外部符号填充的实际偏移表。 .plt：Procedure Linkage Table，程序链接表。他有两个作用，要么在 .got.plt 中拿到链接地址跳转，要么触发链接器去寻找地址。 .got.p">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://caijizhuo.github.io/20230613093018_2903084538/1.png">
+<meta property="og:image" content="https://caijizhuo.github.io/20230613093018_2903084538/2.png">
+<meta property="article:published_time" content="2023-06-13T01:30:18.000Z">
+<meta property="article:modified_time" content="2025-03-08T05:45:05.779Z">
+<meta property="article:author" content="caijizhuo">
+<meta property="article:tag" content="compiler">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://caijizhuo.github.io/20230613093018_2903084538/1.png">
+
+<link rel="canonical" href="https://caijizhuo.github.io/20230613093018_2903084538/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>plt表链接过程 | caijizhuo</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<style>.darkmode--activated{--body-bg-color:#282828;--content-bg-color:#333;--card-bg-color:#555;--text-color:#ccc;--blockquote-color:#bbb;--link-color:#ccc;--link-hover-color:#eee;--brand-color:#ddd;--brand-hover-color:#ddd;--table-row-odd-bg-color:#282828;--table-row-hover-bg-color:#363636;--menu-item-bg-color:#555;--btn-default-bg:#222;--btn-default-color:#ccc;--btn-default-border-color:#555;--btn-default-hover-bg:#666;--btn-default-hover-color:#ccc;--btn-default-hover-border-color:#666;--highlight-background:#282b2e;--highlight-foreground:#a9b7c6;--highlight-gutter-background:#34393d;--highlight-gutter-foreground:#9ca9b6}.darkmode--activated img{opacity:.75}.darkmode--activated img:hover{opacity:.9}.darkmode--activated code{color:#69dbdc;background:0 0}button.darkmode-toggle{z-index:9999}.darkmode-ignore,img{display:flex!important}.beian img{display:inline-block!important}</style></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">caijizhuo</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20230613093018_2903084538/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/portrait.jpg">
+      <meta itemprop="name" content="caijizhuo">
+      <meta itemprop="description" content="Looks delicious">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="caijizhuo">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          plt表链接过程
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-06-13 09:30:18" itemprop="dateCreated datePublished" datetime="2023-06-13T09:30:18+08:00">2023-06-13</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-03-08 13:45:05" itemprop="dateModified" datetime="2025-03-08T13:45:05+08:00">2025-03-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/compiler/" itemprop="url" rel="index"><span itemprop="name">compiler</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.7k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>6 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="概念">概念</h2>
+<p>在 ELF 文件中，查看可以获得它的节的名字。其中有几个带有 plt 和 got 的节。</p>
+<p>在此处，给出各节的定义如下：</p>
+<ul>
+<li>.got：Global Offset Table，全局偏移表。这是链接器为外部符号填充的实际偏移表。</li>
+<li>.plt：Procedure Linkage Table，程序链接表。他有两个作用，要么在 .got.plt 中拿到链接地址跳转，要么触发链接器去寻找地址。</li>
+<li>.got.plt：是 .got 的一部分（但是是两个不同的节），是 got 专门为 plt 准备的节，包含了 plt 表需要的地址。（新版 gcc 可能将他叫为 .plt.got）</li>
+<li>.rela.plt：程序链接表的重定位表，记录所有全局函数的动态链接信息，用于在程序加载时修正 plt 表中的跳转指针，使它们指向正确的地址。</li>
+</ul>
+<h2 id="实验">实验</h2>
+<p>接下来将使用 gdb 一步一步跟着汇编走完动态链接的过程。</p>
+<h3 id="准备工作">准备工作</h3>
+<h4 id="实验代码如下：">实验代码如下：</h4>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="built_in">puts</span>(<span class="string">&quot;hello&quot;</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;hello&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="查看节的地址与大小：">查看节的地址与大小：</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; <span class="comment"># objdump -h plt | grep -E &quot;plt|got&quot;</span></span><br><span class="line">plt:     file format elf64-x86-64</span><br><span class="line">  9 .rela.plt     00000030  0000000000400468  0000000000400468  00000468  2**3</span><br><span class="line"> 11 .plt          00000030  00000000004004c0  00000000004004c0  000004c0  2**4</span><br><span class="line"> 20 .got          00000020  0000000000600fe0  0000000000600fe0  00000fe0  2**3</span><br><span class="line"> 21 .got.plt      00000028  0000000000601000  0000000000601000  00001000  2**3</span><br></pre></td></tr></table></figure>
+<h4 id="查看需要动态链接的符号：">查看需要动态链接的符号：</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; <span class="comment"># readelf -r plt</span></span><br><span class="line"></span><br><span class="line">Relocation section <span class="string">&#x27;.rela.dyn&#x27;</span> at offset 0x408 contains 4 entries:</span><br><span class="line">  Offset          Info           Type           Sym. Value    Sym. Name + Addend</span><br><span class="line">000000600fe0  000100000006 R_X86_64_GLOB_DAT 0000000000000000 _ITM_deregisterTMClone + 0</span><br><span class="line">000000600fe8  000400000006 R_X86_64_GLOB_DAT 0000000000000000 __libc_start_main@GLIBC_2.2.5 + 0</span><br><span class="line">000000600ff0  000500000006 R_X86_64_GLOB_DAT 0000000000000000 __gmon_start__ + 0</span><br><span class="line">000000600ff8  000600000006 R_X86_64_GLOB_DAT 0000000000000000 _ITM_registerTMCloneTa + 0</span><br><span class="line"></span><br><span class="line">Relocation section <span class="string">&#x27;.rela.plt&#x27;</span> at offset 0x468 contains 2 entries:</span><br><span class="line">  Offset          Info           Type           Sym. Value    Sym. Name + Addend</span><br><span class="line">000000601018  000200000007 R_X86_64_JUMP_SLO 0000000000000000 puts@GLIBC_2.2.5 + 0</span><br><span class="line">000000601020  000300000007 R_X86_64_JUMP_SLO 0000000000000000 <span class="built_in">printf</span>@GLIBC_2.2.5 + 0</span><br></pre></td></tr></table></figure>
+<h4 id="反汇编查看-plt-相关函数：">反汇编查看 plt 相关函数：</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; <span class="comment"># objdump -d plt</span></span><br><span class="line">Disassembly of section .plt:</span><br><span class="line"></span><br><span class="line">00000000004004c0 &lt;.plt&gt;:</span><br><span class="line">  4004c0:       ff 35 42 0b 20 00       pushq  0x200b42(%rip)        <span class="comment"># 601008 &lt;_GLOBAL_OFFSET_TABLE_+0x8&gt;</span></span><br><span class="line">  4004c6:       ff 25 44 0b 20 00       jmpq   *0x200b44(%rip)        <span class="comment"># 601010 &lt;_GLOBAL_OFFSET_TABLE_+0x10&gt;</span></span><br><span class="line">  4004cc:       0f 1f 40 00             nopl   0x0(%rax)</span><br><span class="line"></span><br><span class="line">00000000004004d0 &lt;puts@plt&gt;:</span><br><span class="line">  4004d0:       ff 25 42 0b 20 00       jmpq   *0x200b42(%rip)        <span class="comment"># 601018 &lt;puts@GLIBC_2.2.5&gt;</span></span><br><span class="line">  4004d6:       68 00 00 00 00          pushq  <span class="variable">$0x0</span></span><br><span class="line">  4004db:       e9 e0 ff ff ff          jmpq   4004c0 &lt;.plt&gt;</span><br><span class="line"></span><br><span class="line">00000000004004e0 &lt;<span class="built_in">printf</span>@plt&gt;:</span><br><span class="line">  4004e0:       ff 25 3a 0b 20 00       jmpq   *0x200b3a(%rip)        <span class="comment"># 601020 &lt;printf@GLIBC_2.2.5&gt;</span></span><br><span class="line">  4004e6:       68 01 00 00 00          pushq  <span class="variable">$0x1</span></span><br><span class="line">  4004eb:       e9 d0 ff ff ff          jmpq   4004c0 &lt;.plt&gt;</span><br></pre></td></tr></table></figure>
+<h3 id="开始">开始</h3>
+<ol>
+<li>首先断点到 puts 函数，查看调用处：</li>
+</ol>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">@(gdb) disassemble main</span></span><br><span class="line"><span class="symbol">Dump</span> of assembler <span class="meta">code</span> for <span class="meta">function</span> main:</span><br><span class="line">   <span class="number">0x00000000004005d6</span> &lt;+<span class="number">0</span>&gt;:     <span class="keyword">push</span>   %rbp</span><br><span class="line">   <span class="number">0x00000000004005d7</span> &lt;+<span class="number">1</span>&gt;:     <span class="keyword">mov</span>    %rsp,%rbp</span><br><span class="line">=&gt; <span class="number">0x00000000004005da</span> &lt;+<span class="number">4</span>&gt;:     <span class="keyword">mov</span>    <span class="number">$0x400698</span>,%edi</span><br><span class="line">   <span class="number">0x00000000004005df</span> &lt;+<span class="number">9</span>&gt;:     callq  <span class="number">0x4004d0</span> &lt;puts<span class="comment">@plt&gt;</span></span><br><span class="line">   <span class="number">0x00000000004005e4</span> &lt;+<span class="number">14</span>&gt;:    <span class="keyword">mov</span>    <span class="number">$0x400698</span>,%edi</span><br><span class="line">   <span class="number">0x00000000004005e9</span> &lt;+<span class="number">19</span>&gt;:    <span class="keyword">mov</span>    <span class="number">$0x0</span>,%eax</span><br><span class="line">   <span class="number">0x00000000004005ee</span> &lt;+<span class="number">24</span>&gt;:    callq  <span class="number">0x4004e0</span> &lt;printf<span class="comment">@plt&gt;</span></span><br><span class="line">   <span class="number">0x00000000004005f3</span> &lt;+<span class="number">29</span>&gt;:    <span class="keyword">mov</span>    <span class="number">$0x0</span>,%eax</span><br><span class="line">   <span class="number">0x00000000004005f8</span> &lt;+<span class="number">34</span>&gt;:    <span class="keyword">pop</span>    %rbp</span><br><span class="line">   <span class="number">0x00000000004005f9</span> &lt;+<span class="number">35</span>&gt;:    retq</span><br><span class="line"><span class="symbol">End</span> of assembler dump.</span><br></pre></td></tr></table></figure>
+<p>可以看到，调用处实际上是使用 call 指令走到 puts 的代码段。下面的 printf 也是如出一辙。</p>
+<ol start="2">
+<li>查看 puts@plt 的汇编指令</li>
+</ol>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">@(gdb) disassemble</span></span><br><span class="line"><span class="symbol">Dump</span> of assembler <span class="meta">code</span> for <span class="meta">function</span> puts<span class="comment">@plt:</span></span><br><span class="line">=&gt; <span class="number">0x00000000004004d0</span> &lt;+<span class="number">0</span>&gt;:     jmpq   *<span class="number">0x200b42</span>(%rip)        # <span class="number">0x601018</span> &lt;puts<span class="comment">@got.plt&gt;</span></span><br><span class="line">   <span class="number">0x00000000004004d6</span> &lt;+<span class="number">6</span>&gt;:     pushq  <span class="number">$0x0</span></span><br><span class="line">   <span class="number">0x00000000004004db</span> &lt;+<span class="number">11</span>&gt;:    jmpq   <span class="number">0x4004c0</span></span><br><span class="line"><span class="symbol">End</span> of assembler dump.</span><br></pre></td></tr></table></figure>
+<p>可以看到，在汇编中，他首先要跳转到 0x601018 地址的位置。这个地址内容是个全局变量，实际上根据节的地址位置和大小可以判断，是处于 .got.plt 的位置内（ 0x601000 ~ 0x601028）。所以可以认为，在 .got.plt 中，存在了 puts 函数的地址。</p>
+<ol start="3">
+<li>查看 .got.plt</li>
+</ol>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">@(gdb) x/16x 0x601018</span></span><br><span class="line"><span class="number">0x601018</span> &lt;puts<span class="comment">@got.plt&gt;:        0x004004d6      0x00000000      0x004004e6      0x00000000</span></span><br><span class="line"><span class="number">0x601028</span>:       <span class="number">0x00000000</span>      <span class="number">0x00000000</span>      <span class="number">0x00000000</span>      <span class="number">0x00000000</span></span><br><span class="line"><span class="number">0x601038</span>:       <span class="number">0x00000000</span>      <span class="number">0x00000000</span>      <span class="number">0x00000000</span>      <span class="number">0x00000000</span></span><br><span class="line"><span class="number">0x601048</span>:       <span class="number">0x00000000</span>      <span class="number">0x00000000</span>      <span class="number">0x00000000</span>      <span class="number">0x00000000</span></span><br></pre></td></tr></table></figure>
+<p>查看表中内容，发现跳转的地址是 0x4004d6，<strong>这不就是我们跳转之前的下一个地址吗！（puts@plt 的第二条指令）</strong> 同理，printf 函数也是如此（0x4004e6）。这是因为，之前没有调用过 puts 函数，第一次查找的时候，.got.plt 表中找不到函数的地址，那就先返回继续执行去调用链接器获取地址。</p>
+<ol start="4">
+<li>准备调用链接器</li>
+</ol>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">00000000004004</span><span class="built_in">d0</span> &lt;puts<span class="comment">@plt&gt;:</span></span><br><span class="line">  <span class="number">4004</span><span class="built_in">d0</span>:       ff <span class="number">25</span> <span class="number">42</span> <span class="number">0</span>b <span class="number">20</span> <span class="number">00</span>       jmpq   *<span class="number">0x200b42</span>(%rip)        # <span class="number">601018</span> &lt;puts<span class="comment">@GLIBC_2.2.5&gt;</span></span><br><span class="line">  <span class="number">4004</span><span class="built_in">d6</span>:       <span class="number">68</span> <span class="number">00</span> <span class="number">00</span> <span class="number">00</span> <span class="number">00</span>          pushq  <span class="number">$0x0</span></span><br><span class="line">  <span class="number">4004</span>db:       e9 e0 ff ff ff          jmpq   <span class="number">4004</span><span class="built_in">c0</span> &lt;.plt&gt;</span><br></pre></td></tr></table></figure>
+<p>首先 pushq $0x0，这个是在 got.plt 中的编号，如 puts 是 0，printf 是 1。这个参数是给后续链接器使用的。然后跳到了 .plt 的位置执行（0x4004c0）。可以看到，printf@plt 函数最后也是跳到这个位置执行。</p>
+<ol start="5">
+<li>调用链接器</li>
+</ol>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">00000000004004</span><span class="built_in">c0</span> &lt;.plt&gt;:</span><br><span class="line">  <span class="number">4004</span><span class="built_in">c0</span>:       ff <span class="number">35</span> <span class="number">42</span> <span class="number">0</span>b <span class="number">20</span> <span class="number">00</span>       pushq  <span class="number">0x200b42</span>(%rip)        # <span class="number">601008</span> &lt;_GLOBAL_OFFSET_TABLE_+<span class="number">0x8</span>&gt;</span><br><span class="line">  <span class="number">4004</span><span class="built_in">c6</span>:       ff <span class="number">25</span> <span class="number">44</span> <span class="number">0</span>b <span class="number">20</span> <span class="number">00</span>       jmpq   *<span class="number">0x200b44</span>(%rip)        # <span class="number">601010</span> &lt;_GLOBAL_OFFSET_TABLE_+<span class="number">0x10</span>&gt;</span><br><span class="line">  <span class="number">4004</span>cc:       <span class="number">0</span>f <span class="number">1</span>f <span class="number">40</span> <span class="number">00</span>             nopl   <span class="number">0x0</span>(%rax)</span><br></pre></td></tr></table></figure>
+<p>首先 push 了 0x601008 到栈中，这是 .got.plt 表中的一个地址。之后跳转到 0x601010 所存储的地址去执行相应的代码。不难看出，0x601010 也是存储在 .got.plt 表中的。查看一下存储的内容：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">@(gdb) x/10x 0x601010</span><br><span class="line">0x601010:       0xf7de64a0      0x00007fff      0x004004d6      0x00000000</span><br><span class="line">0x601020 &lt;printf@got.plt&gt;:      0x004004e6      0x00000000      0x00000000      0x00000000</span><br><span class="line">0x601030:       0x00000000      0x00000000</span><br></pre></td></tr></table></figure>
+<p>可以看到，是让我们跳转到 0x00007ffff7de64a0 去执行相应的代码。那么这块代码是什么呢？</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">@(gdb) info sharedlibrary</span><br><span class="line">From                To                  Syms Read   Shared Object Library</span><br><span class="line">0x00007ffff7dd0fa0  0x00007ffff7df2cd4  Yes (*)     /lib64/ld-linux-x86-64.so.2</span><br><span class="line">0x00007ffff7a2cb90  0x00007ffff7b798ad  Yes (*)     /lib64/libc.so.6</span><br><span class="line">(*): Shared library is missing debugging information.</span><br></pre></td></tr></table></figure>
+<p>可以看到，该地址是 <a target="_blank" rel="noopener" href="http://ld-linux-x86-64.so">ld-linux-x86-64.so</a> 加载的位置。说明执行的是链接器的代码。</p>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">1</span>: x/<span class="number">5</span>i $<span class="built_in">pc</span></span><br><span class="line">=&gt; <span class="number">0x7ffff7de64a0</span> &lt;_dl_runtime_resolve_xsavec&gt;: endbr64</span><br><span class="line">   <span class="number">0x7ffff7de64a4</span> &lt;_dl_runtime_resolve_xsavec+<span class="number">4</span>&gt;:       <span class="keyword">push</span>   %rbx</span><br><span class="line">   <span class="number">0x7ffff7de64a5</span> &lt;_dl_runtime_resolve_xsavec+<span class="number">5</span>&gt;:       <span class="keyword">mov</span>    %rsp,%rbx</span><br><span class="line">   <span class="number">0x7ffff7de64a8</span> &lt;_dl_runtime_resolve_xsavec+<span class="number">8</span>&gt;:       <span class="keyword">and</span>    <span class="number">$0xffffffffffffffc0</span>,%rsp</span><br><span class="line">   <span class="number">0x7ffff7de64ac</span> &lt;_dl_runtime_resolve_xsavec+<span class="number">12</span>&gt;:</span><br><span class="line">    <span class="keyword">sub</span>    <span class="number">0x21616d</span>(%rip),%rsp        # <span class="number">0x7ffff7ffc620</span> &lt;_rtld_local_ro+<span class="number">384</span>&gt;</span><br><span class="line"><span class="comment">@(gdb) bt</span></span><br><span class="line"><span class="comment">#0  0x00007ffff7de64a0 in _dl_runtime_resolve_xsavec () from /lib64/ld-linux-x86-64.so.2</span></span><br><span class="line"><span class="comment">#1  0x00000000004005e4 in main () at plt.c:3</span></span><br></pre></td></tr></table></figure>
+<p>可以看到这里代码执行的是 ld 中的 _dl_runtime_resolve_xsavec 函数是第一次函数调用时用于查找函数符号的，并且在结尾处会直接去调用找到的函数符号（本文中为 puts 函数）。</p>
+<ol start="6">
+<li>写回 .got.plt 表<br>
+在 puts 上打个断点，这样继续的话就是执行完 _dl_runtime_resolve_xsavec 还未执行 puts 的状态了。</li>
+</ol>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">@(gdb) bt</span></span><br><span class="line"><span class="comment">#0  0x00007ffff7a7d8c0 in puts () from /lib64/libc.so.6</span></span><br><span class="line"><span class="comment">#1  0x00000000004005e4 in main () at plt.c:3</span></span><br><span class="line"><span class="comment">@(gdb) x/10x 0x601018</span></span><br><span class="line"><span class="number">0x601018</span> &lt;puts<span class="comment">@got.plt&gt;:        0xf7a7d8c0      0x00007fff      0x004004e6      0x00000000</span></span><br><span class="line"><span class="number">0x601028</span>:       <span class="number">0x00000000</span>      <span class="number">0x00000000</span>      <span class="number">0x00000000</span>      <span class="number">0x00000000</span></span><br><span class="line"><span class="number">0x601038</span>:       <span class="number">0x00000000</span>      <span class="number">0x00000000</span></span><br></pre></td></tr></table></figure>
+<p>可以看到，此时，got.plt 表中的地址已经被写为 puts 函数实际的地址了（0x00007ffff7a7d8c0 在 0x00007ffff7a2cb90  ~ 0x00007ffff7b798ad 范围内，属于 /lib64/libc.so.6），这样下次调用 puts 就不用再次调用链接器了。</p>
+<h3 id="题外话">题外话</h3>
+<p>其实看一下 .got.plt 表的内容，会发现明明 puts 是第一个需要被链接的函数，为什么第一个却不是它呢？</p>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">@(gdb) x/10x 0x601000</span></span><br><span class="line"><span class="number">0x601000</span>:       <span class="number">0x0000000000600e10</span>      <span class="number">0x00007ffff7ffe1d0</span></span><br><span class="line"><span class="number">0x601010</span>:       <span class="number">0x00007ffff7de64a0</span>      <span class="number">0x00007ffff7a7d8c0</span></span><br><span class="line"><span class="number">0x601020</span> &lt;printf<span class="comment">@got.plt&gt;:      0x00000000004004e6      0x0000000000000000</span></span><br><span class="line"><span class="number">0x601030</span>:       <span class="number">0x0000000000000000</span>      <span class="number">0x0000000000000000</span></span><br><span class="line"><span class="number">0x601040</span>:       <span class="number">0x0000000000000000</span>      <span class="number">0x0000000000000000</span></span><br></pre></td></tr></table></figure>
+<p>puts 地址实际上是 got[3]:0x00007ffff7a7d8c0，前面还有 3 项。其中：</p>
+<ul>
+<li>got[0]:0x0000000000600e10 自身模块 dynamic 段地址</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">@(gdb) info symbol 0x0000000000600e10</span><br><span class="line">_DYNAMIC <span class="keyword">in</span> section .dynamic of /root/xxx/plt</span><br></pre></td></tr></table></figure>
+<ul>
+<li>
+<p>got[1]:0x00007ffff7ffe1d0 本模块的 link_map 的地址。编译期间会初始化为 0。link_map 是一个双向链表的入口，链接进程所有加载的动态库。当链接器查找符号时，通过遍历该链表找到对应的符号。</p>
+</li>
+<li>
+<p>got[2]:0x00007ffff7de64a0 _dl_runtime_resolve_xsavec 的地址。</p>
+</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">@(gdb) info symbol 0x00007ffff7de64a0</span><br><span class="line">_dl_runtime_resolve_xsavec <span class="keyword">in</span> section .text of /lib64/ld-linux-x86-64.so.2</span><br></pre></td></tr></table></figure>
+<p>_dl_runtime_resolve 格式：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//调用形式为：</span></span><br><span class="line">_dl_runtime_resolve((link_map*)(got[<span class="number">1</span>]), <span class="number">0</span>);</span><br><span class="line"><span class="comment">// 第二个参数 0，为 &lt;puts@plt&gt;:中的 pushq $0x0；</span></span><br><span class="line"><span class="comment">// 同理如果是 printf，就是&lt;printf@plt&gt;:中 pushq $0x1；</span></span><br></pre></td></tr></table></figure>
+<h2 id="总结">总结</h2>
+<p>虚拟地址空间内流程图：<br>
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20230613093018_2903084538/1.png" alt="1"></p>
+<p>第二次调用：<br>
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20230613093018_2903084538/2.png" alt="2"></p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>caijizhuo
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://caijizhuo.github.io/20230613093018_2903084538/" title="plt表链接过程">https://caijizhuo.github.io/20230613093018_2903084538/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/compiler/" rel="tag"># compiler</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/20230609105733_4112471478/" rel="prev" title="内嵌汇编">
+      <i class="fa fa-chevron-left"></i> 内嵌汇编
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/20231110175028_3334074855/" rel="next" title="cpp attribute 之 visibility">
+      cpp attribute 之 visibility <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E5%BF%B5"><span class="nav-number">1.</span> <span class="nav-text">概念</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C"><span class="nav-number">2.</span> <span class="nav-text">实验</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%87%86%E5%A4%87%E5%B7%A5%E4%BD%9C"><span class="nav-number">2.1.</span> <span class="nav-text">准备工作</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E4%BB%A3%E7%A0%81%E5%A6%82%E4%B8%8B%EF%BC%9A"><span class="nav-number">2.1.1.</span> <span class="nav-text">实验代码如下：</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9F%A5%E7%9C%8B%E8%8A%82%E7%9A%84%E5%9C%B0%E5%9D%80%E4%B8%8E%E5%A4%A7%E5%B0%8F%EF%BC%9A"><span class="nav-number">2.1.2.</span> <span class="nav-text">查看节的地址与大小：</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9F%A5%E7%9C%8B%E9%9C%80%E8%A6%81%E5%8A%A8%E6%80%81%E9%93%BE%E6%8E%A5%E7%9A%84%E7%AC%A6%E5%8F%B7%EF%BC%9A"><span class="nav-number">2.1.3.</span> <span class="nav-text">查看需要动态链接的符号：</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8F%8D%E6%B1%87%E7%BC%96%E6%9F%A5%E7%9C%8B-plt-%E7%9B%B8%E5%85%B3%E5%87%BD%E6%95%B0%EF%BC%9A"><span class="nav-number">2.1.4.</span> <span class="nav-text">反汇编查看 plt 相关函数：</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%80%E5%A7%8B"><span class="nav-number">2.2.</span> <span class="nav-text">开始</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A2%98%E5%A4%96%E8%AF%9D"><span class="nav-number">2.3.</span> <span class="nav-text">题外话</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">3.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="caijizhuo"
+      src="/images/portrait.jpg">
+  <p class="site-author-name" itemprop="name">caijizhuo</p>
+  <div class="site-description" itemprop="description">Looks delicious</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">67</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">12</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/caijizhuo" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;caijizhuo" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:zhao_yingzhuo@foxmail.com" title="E-Mail → mailto:zhao_yingzhuo@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">caijizhuo</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">61k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">3:40</span>
+</div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+      
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/katex@0/dist/katex.min.css">
+
+
+  
+<script src="https://unpkg.com/darkmode-js@1.5.7/lib/darkmode-js.min.js"></script>
+
+<script>
+var options = {
+  bottom: '72px',
+  right: 'unset',
+  left: '16px',
+  time: '0.5s',
+  mixColor: 'transparent',
+  backgroundColor: 'transparent',
+  buttonColorDark: '#100f2c',
+  buttonColorLight: '#fff',
+  saveInCookies: true,
+  label: '🌓',
+  autoMatchOsTheme: false
+}
+const darkmode = new Darkmode(options);
+window.darkmode = darkmode;
+darkmode.showWidget();
+</script>
+
+    </div>
+
+  <link rel="stylesheet" href="/dist/APlayer.min.css">
+  <div id="aplayer"></div>
+  <script type="text/javascript" src="/dist/APlayer.min.js"></script>
+  <script type="text/javascript" src="/dist/music.js"></script>
+
+        <style>
+            [bg-lazy] {
+                background-image: none !important;
+                background-color: #eee !important;
+            }
+        </style>
+        <script>
+            window.imageLazyLoadSetting = {
+                isSPA: true,
+                preloadRatio: 3,
+                processImages: null,
+            };
+        </script><script>window.addEventListener("load",function(){var t=/\.(gif|jpg|jpeg|tiff|png)$/i,r=/^data:image\/[a-z]+;base64,/;Array.prototype.slice.call(document.querySelectorAll("img[data-original]")).forEach(function(a){var e=a.parentNode;"A"===e.tagName&&(e.href.match(t)||e.href.match(r))&&(e.href=a.dataset.original)})});</script><script>!function(r){r.imageLazyLoadSetting.processImages=t;var e=r.imageLazyLoadSetting.isSPA,n=r.imageLazyLoadSetting.preloadRatio||1,c=a();function a(){var t=Array.prototype.slice.call(document.querySelectorAll("img[data-original]")),e=Array.prototype.slice.call(document.querySelectorAll("[bg-lazy]"));return t.concat(e)}function t(){e&&(c=a());for(var t,o=0;o<c.length;o++)0<=(t=(t=c[o]).getBoundingClientRect()).bottom&&0<=t.left&&t.top<=(r.innerHeight*n||document.documentElement.clientHeight*n)&&function(){var t,e,n,a,i=c[o];e=function(){c=c.filter(function(t){return i!==t}),r.imageLazyLoadSetting.onImageLoaded&&r.imageLazyLoadSetting.onImageLoaded(i)},(t=i).hasAttribute("bg-lazy")?(t.removeAttribute("bg-lazy"),e&&e()):(n=new Image,a=t.getAttribute("data-original"),n.onload=function(){t.src=a,t.removeAttribute("data-original"),e&&e()},t.src!==a&&(n.src=a))}()}function i(){clearTimeout(t.tId),t.tId=setTimeout(t,500)}t(),document.addEventListener("scroll",i),r.addEventListener("resize",i),r.addEventListener("orientationchange",i)}(this);</script></body>
+</html>
