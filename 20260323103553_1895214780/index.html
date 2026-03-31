@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="EJdwSJxhW67liN5YZTmxFCA9mRU0UJt_B2-JNAGGU0Y">
+  <meta name="baidu-site-verification" content="codeva-hPTFkf6vHb">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"caijizhuo.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="大模型Attention发展历程   MHA Multi Head Attention MHA 相比于传统的 Self-Attention 提升了模型的表达能力。例如一个专家组对比一个专家。 先看代码： 123456789101112131415161718192021222324252627282930313233def forward(        self,        hidden_">
+<meta property="og:type" content="article">
+<meta property="og:title" content="attention发展历程">
+<meta property="og:url" content="https://caijizhuo.github.io/20260323103553_1895214780/index.html">
+<meta property="og:site_name" content="caijizhuo">
+<meta property="og:description" content="大模型Attention发展历程   MHA Multi Head Attention MHA 相比于传统的 Self-Attention 提升了模型的表达能力。例如一个专家组对比一个专家。 先看代码： 123456789101112131415161718192021222324252627282930313233def forward(        self,        hidden_">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://caijizhuo.github.io/20260323103553_1895214780/1.jpg">
+<meta property="og:image" content="https://caijizhuo.github.io/20260323103553_1895214780/2.svg">
+<meta property="og:image" content="https://caijizhuo.github.io/20260323103553_1895214780/3.svg">
+<meta property="article:published_time" content="2026-03-23T02:35:53.000Z">
+<meta property="article:modified_time" content="2026-03-31T02:37:08.259Z">
+<meta property="article:author" content="caijizhuo">
+<meta property="article:tag" content="AI">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://caijizhuo.github.io/20260323103553_1895214780/1.jpg">
+
+<link rel="canonical" href="https://caijizhuo.github.io/20260323103553_1895214780/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>attention发展历程 | caijizhuo</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<style>.darkmode--activated{--body-bg-color:#282828;--content-bg-color:#333;--card-bg-color:#555;--text-color:#ccc;--blockquote-color:#bbb;--link-color:#ccc;--link-hover-color:#eee;--brand-color:#ddd;--brand-hover-color:#ddd;--table-row-odd-bg-color:#282828;--table-row-hover-bg-color:#363636;--menu-item-bg-color:#555;--btn-default-bg:#222;--btn-default-color:#ccc;--btn-default-border-color:#555;--btn-default-hover-bg:#666;--btn-default-hover-color:#ccc;--btn-default-hover-border-color:#666;--highlight-background:#282b2e;--highlight-foreground:#a9b7c6;--highlight-gutter-background:#34393d;--highlight-gutter-foreground:#9ca9b6}.darkmode--activated img{opacity:.75}.darkmode--activated img:hover{opacity:.9}.darkmode--activated code{color:#69dbdc;background:0 0}button.darkmode-toggle{z-index:9999}.darkmode-ignore,img{display:flex!important}.beian img{display:inline-block!important}</style></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">caijizhuo</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20260323103553_1895214780/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/portrait.jpg">
+      <meta itemprop="name" content="caijizhuo">
+      <meta itemprop="description" content="Looks delicious">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="caijizhuo">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          attention发展历程
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-03-23 10:35:53" itemprop="dateCreated datePublished" datetime="2026-03-23T10:35:53+08:00">2026-03-23</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2026-03-31 10:37:08" itemprop="dateModified" datetime="2026-03-31T10:37:08+08:00">2026-03-31</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/AI/" itemprop="url" rel="index"><span itemprop="name">AI</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>4.4k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>16 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="大模型attention发展历程"><a class="markdownIt-Anchor" href="#大模型attention发展历程"></a> 大模型Attention发展历程</h1>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20260323103553_1895214780/1.jpg" alt="1"></p>
+<h1 id="mha-multi-head-attention"><a class="markdownIt-Anchor" href="#mha-multi-head-attention"></a> MHA Multi Head Attention</h1>
+<p>MHA 相比于传统的 Self-Attention 提升了模型的表达能力。例如一个专家组对比一个专家。<br>
+先看代码：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params"></span></span><br><span class="line"><span class="params">        self,</span></span><br><span class="line"><span class="params">        hidden_states: torch.Tensor,</span></span><br><span class="line"><span class="params">        position_embeddings: <span class="built_in">tuple</span>[torch.Tensor, torch.Tensor],</span></span><br><span class="line"><span class="params">        attention_mask: <span class="type">Optional</span>[torch.Tensor],</span></span><br><span class="line"><span class="params">        past_key_values: <span class="type">Optional</span>[Cache] = <span class="literal">None</span>,</span></span><br><span class="line"><span class="params">        cache_position: <span class="type">Optional</span>[torch.LongTensor] = <span class="literal">None</span>,</span></span><br><span class="line"><span class="params">        **kwargs: Unpack[TransformersKwargs],</span></span><br><span class="line"><span class="params">    </span>) -&gt; <span class="built_in">tuple</span>[torch.Tensor, torch.Tensor]:</span><br><span class="line">    input_shape = hidden_states.shape[:-<span class="number">1</span>]</span><br><span class="line">    hidden_shape = (*input_shape, -<span class="number">1</span>, self.head_dim)</span><br><span class="line"></span><br><span class="line">    query_states = self.q_proj(hidden_states).view(hidden_shape).transpose(<span class="number">1</span>, <span class="number">2</span>)</span><br><span class="line">    key_states = self.k_proj(hidden_states).view(hidden_shape).transpose(<span class="number">1</span>, <span class="number">2</span>)</span><br><span class="line">    value_states = self.v_proj(hidden_states).view(hidden_shape).transpose(<span class="number">1</span>, <span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">    cos, sin = position_embeddings</span><br><span class="line">    query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)</span><br><span class="line"></span><br><span class="line">    attn_output, attn_weights = attention_interface(</span><br><span class="line">        self,</span><br><span class="line">        query_states,</span><br><span class="line">        key_states,</span><br><span class="line">        value_states,</span><br><span class="line">        attention_mask,</span><br><span class="line">        dropout=<span class="number">0.0</span> <span class="keyword">if</span> <span class="keyword">not</span> self.training <span class="keyword">else</span> self.attention_dropout,</span><br><span class="line">        scaling=self.scaling,</span><br><span class="line">        **kwargs,</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">    attn_output = attn_output.reshape(*input_shape, -<span class="number">1</span>).contiguous()</span><br><span class="line">    attn_output = self.o_proj(attn_output)</span><br><span class="line">    <span class="keyword">return</span> attn_output, attn_weights</span><br></pre></td></tr></table></figure>
+<p>这个 attention 是 Multi-head self-attention，注意力有头这个概念。其中，<code>Q K V</code> 这三个向量分别是由 <code>hidden_states</code> 乘上一个 <code>Linear</code> 层来计算的。这里面由于是多头注意力机制，所以需要让 <code>Q K V</code> 的 shape 变为 (batch, seq_len, num_head, head_dim)。之后 transpose 成 (batch, num_head, seq_len, head_dim)，这么做的目的是为了让后续计算时，每个头可以<em>独立</em>进行注意力计算，让 <code>num_head</code> 变为“批次”的一部分，注意力仅在 <code>seq_len</code> 维度计算，而不把不同的 <code>head</code> 混在一起算。<br>
+再算完这几个向量后，需要对 Q K 向量添加位置信息，这就是 <code>apply_rotary_pos_emb</code> 的作用。之后就是 attention 的计算，也就是我们说的公式:</p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mtable rowspacing="0.24999999999999992em" columnalign="right left" columnspacing="0em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow><mtext>Attention</mtext><mo stretchy="false">(</mo><mi>Q</mi><mo separator="true">,</mo><mi>K</mi><mo separator="true">,</mo><mi>V</mi><mo stretchy="false">)</mo></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow><mrow></mrow><mo>=</mo><mtext>softmax</mtext><mrow><mo fence="true">(</mo><mfrac><mrow><mi>Q</mi><msup><mi>K</mi><mi>T</mi></msup></mrow><msqrt><msub><mi>d</mi><mi>k</mi></msub></msqrt></mfrac><mo fence="true">)</mo></mrow><mi>V</mi></mrow></mstyle></mtd></mtr></mtable><annotation encoding="application/x-tex">\begin{aligned}
+\text{Attention}(Q, K, V) &amp;= \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V
+\end{aligned}
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:2.768361em;vertical-align:-1.1341805em;"></span><span class="mord"><span class="mtable"><span class="col-align-r"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.6341805em;"><span style="top:-3.6341805em;"><span class="pstrut" style="height:3.518331em;"></span><span class="mord"><span class="mord text"><span class="mord">Attention</span></span><span class="mopen">(</span><span class="mord mathnormal">Q</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord mathnormal" style="margin-right:0.07153em;">K</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord mathnormal" style="margin-right:0.22222em;">V</span><span class="mclose">)</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.1341805em;"><span></span></span></span></span></span><span class="col-align-l"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.6341805em;"><span style="top:-3.6341805em;"><span class="pstrut" style="height:3.518331em;"></span><span class="mord"><span class="mord"></span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mord text"><span class="mord">softmax</span></span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="minner"><span class="mopen delimcenter" style="top:0em;"><span class="delimsizing size3">(</span></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.5183309999999999em;"><span style="top:-2.25278em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord sqrt"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.85722em;"><span class="svg-align" style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord" style="padding-left:0.833em;"><span class="mord"><span class="mord mathnormal">d</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.33610799999999996em;"><span style="top:-2.5500000000000003em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.03148em;">k</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span><span style="top:-2.81722em;"><span class="pstrut" style="height:3em;"></span><span class="hide-tail" style="min-width:0.853em;height:1.08em;"><svg width="400em" height="1.08em" viewbox="0 0 400000 1080" preserveaspectratio="xMinYMin slice"><path d="M95,702
+c-2.7,0,-7.17,-2.7,-13.5,-8c-5.8,-5.3,-9.5,-10,-9.5,-14
+c0,-2,0.3,-3.3,1,-4c1.3,-2.7,23.83,-20.7,67.5,-54
+c44.2,-33.3,65.8,-50.3,66.5,-51c1.3,-1.3,3,-2,5,-2c4.7,0,8.7,3.3,12,10
+s173,378,173,378c0.7,0,35.3,-71,104,-213c68.7,-142,137.5,-285,206.5,-429
+c69,-144,104.5,-217.7,106.5,-221
+l0 -0
+c5.3,-9.3,12,-14,20,-14
+H400000v40H845.2724
+s-225.272,467,-225.272,467s-235,486,-235,486c-2.7,4.7,-9,7,-19,7
+c-6,0,-10,-1,-12,-3s-194,-422,-194,-422s-65,47,-65,47z
+M834 80h400000v40h-400000z"/></svg></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.18278000000000005em;"><span></span></span></span></span></span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal">Q</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.07153em;">K</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8413309999999999em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.13889em;">T</span></span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.93em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mclose delimcenter" style="top:0em;"><span class="delimsizing size3">)</span></span></span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord mathnormal" style="margin-right:0.22222em;">V</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.1341805em;"><span></span></span></span></span></span></span></span></span></span></span></span></p>
+<p>其中，QK 的意思是 Q 和 K 的点积，表示 Q 和 K 之间的相似性，更进一步，这个向量是词向量，是词在高维空间的数值映射。词向量之间相关度高表示什么？是不是在一定程度上（不是完全）表示，在关注词 A 的时候，应当给予词 B 更多的关注？除以 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msqrt><msub><mi>d</mi><mi>k</mi></msub></msqrt></mrow><annotation encoding="application/x-tex">\sqrt{d_k}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.04em;vertical-align:-0.18278000000000005em;"></span><span class="mord sqrt"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.85722em;"><span class="svg-align" style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord" style="padding-left:0.833em;"><span class="mord"><span class="mord mathnormal">d</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.33610799999999996em;"><span style="top:-2.5500000000000003em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.03148em;">k</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span><span style="top:-2.81722em;"><span class="pstrut" style="height:3em;"></span><span class="hide-tail" style="min-width:0.853em;height:1.08em;"><svg width="400em" height="1.08em" viewbox="0 0 400000 1080" preserveaspectratio="xMinYMin slice"><path d="M95,702
+c-2.7,0,-7.17,-2.7,-13.5,-8c-5.8,-5.3,-9.5,-10,-9.5,-14
+c0,-2,0.3,-3.3,1,-4c1.3,-2.7,23.83,-20.7,67.5,-54
+c44.2,-33.3,65.8,-50.3,66.5,-51c1.3,-1.3,3,-2,5,-2c4.7,0,8.7,3.3,12,10
+s173,378,173,378c0.7,0,35.3,-71,104,-213c68.7,-142,137.5,-285,206.5,-429
+c69,-144,104.5,-217.7,106.5,-221
+l0 -0
+c5.3,-9.3,12,-14,20,-14
+H400000v40H845.2724
+s-225.272,467,-225.272,467s-235,486,-235,486c-2.7,4.7,-9,7,-19,7
+c-6,0,-10,-1,-12,-3s-194,-422,-194,-422s-65,47,-65,47z
+M834 80h400000v40h-400000z"/></svg></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.18278000000000005em;"><span></span></span></span></span></span></span></span></span> 的作用是训练时防止梯度消失。<br>
+算完 attention 后，再被 <code>o_projection</code> 映射，结果就算出来了。</p>
+<ul>
+<li>MHA (Multi-Head Attention)：假设头个数为32，
+<ul>
+<li>配置：每个 Query 头都有自己独立的 Key 头和 Value 头。</li>
+<li>数量：32 个 Q 头，对应 32 个 K 头 和 32 个 V 头。</li>
+<li>特点：完全独立，信息隔离性好，模型表达能力强。<br>
+总结：MHA 多头自注意力机制是效果最好的也是最慢的，而 MQA 和 GQA 则是通过不同的方式来提升计算效率。<br>
+一些比较出名的模型，如 LLama2-7B、LLama2-13B 使用的都是这种架构。</li>
+</ul>
+</li>
+</ul>
+<h1 id="mqa-multi-query-attention"><a class="markdownIt-Anchor" href="#mqa-multi-query-attention"></a> MQA Multi Query Attention</h1>
+<p>相比 MHA，MQA 允许一个 Query 头同时关注多个 Key 头和 Value 头，从而在保证信息隔离性的前提下，提升模型的计算效率。</p>
+<ul>
+<li>MQA (Multi-Query Attention)：假设头个数为32，
+<ul>
+<li>配置：所有的 Query 头共享同一组 Key 和 Value 头。</li>
+<li>数量：32 个 Q 头，对应 1 个 K 头 和 1 个 V 头。</li>
+<li>特点：极端压缩，推理速度极快，但模型效果下降明显（因为所有头被迫看同样的 K/V 信息）。<br>
+目前没听说哪个模型全程使用这个架构。但是 DeepSeek V3.2 的 decode 阶段使用了该方式。</li>
+</ul>
+</li>
+</ul>
+<h1 id="gqa-group-query-attention"><a class="markdownIt-Anchor" href="#gqa-group-query-attention"></a> GQA Group Query Attention</h1>
+<p>GQA 相比 MHA，其主要区别在于，GQA 是先进行“组内”注意力计算，再进行“组间”注意力计算。也就是说，GQA 首先将 Q K V 分成多组，然后在组内进行注意力计算，最后在组间进行注意力计算。推理速度更快，普遍用于 70B 及更大的模型中。MHA 则用于稍微小一点的模型中。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params"></span></span><br><span class="line"><span class="params">        self,</span></span><br><span class="line"><span class="params">        hidden_states: torch.Tensor,</span></span><br><span class="line"><span class="params">        attention_mask: <span class="type">Optional</span>[torch.Tensor] = <span class="literal">None</span>,</span></span><br><span class="line"><span class="params">        position_ids: <span class="type">Optional</span>[torch.LongTensor] = <span class="literal">None</span>,</span></span><br><span class="line"><span class="params">        past_key_values: <span class="type">Optional</span>[Cache] = <span class="literal">None</span>,</span></span><br><span class="line"><span class="params">        output_attentions: <span class="built_in">bool</span> = <span class="literal">False</span>,</span></span><br><span class="line"><span class="params">        use_cache: <span class="built_in">bool</span> = <span class="literal">False</span>,</span></span><br><span class="line"><span class="params">        cache_position: <span class="type">Optional</span>[torch.LongTensor] = <span class="literal">None</span>,</span></span><br><span class="line"><span class="params">        position_embeddings: <span class="type">Optional</span>[<span class="built_in">tuple</span>[torch.Tensor, torch.Tensor]] = <span class="literal">None</span>,  <span class="comment"># necessary, but kept here for BC</span></span></span><br><span class="line"><span class="params">    </span>) -&gt; <span class="built_in">tuple</span>[torch.Tensor, <span class="type">Optional</span>[torch.Tensor], <span class="type">Optional</span>[<span class="built_in">tuple</span>[torch.Tensor]]]:</span><br><span class="line">    bsz, q_len, _ = hidden_states.size()</span><br><span class="line"></span><br><span class="line">    query_states = self.q_proj(hidden_states)</span><br><span class="line">    key_states = self.k_proj(hidden_states)</span><br><span class="line">    value_states = self.v_proj(hidden_states)</span><br><span class="line"></span><br><span class="line">    query_states = query_states.view(bsz, q_len, -<span class="number">1</span>, self.head_dim).transpose(<span class="number">1</span>, <span class="number">2</span>)</span><br><span class="line">    key_states = key_states.view(bsz, q_len, -<span class="number">1</span>, self.head_dim).transpose(<span class="number">1</span>, <span class="number">2</span>)</span><br><span class="line">    value_states = value_states.view(bsz, q_len, -<span class="number">1</span>, self.head_dim).transpose(<span class="number">1</span>, <span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">    cos, sin = position_embeddings</span><br><span class="line">    query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin, position_ids)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># repeat k/v heads if n_kv_heads &lt; n_heads</span></span><br><span class="line">    key_states = repeat_kv(key_states, self.num_key_value_groups)</span><br><span class="line">    value_states = repeat_kv(value_states, self.num_key_value_groups)</span><br><span class="line"></span><br><span class="line">    attn_weights = torch.matmul(query_states, key_states.transpose(<span class="number">2</span>, <span class="number">3</span>)) / math.sqrt(self.head_dim)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> attention_mask <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:  <span class="comment"># no matter the length, we just slice it</span></span><br><span class="line">        causal_mask = attention_mask[:, :, :, : key_states.shape[-<span class="number">2</span>]]</span><br><span class="line">        attn_weights = attn_weights + causal_mask</span><br><span class="line"></span><br><span class="line">    <span class="comment"># upcast attention to fp32</span></span><br><span class="line">    attn_weights = nn.functional.softmax(attn_weights, dim=-<span class="number">1</span>, dtype=torch.float32).to(query_states.dtype)</span><br><span class="line">    attn_weights = nn.functional.dropout(attn_weights, p=self.attention_dropout, training=self.training)</span><br><span class="line">    attn_output = torch.matmul(attn_weights, value_states)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> attn_output.size() != (bsz, self.num_heads, q_len, self.head_dim):</span><br><span class="line">        <span class="keyword">raise</span> ValueError(</span><br><span class="line">            <span class="string">f&quot;`attn_output` should be of size <span class="subst">&#123;(bsz, self.num_heads, q_len, self.head_dim)&#125;</span>, but is&quot;</span></span><br><span class="line">            <span class="string">f&quot; <span class="subst">&#123;attn_output.size()&#125;</span>&quot;</span></span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">    attn_output = attn_output.transpose(<span class="number">1</span>, <span class="number">2</span>).contiguous()</span><br><span class="line">    attn_output = attn_output.reshape(bsz, q_len, self.hidden_size)</span><br><span class="line"></span><br><span class="line">    attn_output = self.o_proj(attn_output)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> output_attentions:</span><br><span class="line">        attn_weights = <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> attn_output, attn_weights</span><br></pre></td></tr></table></figure>
+<p>可以看见代码里有一个 <code>repeat_kv</code> 的操作，作用是将较少的 Key/Value 头复制扩展，使它们能和 Query 的头数一一对应进行矩阵乘法。这正是 GQA 的典型操作：“分组共享，通过复制来对齐”。</p>
+<ul>
+<li>GQA (Grouped Query Attention)：
+<ul>
+<li>配置：将 Query 头分组，每组 Query 头共享一组 Key 和 Value。</li>
+<li>数量：例如分为 8 组（Group=8）。32 个 Q 头，对应 8 个 K 头 和 8 个 V 头（每4个Q头共享1个K/V头）。</li>
+<li>特点：介于 MHA 和 MQA 之间。比 MQA 效果好（保留了部分独立性），比 MHA 速度快（KV Cache 大小减少了 4 倍）。<br>
+GQA 相比于 MHA，效果上几乎相近，而速度却能达到 MQA 的水平，被广泛的应用在现在的大模型上。<br>
+LLama2-70B、LLama3、Qwen2 全系列使用的都是这种架构。</li>
+</ul>
+</li>
+</ul>
+<h1 id="mla-multi-latent-attention"><a class="markdownIt-Anchor" href="#mla-multi-latent-attention"></a> MLA Multi Latent Attention</h1>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20260323103553_1895214780/2.svg" alt="2"></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params"></span></span><br><span class="line"><span class="params">        self,</span></span><br><span class="line"><span class="params">        hidden_states: torch.Tensor,</span></span><br><span class="line"><span class="params">        position_embeddings: <span class="built_in">tuple</span>[torch.Tensor, torch.Tensor],</span></span><br><span class="line"><span class="params">        attention_mask: <span class="type">Optional</span>[torch.Tensor],</span></span><br><span class="line"><span class="params">        past_key_values: <span class="type">Optional</span>[Cache] = <span class="literal">None</span>,</span></span><br><span class="line"><span class="params">        cache_position: <span class="type">Optional</span>[torch.LongTensor] = <span class="literal">None</span>,</span></span><br><span class="line"><span class="params">        **kwargs: Unpack[FlashAttentionKwargs],</span></span><br><span class="line"><span class="params">    </span>) -&gt; <span class="built_in">tuple</span>[torch.Tensor, <span class="type">Optional</span>[torch.Tensor], <span class="type">Optional</span>[<span class="built_in">tuple</span>[torch.Tensor]]]:</span><br><span class="line">    batch_size, seq_length = hidden_states.shape[:-<span class="number">1</span>]</span><br><span class="line">    query_shape = (batch_size, seq_length, -<span class="number">1</span>, self.qk_head_dim)</span><br><span class="line">    key_shape = (batch_size, seq_length, -<span class="number">1</span>, self.qk_nope_head_dim + self.v_head_dim)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> self.q_lora_rank <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">        q_states = self.q_proj(hidden_states)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        q_states = self.q_b_proj(self.q_a_layernorm(self.q_a_proj(hidden_states)))</span><br><span class="line">    q_states = q_states.view(query_shape).transpose(<span class="number">1</span>, <span class="number">2</span>)</span><br><span class="line">    q_pass, q_rot = torch.split(q_states, [self.qk_nope_head_dim, self.qk_rope_head_dim], dim=-<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">    compressed_kv = self.kv_a_proj_with_mqa(hidden_states)</span><br><span class="line">    k_pass, k_rot = torch.split(compressed_kv, [self.kv_lora_rank, self.qk_rope_head_dim], dim=-<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">    k_pass = self.kv_b_proj(self.kv_a_layernorm(k_pass)).view(key_shape).transpose(<span class="number">1</span>, <span class="number">2</span>)</span><br><span class="line">    k_pass, value_states = torch.split(k_pass, [self.qk_nope_head_dim, self.v_head_dim], dim=-<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">    k_rot = k_rot.view(batch_size, <span class="number">1</span>, seq_length, self.qk_rope_head_dim)</span><br><span class="line"></span><br><span class="line">    cos, sin = position_embeddings</span><br><span class="line">    <span class="keyword">if</span> self.config.rope_interleave:  <span class="comment"># support using interleaved weights for efficiency</span></span><br><span class="line">        q_rot, k_rot = apply_rotary_pos_emb_interleave(q_rot, k_rot, cos, sin)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        q_rot, k_rot = apply_rotary_pos_emb(q_rot, k_rot, cos, sin)</span><br><span class="line">    k_rot = k_rot.expand(*k_pass.shape[:-<span class="number">1</span>], -<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">    query_states = torch.cat((q_pass, q_rot), dim=-<span class="number">1</span>)</span><br><span class="line">    key_states = torch.cat((k_pass, k_rot), dim=-<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> past_key_values <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">        <span class="comment"># sin and cos are specific to RoPE models; cache_position needed for the static cache</span></span><br><span class="line">        cache_kwargs = &#123;<span class="string">&quot;sin&quot;</span>: sin, <span class="string">&quot;cos&quot;</span>: cos, <span class="string">&quot;cache_position&quot;</span>: cache_position&#125;</span><br><span class="line">        key_states, value_states = past_key_values.update(key_states, value_states, self.layer_idx, cache_kwargs)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> self.config._attn_implementation == <span class="string">&quot;flash_attention_2&quot;</span> <span class="keyword">and</span> self.qk_head_dim != self.v_head_dim:</span><br><span class="line">        value_states = F.pad(value_states, [<span class="number">0</span>, self.qk_head_dim - self.v_head_dim])</span><br><span class="line"></span><br><span class="line">    attention_interface: <span class="type">Callable</span> = eager_attention_forward</span><br><span class="line">    <span class="keyword">if</span> self.config._attn_implementation != <span class="string">&quot;eager&quot;</span>:</span><br><span class="line">        attention_interface = ALL_ATTENTION_FUNCTIONS[self.config._attn_implementation]</span><br><span class="line"></span><br><span class="line">    attn_output, attn_weights = attention_interface(</span><br><span class="line">        self,</span><br><span class="line">        query_states,</span><br><span class="line">        key_states,</span><br><span class="line">        value_states,</span><br><span class="line">        attention_mask,</span><br><span class="line">        dropout=<span class="number">0.0</span> <span class="keyword">if</span> <span class="keyword">not</span> self.training <span class="keyword">else</span> self.attention_dropout,</span><br><span class="line">        scaling=self.scaling,</span><br><span class="line">        **kwargs,</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> self.config._attn_implementation == <span class="string">&quot;flash_attention_2&quot;</span> <span class="keyword">and</span> self.qk_head_dim != self.v_head_dim:</span><br><span class="line">        attn_output = attn_output[:, :, :, : self.v_head_dim]</span><br><span class="line"></span><br><span class="line">    attn_output = attn_output.reshape(batch_size, seq_length, -<span class="number">1</span>).contiguous()</span><br><span class="line">    attn_output = self.o_proj(attn_output)</span><br><span class="line">    <span class="keyword">return</span> attn_output, attn_weights</span><br></pre></td></tr></table></figure>
+<p>上面代码是 MLA 的流程。可以分为以下几步：</p>
+<ol>
+<li>Query 的生成与压缩<br>
+DeepSeek 对 Q 进行了压缩，减少计算量</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 这一部分对应 Query 的生成</span></span><br><span class="line"><span class="keyword">if</span> self.q_lora_rank <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">    <span class="comment"># 如果没有设置压缩秩，则使用标准投影</span></span><br><span class="line">    q_states = self.q_proj(hidden_states)</span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">    <span class="comment"># 【核心 MLA 特征】：Query 低秩压缩</span></span><br><span class="line">    <span class="comment"># 1. q_a_proj: 降维 (hidden -&gt; low_rank)</span></span><br><span class="line">    <span class="comment"># 2. q_a_layernorm: 训练时加了个layernorm，防止梯度爆炸，归一化</span></span><br><span class="line">    <span class="comment"># 3. q_b_proj: 升维 (low_rank -&gt; num_heads * qk_head_dim)</span></span><br><span class="line">    q_states = self.q_b_proj(self.q_a_layernorm(self.q_a_proj(hidden_states)))</span><br><span class="line"></span><br><span class="line">q_states = q_states.view(query_shape).transpose(<span class="number">1</span>, <span class="number">2</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 【核心 MLA 特征】：解耦 RoPE</span></span><br><span class="line"><span class="comment"># 将 Query 分割为两部分：一部分不带位置信息，一部分带位置信息</span></span><br><span class="line">q_pass, q_rot = torch.split(q_states, [self.qk_nope_head_dim, self.qk_rope_head_dim], dim=-<span class="number">1</span>)</span><br></pre></td></tr></table></figure>
+<ol start="2">
+<li>KV 的压缩与潜在向量生成</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 【核心 MLA 特征】：KV 压缩</span></span><br><span class="line"><span class="comment"># 将输入投影到一个非常小的压缩向量 (Latent Vector)</span></span><br><span class="line"><span class="comment"># 这就是推理时缓存的 &quot;KV Cache&quot;，体积非常小！</span></span><br><span class="line">compressed_kv = self.kv_a_proj_with_mqa(hidden_states)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 将压缩向量拆分：</span></span><br><span class="line"><span class="comment"># k_pass: 压缩后的 KV 内容特征 (用于后续还原)</span></span><br><span class="line"><span class="comment"># k_rot: 专门用于位置编码的部分</span></span><br><span class="line">k_pass, k_rot = torch.split(compressed_kv, [self.kv_lora_rank, self.qk_rope_head_dim], dim=-<span class="number">1</span>)</span><br></pre></td></tr></table></figure>
+<ol start="3">
+<li>KV 的解压与还原</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 1. 对压缩的内容特征进行 LayerNorm</span></span><br><span class="line"><span class="comment"># 2. kv_b_proj: 升维投影，将低维 Latent 还原成高维的 Key 和 Value</span></span><br><span class="line">k_pass = self.kv_b_proj(self.kv_a_layernorm(k_pass)).view(key_shape).transpose(<span class="number">1</span>, <span class="number">2</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 分离还原后的 Key 和 Value</span></span><br><span class="line">k_pass, value_states = torch.split(k_pass, [self.qk_nope_head_dim, self.v_head_dim], dim=-<span class="number">1</span>)</span><br></pre></td></tr></table></figure>
+<p>虽然我们在 Cache 里存的是压缩后的向量，但在计算当前时刻的 Attention 分数时，需要将其还原成完整的多头 Key 和 Value。虽然计算量增加了一些，但换来了显存带宽的大幅节省。</p>
+<ol start="4">
+<li>位置编码与拼接</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 对专门的位置部分应用 RoPE</span></span><br><span class="line">cos, sin = position_embeddings</span><br><span class="line">q_rot, k_rot = apply_rotary_pos_emb(q_rot, k_rot, cos, sin)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 扩展 k_rot 维度以匹配多头</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 【核心 MLA 特征】：重组</span></span><br><span class="line"><span class="comment"># 将内容部分 和位置部分 拼接</span></span><br><span class="line">query_states = torch.cat((q_pass, q_rot), dim=-<span class="number">1</span>)</span><br><span class="line">key_states = torch.cat((k_pass, k_rot), dim=-<span class="number">1</span>)</span><br></pre></td></tr></table></figure>
+<p>最终参与计算的 query_states 和 key_states 是由“非旋转部分”和“旋转部分”拼接而成的。这样做的好处是，位置信息不会破坏压缩向量的低秩结构。为什么位置编码要这么做呢？因为在实现 MLA 的时候，有一个小技巧叫做“矩阵吸收”。</p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>x</mi><msubsup><mi>W</mi><mrow><mi>d</mi><mi>o</mi><mi>w</mi><mi>n</mi></mrow><mi>Q</mi></msubsup><msubsup><mi>W</mi><mrow><mi>u</mi><mi>p</mi><mo separator="true">,</mo><mi>i</mi></mrow><mi>Q</mi></msubsup><mo stretchy="false">(</mo><msubsup><mi>W</mi><mrow><mi>u</mi><mi>p</mi><mo separator="true">,</mo><mi>i</mi></mrow><mi>K</mi></msubsup><mrow></mrow><msup><mo stretchy="false">)</mo><mi>T</mi></msup><mo stretchy="false">(</mo><msup><mi>c</mi><mrow><mi>K</mi><mi>V</mi></mrow></msup><mrow></mrow><msup><mo stretchy="false">)</mo><mi>T</mi></msup></mrow><annotation encoding="application/x-tex">x W_{down}^Q W_{up,i}^Q (W_{up,i}^K{})^T (c^{KV}{})^T
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.372211em;vertical-align:-0.412972em;"></span><span class="mord mathnormal">x</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.13889em;">W</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.9592389999999998em;"><span style="top:-2.3986920000000005em;margin-left:-0.13889em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">d</span><span class="mord mathnormal mtight">o</span><span class="mord mathnormal mtight" style="margin-right:0.02691em;">w</span><span class="mord mathnormal mtight">n</span></span></span></span><span style="top:-3.180908em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">Q</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.3013079999999999em;"><span></span></span></span></span></span></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.13889em;">W</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.959239em;"><span style="top:-2.4231360000000004em;margin-left:-0.13889em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">u</span><span class="mord mathnormal mtight">p</span><span class="mpunct mtight">,</span><span class="mord mathnormal mtight">i</span></span></span></span><span style="top:-3.1809080000000005em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">Q</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.412972em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.13889em;">W</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.891331em;"><span style="top:-2.4530000000000003em;margin-left:-0.13889em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">u</span><span class="mord mathnormal mtight">p</span><span class="mpunct mtight">,</span><span class="mord mathnormal mtight">i</span></span></span></span><span style="top:-3.1130000000000004em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.07153em;">K</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.383108em;"><span></span></span></span></span></span></span><span class="mord"></span><span class="mclose"><span class="mclose">)</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8913309999999999em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.13889em;">T</span></span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal">c</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8913309999999999em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.07153em;">K</span><span class="mord mathnormal mtight" style="margin-right:0.22222em;">V</span></span></span></span></span></span></span></span></span><span class="mord"></span><span class="mclose"><span class="mclose">)</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8913309999999999em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.13889em;">T</span></span></span></span></span></span></span></span></span></span></span></span></p>
+<p>在这个公式中，可以将 kv 的上投影矩阵<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>W</mi><mrow><mi>u</mi><mi>p</mi><mo separator="true">,</mo><mi>i</mi></mrow><mi>K</mi></msubsup></mrow><annotation encoding="application/x-tex">W_{up,i}^K</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.236103em;vertical-align:-0.394772em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.13889em;">W</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.8413309999999999em;"><span style="top:-2.441336em;margin-left:-0.13889em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">u</span><span class="mord mathnormal mtight">p</span><span class="mpunct mtight">,</span><span class="mord mathnormal mtight">i</span></span></span></span><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.07153em;">K</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.394772em;"><span></span></span></span></span></span></span></span></span></span>看成是<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>W</mi><mrow><mi>u</mi><mi>p</mi><mo separator="true">,</mo><mi>i</mi></mrow><mi>Q</mi></msubsup></mrow><annotation encoding="application/x-tex">W_{up,i}^Q</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.372211em;vertical-align:-0.412972em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.13889em;">W</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.959239em;"><span style="top:-2.4231360000000004em;margin-left:-0.13889em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">u</span><span class="mord mathnormal mtight">p</span><span class="mpunct mtight">,</span><span class="mord mathnormal mtight">i</span></span></span></span><span style="top:-3.1809080000000005em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">Q</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.412972em;"><span></span></span></span></span></span></span></span></span></span>，这样子，位置信息部分就可以通过矩阵吸收的方式，被<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>W</mi><mrow><mi>d</mi><mi>o</mi><mi>w</mi><mi>n</mi></mrow><mi>Q</mi></msubsup></mrow><annotation encoding="application/x-tex">W_{down}^Q</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.2605469999999999em;vertical-align:-0.3013079999999999em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.13889em;">W</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.959239em;"><span style="top:-2.3986920000000005em;margin-left:-0.13889em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">d</span><span class="mord mathnormal mtight">o</span><span class="mord mathnormal mtight" style="margin-right:0.02691em;">w</span><span class="mord mathnormal mtight">n</span></span></span></span><span style="top:-3.1809080000000005em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">Q</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.3013079999999999em;"><span></span></span></span></span></span></span></span></span></span>“吸收”进去了。但是如果加了常规旋转位置编码的话，位置信息部分就无法被<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>W</mi><mrow><mi>d</mi><mi>o</mi><mi>w</mi><mi>n</mi></mrow><mi>Q</mi></msubsup></mrow><annotation encoding="application/x-tex">W_{down}^Q</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.2605469999999999em;vertical-align:-0.3013079999999999em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.13889em;">W</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.959239em;"><span style="top:-2.3986920000000005em;margin-left:-0.13889em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">d</span><span class="mord mathnormal mtight">o</span><span class="mord mathnormal mtight" style="margin-right:0.02691em;">w</span><span class="mord mathnormal mtight">n</span></span></span></span><span style="top:-3.1809080000000005em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">Q</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.3013079999999999em;"><span></span></span></span></span></span></span></span></span></span>“吸收”进去了。可以看见被隔断了。无法吸收，会导致推理效率下降。</p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>x</mi><msubsup><mi>W</mi><mrow><mi>d</mi><mi>o</mi><mi>w</mi><mi>n</mi></mrow><mi>Q</mi></msubsup><msubsup><mi>W</mi><mrow><mi>u</mi><mi>p</mi><mo separator="true">,</mo><mi>i</mi></mrow><mi>Q</mi></msubsup><msub><mi>R</mi><mi>m</mi></msub><msubsup><mi>R</mi><mi>n</mi><mi>T</mi></msubsup><mo stretchy="false">(</mo><msubsup><mi>W</mi><mrow><mi>u</mi><mi>p</mi><mo separator="true">,</mo><mi>i</mi></mrow><mi>K</mi></msubsup><mrow></mrow><msup><mo stretchy="false">)</mo><mi>T</mi></msup><mo stretchy="false">(</mo><msup><mi>c</mi><mrow><mi>K</mi><mi>V</mi></mrow></msup><mrow></mrow><msup><mo stretchy="false">)</mo><mi>T</mi></msup></mrow><annotation encoding="application/x-tex">x W_{down}^Q W_{up,i}^Q R_{m} R_{n}^T (W_{up,i}^K{})^T (c^{KV}{})^T
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.372211em;vertical-align:-0.412972em;"></span><span class="mord mathnormal">x</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.13889em;">W</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.9592389999999998em;"><span style="top:-2.3986920000000005em;margin-left:-0.13889em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">d</span><span class="mord mathnormal mtight">o</span><span class="mord mathnormal mtight" style="margin-right:0.02691em;">w</span><span class="mord mathnormal mtight">n</span></span></span></span><span style="top:-3.180908em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">Q</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.3013079999999999em;"><span></span></span></span></span></span></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.13889em;">W</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.959239em;"><span style="top:-2.4231360000000004em;margin-left:-0.13889em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">u</span><span class="mord mathnormal mtight">p</span><span class="mpunct mtight">,</span><span class="mord mathnormal mtight">i</span></span></span></span><span style="top:-3.1809080000000005em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">Q</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.412972em;"><span></span></span></span></span></span></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.00773em;">R</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.151392em;"><span style="top:-2.5500000000000003em;margin-left:-0.00773em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">m</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.00773em;">R</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.8913309999999999em;"><span style="top:-2.4530000000000003em;margin-left:-0.00773em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">n</span></span></span></span><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.13889em;">T</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.247em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.13889em;">W</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.891331em;"><span style="top:-2.4530000000000003em;margin-left:-0.13889em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">u</span><span class="mord mathnormal mtight">p</span><span class="mpunct mtight">,</span><span class="mord mathnormal mtight">i</span></span></span></span><span style="top:-3.1130000000000004em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.07153em;">K</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.383108em;"><span></span></span></span></span></span></span><span class="mord"></span><span class="mclose"><span class="mclose">)</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8913309999999999em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.13889em;">T</span></span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal">c</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8913309999999999em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.07153em;">K</span><span class="mord mathnormal mtight" style="margin-right:0.22222em;">V</span></span></span></span></span></span></span></span></span><span class="mord"></span><span class="mclose"><span class="mclose">)</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8913309999999999em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.13889em;">T</span></span></span></span></span></span></span></span></span></span></span></span></p>
+<p>所以引入了 Decoupled RoPE (解耦 RoPE)。q_rot 和 k_rot 分开处理，这样位置编码和内容编码就可以分开处理，互不干扰。</p>
+<ol start="5">
+<li>注意力计算</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 更新 KV Cache (这里存储的通常是还原后的 K 和 V，或者是压缩向量，取决于具体的 Cache 实现)</span></span><br><span class="line"><span class="keyword">if</span> past_key_values <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">    key_states, value_states = past_key_values.update(...)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 【Flash Attention 兼容性处理】</span></span><br><span class="line"><span class="comment"># 如果 QK 的维度和 V 的维度不一样，需要 Padding 对齐</span></span><br><span class="line"><span class="keyword">if</span> self.config._attn_implementation == <span class="string">&quot;flash_attention_2&quot;</span> <span class="keyword">and</span> self.qk_head_dim != self.v_head_dim:</span><br><span class="line">    value_states = F.pad(value_states, [<span class="number">0</span>, self.qk_head_dim - self.v_head_dim])</span><br><span class="line"></span><br><span class="line"><span class="comment"># 调用标准注意力接口计算</span></span><br><span class="line">attn_output, attn_weights = attention_interface(...)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 去除 Padding</span></span><br><span class="line"><span class="keyword">if</span> ...:</span><br><span class="line">    attn_output = attn_output[:, :, :, : self.v_head_dim]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 输出投影</span></span><br><span class="line">attn_output = self.o_proj(attn_output)</span><br></pre></td></tr></table></figure>
+<ul>
+<li>MLA (Multi-Head Latent Attention)
+<ul>
+<li>配置：通过生成 compressed_kv，将 KV Cache 的大小压缩了 90% 以上。存储上 compressed_kv 只有一份，接近 MQA。</li>
+<li>数量：通过 kv_b_proj 动态还原 KV，保留了多头注意力的表达能力。每个头一个 KV 数量，这一部分接近 MHA。</li>
+<li>特点：通过 split 和 cat 操作，把位置信息和内容信息分开处理，使得压缩机制能与 RoPE 完美兼容。</li>
+</ul>
+</li>
+</ul>
+<h1 id="nsa-natural-sparse-attention"><a class="markdownIt-Anchor" href="#nsa-natural-sparse-attention"></a> NSA Natural Sparse Attention</h1>
+<p>该注意力机制首次被提出是在 2025 年的 2 月。由 DeepSeek 针对长序列处理提出的原生稀疏注意力机制，属于 block-wise 的稀疏方案。这个目前只存在于论文中，没有实际用于某个模型。直到 Deepseek-V3.2 中，他们提出了 DSA，可以说是 NSA 的一个变种实现， 属于 token-wise 的稀疏方案。</p>
+<ol>
+<li>压缩块，计算块间注意力<br>
+标准自注意力需要计算序列中每个词元（Token）与其他所有词元的关系。对于一个长度为 <strong>N</strong> 的序列，需要计算 <strong>N*N</strong> 个注意力权重，随长度二次增长。<br>
+解决方案是，NSA 不再以单个 token 为基本计算单元，而是将连续的多个 token 聚合成一个 block。例如，将 4096 个词元的序列划分为 64 个块，每个块包含 64 个 token。<br>
+计算流程转变：<br>
+之前（标准注意力）： 处理 4096 个 token -&gt; 需要处理 4096 * 4096≈16.7M 个关系对。<br>
+之后（块压缩）： 处理 64 个 block -&gt; 先计算块与块之间的注意力。此时，需要处理的关系对数量骤降至 64 * 64=4096 个。</li>
+<li>重要性筛选：选出重要的 K 个块<br>
+在压缩后的 block 中，筛选出需要详细看的部分：<br>
+块压缩是假设所有 block 都同等重要。但实际上，对于当前要处理的 token 来说，某些 block 是关键的而其他的是次要的。NSA 引入动态机制，根据当前的 Q 内容，评估并筛选出最相关的少量关键 block。<br>
+系统会为每个 block 计算一个“重要性分数”。这个分数通常基于当前 Q 与每个 block 的“摘要向量”（通常是 block 内 token 的均值或通过一个小型网络生成）的相似度。<br>
+在块压缩的基础上增加重要性筛选，系统从64个块中选出最相关的 K 个块（例如 K=8），额外计算当前查询向量与这 K 个关键块内全部 token 的注意力。</li>
+<li>滑动窗口<br>
+为了保证局部上下文信息的完整性，token 不但要关注遥远的关键块，还要关注紧挨着它的其他 token。NSA 强制性地规定，无论重要性筛选的结果如何，每个 token 都必须关注以其自身为中心的一个局部窗口内的所有其他token。这个窗口是“滑动”的，因为它随着 token 位置的变化而移动。例如，假设滑动窗口大小为 256。那么对于序列中第 500 个 token，无论如何它都会关注第 500-255 至第 500 这个范围内的所有 token。</li>
+</ol>
+<h1 id="dsa-deepseek-sparse-attention"><a class="markdownIt-Anchor" href="#dsa-deepseek-sparse-attention"></a> DSA DeepSeek Sparse Attention</h1>
+<p>DSA 首次被应用在 Deepseek V3.2 Exp 中，属于 token-wise 的稀疏方案。DeepSeek-V3.2-Exp 仅在 DeepSeek-V3 的基础上新增了 Lightning Indexer 模块，用于选择参与 attention 的 token。<br>
+该模块的主要输入是 compressed_q 与 MLA 的输入矩阵 hidden_states，输出则是每个 token 所对应的 2048 个可参与 attention 计算的历史 token 的 index。<br>
+被选中的 2048 个 token 会在 attention 的 mask 阶段发挥作用：通过将<code>未选中的位置的 mask 值设为 inf</code>，在经过 softmax 之后，就能有效去除不需要参与 attention 的 token。这样实现了高效的稀疏化，显著降低了计算量。从<em>O(L^2)<em>降到了</em>O(LK)</em>，其中 K&lt;&lt;L 为 2048。<br>
+Indexer 代码（来自于官方 DeepSeek V3.2 仓库）：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">fp8_index</span>(<span class="params"></span></span><br><span class="line"><span class="params">    q: torch.Tensor,</span></span><br><span class="line"><span class="params">    q_s: torch.Tensor,</span></span><br><span class="line"><span class="params">    k: torch.Tensor,</span></span><br><span class="line"><span class="params">    k_s: torch.Tensor,</span></span><br><span class="line"><span class="params"></span>) -&gt; torch.Tensor:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    Perform index score using FP8 precision.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        q (torch.Tensor): The Q tensor, must be contiguous.</span></span><br><span class="line"><span class="string">        q_s (torch.Tensor): The scaling factor for Q (float), must be contiguous.</span></span><br><span class="line"><span class="string">        k (torch.Tensor): The K tensor, must be contiguous.</span></span><br><span class="line"><span class="string">        k_s (torch.Tensor): The scaling factor for K (e8m0 here), must be contiguous.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        fp8 q @ fp8 k -&gt; fp32 logits</span></span><br><span class="line"><span class="string">        relu(fp32 logits) * q_s (weights) -&gt; fp32 logits</span></span><br><span class="line"><span class="string">        fp32 logits -&gt; fp32 logits_sum</span></span><br><span class="line"><span class="string">        fp32 logits_sum * k_s (e8m0) -&gt; fp32 index_score</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> fp8_index_kernel(q.shape[<span class="number">2</span>], q.shape[<span class="number">3</span>])(q, q_s, k, k_s)</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Indexer</span>(torch.nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, args: ModelArgs</span>):</span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        self.dim: <span class="built_in">int</span> = args.dim</span><br><span class="line">        self.n_heads: <span class="built_in">int</span> = args.index_n_heads</span><br><span class="line">        self.n_local_heads = args.index_n_heads // world_size</span><br><span class="line">        self.head_dim: <span class="built_in">int</span> = args.index_head_dim</span><br><span class="line">        self.rope_head_dim: <span class="built_in">int</span> = args.qk_rope_head_dim</span><br><span class="line">        self.index_topk: <span class="built_in">int</span> = args.index_topk</span><br><span class="line">        self.q_lora_rank: <span class="built_in">int</span> = args.q_lora_rank</span><br><span class="line">        self.wq_b = Linear(self.q_lora_rank, self.n_heads * self.head_dim)</span><br><span class="line">        self.wk = Linear(self.dim, self.head_dim)</span><br><span class="line">        self.k_norm = LayerNorm(self.head_dim)</span><br><span class="line">        <span class="comment"># weights_proj in the checkpoint is stored in bf16, while the parameters here are stored in fp32 for convenient.</span></span><br><span class="line">        self.weights_proj = Linear(self.dim, self.n_heads, dtype=torch.float32)</span><br><span class="line">        self.softmax_scale = self.head_dim ** -<span class="number">0.5</span></span><br><span class="line">        self.scale_fmt = args.scale_fmt</span><br><span class="line"></span><br><span class="line">        self.register_buffer(<span class="string">&quot;k_cache&quot;</span>, torch.zeros(args.max_batch_size, args.max_seq_len, self.head_dim, dtype=torch.float8_e4m3fn), persistent=<span class="literal">False</span>)</span><br><span class="line">        self.register_buffer(<span class="string">&quot;k_scale_cache&quot;</span>, torch.zeros(args.max_batch_size, args.max_seq_len, self.head_dim // block_size, dtype=torch.float32), persistent=<span class="literal">False</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x: torch.Tensor, qr: torch.Tensor, start_pos: <span class="built_in">int</span>, freqs_cis: torch.Tensor, mask: <span class="type">Optional</span>[torch.Tensor]</span>):</span><br><span class="line">        bsz, seqlen, _ = x.size()</span><br><span class="line">        end_pos = start_pos + seqlen</span><br><span class="line">        q = self.wq_b(qr)</span><br><span class="line">        q = q.view(bsz, seqlen, self.n_heads, self.head_dim)</span><br><span class="line">        q_pe, q_nope = torch.split(q, [self.rope_head_dim, self.head_dim - self.rope_head_dim], dim=-<span class="number">1</span>)</span><br><span class="line">        <span class="comment"># rope in indexer is not interleaved</span></span><br><span class="line">        q_pe = apply_rotary_emb(q_pe, freqs_cis, <span class="literal">False</span>)</span><br><span class="line">        q = torch.cat([q_pe, q_nope], dim=-<span class="number">1</span>)</span><br><span class="line">        k = self.wk(x)</span><br><span class="line">        k = self.k_norm(k)</span><br><span class="line">        k_pe, k_nope = torch.split(k, [self.rope_head_dim, self.head_dim - self.rope_head_dim], dim=-<span class="number">1</span>)</span><br><span class="line">        <span class="comment"># rope in indexer is not interleaved</span></span><br><span class="line">        k_pe = apply_rotary_emb(k_pe.unsqueeze(<span class="number">2</span>), freqs_cis, <span class="literal">False</span>).squeeze(<span class="number">2</span>)</span><br><span class="line">        k = torch.cat([k_pe, k_nope], dim=-<span class="number">1</span>)</span><br><span class="line">        q = rotate_activation(q)</span><br><span class="line">        k = rotate_activation(k)</span><br><span class="line">        q_fp8, q_scale = act_quant(q, block_size, self.scale_fmt)</span><br><span class="line">        k_fp8, k_scale = act_quant(k, block_size, self.scale_fmt)</span><br><span class="line">        self.k_cache[:bsz, start_pos:end_pos] = k_fp8</span><br><span class="line">        self.k_scale_cache[:bsz, start_pos:end_pos] = k_scale</span><br><span class="line">        weights = self.weights_proj(x.<span class="built_in">float</span>()) * self.n_heads ** -<span class="number">0.5</span></span><br><span class="line">        weights = weights.unsqueeze(-<span class="number">1</span>) * q_scale * self.softmax_scale</span><br><span class="line">        index_score = fp8_index(q_fp8.contiguous(), weights, self.k_cache[:bsz, :end_pos].contiguous(), self.k_scale_cache[:bsz, :end_pos].contiguous())</span><br><span class="line">        <span class="keyword">if</span> mask <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">            index_score += mask</span><br><span class="line">        topk_indices = index_score.topk(<span class="built_in">min</span>(self.index_topk, end_pos), dim=-<span class="number">1</span>)[<span class="number">1</span>]</span><br><span class="line">        topk_indices_ = topk_indices.clone()</span><br><span class="line">        dist.broadcast(topk_indices_, src=<span class="number">0</span>)</span><br><span class="line">        <span class="keyword">assert</span> torch.<span class="built_in">all</span>(topk_indices == topk_indices_), <span class="string">f&quot;<span class="subst">&#123;topk_indices=&#125;</span> <span class="subst">&#123;topk_indices_=&#125;</span>&quot;</span></span><br><span class="line">        <span class="keyword">return</span> topk_indices</span><br></pre></td></tr></table></figure>
+<p>公式如下：</p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>I</mi><mrow><mi>t</mi><mo separator="true">,</mo><mi>s</mi></mrow></msub><mo>=</mo><munderover><mo>∑</mo><mrow><mi>j</mi><mo>=</mo><mn>1</mn></mrow><msub><mi>H</mi><mi>I</mi></msub></munderover><msubsup><mi>w</mi><mrow><mi>t</mi><mo separator="true">,</mo><mi>j</mi></mrow><mi>I</mi></msubsup><mo>⋅</mo><mi mathvariant="normal">ReLU</mi><mo>⁡</mo><mrow><mo fence="true">(</mo><msubsup><mi mathvariant="bold-italic">q</mi><mrow><mi>t</mi><mo separator="true">,</mo><mi>j</mi></mrow><mi>I</mi></msubsup><mo>⋅</mo><msubsup><mi mathvariant="bold-italic">k</mi><mi>s</mi><mi>I</mi></msubsup><mo fence="true">)</mo></mrow></mrow><annotation encoding="application/x-tex">I_{t,s} = \sum_{j=1}^{H_{I}} w_{t,j}^{I} \cdot \operatorname{ReLU}\left( \boldsymbol{q}_{t,j}^{I} \cdot \boldsymbol{k}_{s}^{I} \right)
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.969438em;vertical-align:-0.286108em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.07847em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.28055599999999997em;"><span style="top:-2.5500000000000003em;margin-left:-0.07847em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">t</span><span class="mpunct mtight">,</span><span class="mord mathnormal mtight">s</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.286108em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:3.2534180000000004em;vertical-align:-1.4137769999999998em;"></span><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.8396410000000005em;"><span style="top:-1.872331em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span><span class="mrel mtight">=</span><span class="mord mtight">1</span></span></span></span><span style="top:-3.050005em;"><span class="pstrut" style="height:3.05em;"></span><span><span class="mop op-symbol large-op">∑</span></span></span><span style="top:-4.31131em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.08125em;">H</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3448em;"><span style="top:-2.3567071428571427em;margin-left:-0.08125em;margin-right:0.07142857142857144em;"><span class="pstrut" style="height:2.5em;"></span><span class="sizing reset-size3 size1 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.07847em;">I</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.14329285714285717em;"><span></span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.4137769999999998em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.02691em;">w</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.891331em;"><span style="top:-2.4530000000000003em;margin-left:-0.02691em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">t</span><span class="mpunct mtight">,</span><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span style="top:-3.1130000000000004em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.07847em;">I</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.383108em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:1.80002em;vertical-align:-0.65002em;"></span><span class="mop"><span class="mord mathrm">R</span><span class="mord mathrm">e</span><span class="mord mathrm">L</span><span class="mord mathrm">U</span></span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="minner"><span class="mopen delimcenter" style="top:0em;"><span class="delimsizing size2">(</span></span><span class="mord"><span class="mord"><span class="mord"><span class="mord boldsymbol" style="margin-right:0.03704em;">q</span></span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.891331em;"><span style="top:-2.4530000000000003em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">t</span><span class="mpunct mtight">,</span><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span style="top:-3.1130000000000004em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.07847em;">I</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.383108em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mord"><span class="mord"><span class="mord"><span class="mord boldsymbol" style="margin-right:0.01852em;">k</span></span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.9256709999999999em;"><span style="top:-2.4530000000000003em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">s</span></span></span></span><span style="top:-3.1473400000000002em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.07847em;">I</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.247em;"><span></span></span></span></span></span></span><span class="mclose delimcenter" style="top:0em;"><span class="delimsizing size2">)</span></span></span></span></span></span></span></p>
+<p>总体框架如下：<br>
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20260323103553_1895214780/3.svg" alt="3"><br>
+其中，绿色部分是 indexer 实现。而框住的部分是函数 fp8_index 部分。可以看到，虽然说 attention 的计算复杂度降低了，但是实际上选择不同 token 重要性这个 indexer 模块，也算是个 attention。还是需要计算查询相对于之前每个 token 的 attention 的<code>重要性</code>分数，复杂度还是 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>O</mi><mo stretchy="false">(</mo><msup><mi>n</mi><mn>2</mn></msup><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">O(n^2)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.064108em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.02778em;">O</span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal">n</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8141079999999999em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span></span></span></span></span><span class="mclose">)</span></span></span></span>。只不过这个过程是在 fp8 精度下进行的，所以效率会比较高。</p>
+<p>为什么需要哈达玛变换&quot;<code>rotate_activation</code>&quot;？<br>
+直接量化 q 和 k 向量可能会造成精度损失。引入旋转变换操作：将大范围数值打散到小范围。可以与随机的正交矩阵相乘来做这件事，使得向量数值分布均匀且模长不变。不过矩阵乘法代价较大。于是使用小代价的哈达玛变换。</p>
+<p>最后得出的topk_indices，会作为 mask 输入到 MLA 中，从而实现稀疏化。可以看下面代码。<br>
+对于 Deepseek V3.2 的 attention 实现而言：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x: torch.Tensor, start_pos: <span class="built_in">int</span>, freqs_cis: torch.Tensor, mask: <span class="type">Optional</span>[torch.Tensor]</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    Forward pass for the Multi-Head Latent Attention (MLA) Layer.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        x (torch.Tensor): Input tensor of shape (batch_size, seq_len, dim).</span></span><br><span class="line"><span class="string">        start_pos (int): Starting position in the sequence for caching.</span></span><br><span class="line"><span class="string">        freqs_cis (torch.Tensor): Precomputed complex exponential values for rotary embeddings.</span></span><br><span class="line"><span class="string">        mask (Optional[torch.Tensor]): Mask tensor to exclude certain positions from attention.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">        torch.Tensor: Output tensor with the same shape as the input.</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    bsz, seqlen, _ = x.size()</span><br><span class="line">    end_pos = start_pos + seqlen</span><br><span class="line">    qr = self.q_norm(self.wq_a(x))</span><br><span class="line">    q = self.wq_b(qr)</span><br><span class="line">    q = q.view(bsz, seqlen, self.n_local_heads, self.qk_head_dim)</span><br><span class="line">    q_nope, q_pe = torch.split(q, [self.qk_nope_head_dim, self.qk_rope_head_dim], dim=-<span class="number">1</span>)</span><br><span class="line">    q_pe = apply_rotary_emb(q_pe, freqs_cis)</span><br><span class="line">    kv = self.wkv_a(x)</span><br><span class="line">    kv, k_pe = torch.split(kv, [self.kv_lora_rank, self.qk_rope_head_dim], dim=-<span class="number">1</span>)</span><br><span class="line">    kv = self.kv_norm(kv)</span><br><span class="line">    k_pe = apply_rotary_emb(k_pe.unsqueeze(<span class="number">2</span>), freqs_cis)</span><br><span class="line">    <span class="comment"># we use fp8 kv cache in actual deployment, so here we simulate the precision by casting kv to fp8 and then back to bf16.</span></span><br><span class="line">    kv_fp8, kv_scale = act_quant(kv, block_size, self.scale_fmt)</span><br><span class="line">    kv = (kv_fp8.view(-<span class="number">1</span>, block_size).<span class="built_in">float</span>() * kv_scale.view(-<span class="number">1</span>, <span class="number">1</span>)).to(kv.dtype).view_as(kv)</span><br><span class="line">    self.kv_cache[:bsz, start_pos:end_pos] = kv</span><br><span class="line">    self.pe_cache[:bsz, start_pos:end_pos] = k_pe.squeeze(<span class="number">2</span>)</span><br><span class="line">    <span class="keyword">if</span> mask <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:    <span class="comment"># MHA prefill</span></span><br><span class="line">        q = torch.cat([q_nope, q_pe], dim=-<span class="number">1</span>)</span><br><span class="line">        kv = self.wkv_b(kv)</span><br><span class="line">        kv = kv.view(bsz, seqlen, self.n_local_heads, self.qk_nope_head_dim + self.v_head_dim)</span><br><span class="line">        k_nope, v = torch.split(kv, [self.qk_nope_head_dim, self.v_head_dim], dim=-<span class="number">1</span>)</span><br><span class="line">        k = torch.cat([k_nope, k_pe.expand(-<span class="number">1</span>, -<span class="number">1</span>, self.n_local_heads, -<span class="number">1</span>)], dim=-<span class="number">1</span>)</span><br><span class="line">        scores = torch.einsum(<span class="string">&quot;bshd,bthd-&gt;bsht&quot;</span>, q, k).mul_(self.softmax_scale)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># indexer</span></span><br><span class="line">        topk_indices = self.indexer(x, qr, start_pos, freqs_cis, mask)</span><br><span class="line">        index_mask = torch.full((bsz, seqlen, seqlen), <span class="built_in">float</span>(<span class="string">&quot;-inf&quot;</span>), device=x.device).scatter_(-<span class="number">1</span>, topk_indices, <span class="number">0</span>)</span><br><span class="line">        index_mask += mask</span><br><span class="line">        scores += index_mask.unsqueeze(<span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">        scores = scores.softmax(dim=-<span class="number">1</span>)</span><br><span class="line">        x = torch.einsum(<span class="string">&quot;bsht,bthd-&gt;bshd&quot;</span>, scores, v)</span><br><span class="line">    <span class="keyword">else</span>:                   <span class="comment"># MQA decode</span></span><br><span class="line">        <span class="keyword">if</span> self.dequant_wkv_b <span class="keyword">is</span> <span class="literal">None</span> <span class="keyword">and</span> self.wkv_b.scale <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">            self.dequant_wkv_b = weight_dequant(self.wkv_b.weight, self.wkv_b.scale)</span><br><span class="line">        wkv_b = self.wkv_b.weight <span class="keyword">if</span> self.dequant_wkv_b <span class="keyword">is</span> <span class="literal">None</span> <span class="keyword">else</span> self.dequant_wkv_b</span><br><span class="line">        wkv_b = wkv_b.view(self.n_local_heads, -<span class="number">1</span>, self.kv_lora_rank)</span><br><span class="line">        q_nope = torch.einsum(<span class="string">&quot;bshd,hdc-&gt;bshc&quot;</span>, q_nope, wkv_b[:, :self.qk_nope_head_dim])</span><br><span class="line">        scores = (torch.einsum(<span class="string">&quot;bshc,btc-&gt;bsht&quot;</span>, q_nope, self.kv_cache[:bsz, :end_pos]) +</span><br><span class="line">                    torch.einsum(<span class="string">&quot;bshr,btr-&gt;bsht&quot;</span>, q_pe, self.pe_cache[:bsz, :end_pos])) * self.softmax_scale</span><br><span class="line"></span><br><span class="line">        <span class="comment"># indexer</span></span><br><span class="line">        topk_indices = self.indexer(x, qr, start_pos, freqs_cis, mask)</span><br><span class="line">        index_mask = torch.full((bsz, <span class="number">1</span>, end_pos), <span class="built_in">float</span>(<span class="string">&quot;-inf&quot;</span>), device=x.device).scatter_(-<span class="number">1</span>, topk_indices, <span class="number">0</span>)</span><br><span class="line">        scores += index_mask.unsqueeze(<span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">        scores = scores.softmax(dim=-<span class="number">1</span>)</span><br><span class="line">        x = torch.einsum(<span class="string">&quot;bsht,btc-&gt;bshc&quot;</span>, scores, self.kv_cache[:bsz, :end_pos])</span><br><span class="line">        x = torch.einsum(<span class="string">&quot;bshc,hdc-&gt;bshd&quot;</span>, x, wkv_b[:, -self.v_head_dim:])</span><br><span class="line">    x = self.wo(x.flatten(<span class="number">2</span>))</span><br><span class="line">    <span class="keyword">return</span> x</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>caijizhuo
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://caijizhuo.github.io/20260323103553_1895214780/" title="attention发展历程">https://caijizhuo.github.io/20260323103553_1895214780/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/AI/" rel="tag"># AI</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/20240519171831_2854729219/" rel="prev" title="cuda性能分析工具nsys使用">
+      <i class="fa fa-chevron-left"></i> cuda性能分析工具nsys使用
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A4%A7%E6%A8%A1%E5%9E%8Battention%E5%8F%91%E5%B1%95%E5%8E%86%E7%A8%8B"><span class="nav-number">1.</span> <span class="nav-text"> 大模型Attention发展历程</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#mha-multi-head-attention"><span class="nav-number">2.</span> <span class="nav-text"> MHA Multi Head Attention</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#mqa-multi-query-attention"><span class="nav-number">3.</span> <span class="nav-text"> MQA Multi Query Attention</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#gqa-group-query-attention"><span class="nav-number">4.</span> <span class="nav-text"> GQA Group Query Attention</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#mla-multi-latent-attention"><span class="nav-number">5.</span> <span class="nav-text"> MLA Multi Latent Attention</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#nsa-natural-sparse-attention"><span class="nav-number">6.</span> <span class="nav-text"> NSA Natural Sparse Attention</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#dsa-deepseek-sparse-attention"><span class="nav-number">7.</span> <span class="nav-text"> DSA DeepSeek Sparse Attention</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="caijizhuo"
+      src="/images/portrait.jpg">
+  <p class="site-author-name" itemprop="name">caijizhuo</p>
+  <div class="site-description" itemprop="description">Looks delicious</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">68</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">12</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/caijizhuo" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;caijizhuo" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:zhao_yingzhuo@foxmail.com" title="E-Mail → mailto:zhao_yingzhuo@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">caijizhuo</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">65k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">3:56</span>
+</div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+      
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/katex@0/dist/katex.min.css">
+
+
+  
+<script src="https://unpkg.com/darkmode-js@1.5.7/lib/darkmode-js.min.js"></script>
+
+<script>
+var options = {
+  bottom: '72px',
+  right: 'unset',
+  left: '16px',
+  time: '0.5s',
+  mixColor: 'transparent',
+  backgroundColor: 'transparent',
+  buttonColorDark: '#100f2c',
+  buttonColorLight: '#fff',
+  saveInCookies: true,
+  label: '🌓',
+  autoMatchOsTheme: false
+}
+const darkmode = new Darkmode(options);
+window.darkmode = darkmode;
+darkmode.showWidget();
+</script>
+
+    </div>
+
+  <link rel="stylesheet" href="/dist/APlayer.min.css">
+  <div id="aplayer"></div>
+  <script type="text/javascript" src="/dist/APlayer.min.js"></script>
+  <script type="text/javascript" src="/dist/music.js"></script>
+
+        <style>
+            [bg-lazy] {
+                background-image: none !important;
+                background-color: #eee !important;
+            }
+        </style>
+        <script>
+            window.imageLazyLoadSetting = {
+                isSPA: true,
+                preloadRatio: 3,
+                processImages: null,
+            };
+        </script><script>window.addEventListener("load",function(){var t=/\.(gif|jpg|jpeg|tiff|png)$/i,r=/^data:image\/[a-z]+;base64,/;Array.prototype.slice.call(document.querySelectorAll("img[data-original]")).forEach(function(a){var e=a.parentNode;"A"===e.tagName&&(e.href.match(t)||e.href.match(r))&&(e.href=a.dataset.original)})});</script><script>!function(r){r.imageLazyLoadSetting.processImages=t;var e=r.imageLazyLoadSetting.isSPA,n=r.imageLazyLoadSetting.preloadRatio||1,c=a();function a(){var t=Array.prototype.slice.call(document.querySelectorAll("img[data-original]")),e=Array.prototype.slice.call(document.querySelectorAll("[bg-lazy]"));return t.concat(e)}function t(){e&&(c=a());for(var t,o=0;o<c.length;o++)0<=(t=(t=c[o]).getBoundingClientRect()).bottom&&0<=t.left&&t.top<=(r.innerHeight*n||document.documentElement.clientHeight*n)&&function(){var t,e,n,a,i=c[o];e=function(){c=c.filter(function(t){return i!==t}),r.imageLazyLoadSetting.onImageLoaded&&r.imageLazyLoadSetting.onImageLoaded(i)},(t=i).hasAttribute("bg-lazy")?(t.removeAttribute("bg-lazy"),e&&e()):(n=new Image,a=t.getAttribute("data-original"),n.onload=function(){t.src=a,t.removeAttribute("data-original"),e&&e()},t.src!==a&&(n.src=a))}()}function i(){clearTimeout(t.tId),t.tId=setTimeout(t,500)}t(),document.addEventListener("scroll",i),r.addEventListener("resize",i),r.addEventListener("orientationchange",i)}(this);</script></body>
+</html>
