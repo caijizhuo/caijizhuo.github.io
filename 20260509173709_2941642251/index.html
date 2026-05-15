@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="EJdwSJxhW67liN5YZTmxFCA9mRU0UJt_B2-JNAGGU0Y">
+  <meta name="baidu-site-verification" content="codeva-hPTFkf6vHb">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"caijizhuo.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="mHC Manifold-Constrained Hyper-Connections 流形约束超连接，是 DeepSeek 团队在 2025 年 12 月提出，在 2026 年 4 月发布的 DeepSeek V4 中应用的新的残差技术，是 DeepSeek 的核心创新之一。他的目标是为了解决传统残差连接表达能力不足以及使用原始超链接（Hyper-Connections）深层次训练崩溃的问题。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="mHC 流程解析">
+<meta property="og:url" content="https://caijizhuo.github.io/20260509173709_2941642251/index.html">
+<meta property="og:site_name" content="caijizhuo">
+<meta property="og:description" content="mHC Manifold-Constrained Hyper-Connections 流形约束超连接，是 DeepSeek 团队在 2025 年 12 月提出，在 2026 年 4 月发布的 DeepSeek V4 中应用的新的残差技术，是 DeepSeek 的核心创新之一。他的目标是为了解决传统残差连接表达能力不足以及使用原始超链接（Hyper-Connections）深层次训练崩溃的问题。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-05-09T09:37:09.000Z">
+<meta property="article:modified_time" content="2026-05-15T03:40:29.822Z">
+<meta property="article:author" content="caijizhuo">
+<meta property="article:tag" content="AI">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://caijizhuo.github.io/20260509173709_2941642251/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>mHC 流程解析 | caijizhuo</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<style>.darkmode--activated{--body-bg-color:#282828;--content-bg-color:#333;--card-bg-color:#555;--text-color:#ccc;--blockquote-color:#bbb;--link-color:#ccc;--link-hover-color:#eee;--brand-color:#ddd;--brand-hover-color:#ddd;--table-row-odd-bg-color:#282828;--table-row-hover-bg-color:#363636;--menu-item-bg-color:#555;--btn-default-bg:#222;--btn-default-color:#ccc;--btn-default-border-color:#555;--btn-default-hover-bg:#666;--btn-default-hover-color:#ccc;--btn-default-hover-border-color:#666;--highlight-background:#282b2e;--highlight-foreground:#a9b7c6;--highlight-gutter-background:#34393d;--highlight-gutter-foreground:#9ca9b6}.darkmode--activated img{opacity:.75}.darkmode--activated img:hover{opacity:.9}.darkmode--activated code{color:#69dbdc;background:0 0}button.darkmode-toggle{z-index:9999}.darkmode-ignore,img{display:flex!important}.beian img{display:inline-block!important}</style></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">caijizhuo</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20260509173709_2941642251/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/portrait.jpg">
+      <meta itemprop="name" content="caijizhuo">
+      <meta itemprop="description" content="Looks delicious">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="caijizhuo">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          mHC 流程解析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-05-09 17:37:09" itemprop="dateCreated datePublished" datetime="2026-05-09T17:37:09+08:00">2026-05-09</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2026-05-15 11:40:29" itemprop="dateModified" datetime="2026-05-15T11:40:29+08:00">2026-05-15</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/AI/" itemprop="url" rel="index"><span itemprop="name">AI</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.4k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>5 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="mhc-manifold-constrained-hyper-connections"><a class="markdownIt-Anchor" href="#mhc-manifold-constrained-hyper-connections"></a> mHC Manifold-Constrained Hyper-Connections</h2>
+<p>流形约束超连接，是 DeepSeek 团队在 2025 年 12 月提出，在 2026 年 4 月发布的 DeepSeek V4 中应用的新的残差技术，是 DeepSeek 的核心创新之一。他的目标是为了解决传统残差连接表达能力不足以及使用原始超链接（Hyper-Connections）深层次训练崩溃的问题。</p>
+<h2 id="计算流程"><a class="markdownIt-Anchor" href="#计算流程"></a> 计算流程</h2>
+<p>以下代码来自 sglang 中的 deepseek v4 的 forward函数，省略了部分细节。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">residual = hidden_states</span><br><span class="line">hidden_states, post, comb = self.hc_pre(</span><br><span class="line">    hidden_states, self.hc_attn_fn, self.hc_attn_scale, self.hc_attn_base</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 模块计算，以 attention 为例</span></span><br><span class="line">hidden_states = self.input_layernorm(hidden_states)</span><br><span class="line">hidden_states = self.self_attn(</span><br><span class="line">    x=hidden_states,</span><br><span class="line">    positions=positions,</span><br><span class="line">    forward_batch=forward_batch,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">hidden_states = self.hc_post(hidden_states, residual, post, comb)</span><br></pre></td></tr></table></figure>
+<p>可以看见，在最开始的时候会保存原始的 hidden_states（residual），之后对这部分 hidden_states 做预处理。</p>
+<h3 id="hc_pre"><a class="markdownIt-Anchor" href="#hc_pre"></a> hc_pre</h3>
+<p>对于 <code>hc_pre</code> 函数，可以看到有四个入参。<br>
+<strong>输入参数</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>维度</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>x</td>
+<td>torch.Tensor</td>
+<td>[…, hidden_size]</td>
+<td>输入激活值，通常是上一层输出</td>
+</tr>
+<tr>
+<td>hc_fn</td>
+<td>torch.Tensor</td>
+<td>[hc_mult, hidden_size]</td>
+<td>混合函数权重，定义了如何将输入映射到混合空间</td>
+</tr>
+<tr>
+<td>hc_scale</td>
+<td>torch.Tensor</td>
+<td>[hc_mult]</td>
+<td>Sinkhorn 迭代的缩放因子</td>
+</tr>
+<tr>
+<td>hc_base</td>
+<td>torch.Tensor</td>
+<td>[hc_mult]</td>
+<td>Sinkhorn 迭代的基础偏置项</td>
+</tr>
+</tbody>
+</table>
+<p><strong>返回值</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>维度</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>y</td>
+<td>torch.Tensor</td>
+<td>[…, hidden_size]</td>
+<td>预处理输出：对 x 按混合权重加权后的结果</td>
+</tr>
+<tr>
+<td>post</td>
+<td>torch.Tensor</td>
+<td>[…, hc_mult]</td>
+<td>后处理权重：用于后续 hc_post 阶段</td>
+</tr>
+<tr>
+<td>comb</td>
+<td>torch.Tensor</td>
+<td>[…, hc_mult, hc_mult]</td>
+<td>组合矩阵：表示各混合通道间的连接关系</td>
+</tr>
+</tbody>
+</table>
+<p>具体计算分为两个步骤：</p>
+<ol>
+<li>计算输入的归一化（rmsnorm），并与混合函数矩阵乘，映射得到混合权重。</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">hc_pre_torch_impl</span>(<span class="params">x, hc_fn</span>):</span><br><span class="line">    x_flat = x.flatten(<span class="number">1</span>).<span class="built_in">float</span>()</span><br><span class="line">    rsqrt = torch.rsqrt(</span><br><span class="line">        x_flat.square().mean(-<span class="number">1</span>, keepdim=<span class="literal">True</span>) + self.rms_norm_eps</span><br><span class="line">    )</span><br><span class="line">    mixes = (F.linear(x_flat, hc_fn) * rsqrt).unsqueeze(<span class="number">1</span>)</span><br><span class="line">    <span class="keyword">return</span> x_flat, mixes</span><br></pre></td></tr></table></figure>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mtext>mixes</mtext><mo>=</mo><mo stretchy="false">(</mo><msub><mi>W</mi><mrow><mi>h</mi><mi>c</mi></mrow></msub><mo>⋅</mo><mi>x</mi><mo stretchy="false">)</mo><mo>⋅</mo><mtext>RMSNorm</mtext><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">\text{mixes} = (W_{hc} \cdot x) \cdot \text{RMSNorm}(x)
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.66786em;vertical-align:0em;"></span><span class="mord text"><span class="mord">mixes</span></span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.13889em;">W</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.33610799999999996em;"><span style="top:-2.5500000000000003em;margin-left:-0.13889em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">h</span><span class="mord mathnormal mtight">c</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">x</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord text"><span class="mord">RMSNorm</span></span><span class="mopen">(</span><span class="mord mathnormal">x</span><span class="mclose">)</span></span></span></span></span></p>
+<p>这个函数将返回 mixes 交给下一步处理。</p>
+<ol start="2">
+<li>Sinkhorn 归一化<br>
+Sinkhorn 归一化是一种快速迭代算法，用来将任意非负矩阵转换成双随机矩阵（每行和每列的和都等于 1）。它是 DeepSeek V4 mHC（流形约束超连接）架构中最核心的数学创新，解决了原始超连接训练崩溃的问题。hc_split_sinkhorn 的作用是将输入的 mixes 张量拆分为三部分（pre、post、comb），并对 comb 部分执行 Sinkhorn 归一化，使其收敛为双随机矩阵（doubly stochastic matrix）。<br>
+<strong>核心思想：交替对行和列进行归一化，直到收敛。</strong></li>
+</ol>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">pre, post, comb = hc_split_sinkhorn(</span><br><span class="line">    mixes,</span><br><span class="line">    hc_scale,</span><br><span class="line">    hc_base,</span><br><span class="line">    self.hc_mult,</span><br><span class="line">    self.hc_sinkhorn_iters,</span><br><span class="line">    self.hc_eps,</span><br><span class="line">)</span><br><span class="line">y = (pre.squeeze(<span class="number">1</span>).unsqueeze(-<span class="number">1</span>) * x_flat.view(shape)).<span class="built_in">sum</span>(dim=<span class="number">1</span>)</span><br></pre></td></tr></table></figure>
+<p>输入参数：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">参数名</th>
+<th style="text-align:center">类型</th>
+<th style="text-align:center">维度</th>
+<th style="text-align:center">输入/输出</th>
+<th style="text-align:center">说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">mixes</td>
+<td style="text-align:center">float32</td>
+<td style="text-align:center">(n, mix_hc)</td>
+<td style="text-align:center">输入</td>
+<td style="text-align:center">混合参数，其中 mix_hc = (2 + hc) * hc</td>
+</tr>
+<tr>
+<td style="text-align:center">hc_scale</td>
+<td style="text-align:center">float32</td>
+<td style="text-align:center">(3,)</td>
+<td style="text-align:center">输入</td>
+<td style="text-align:center">三部分（pre/post/comb）的缩放系数</td>
+</tr>
+<tr>
+<td style="text-align:center">hc_base</td>
+<td style="text-align:center">float32</td>
+<td style="text-align:center">(mix_hc,)</td>
+<td style="text-align:center">输入</td>
+<td style="text-align:center">基础偏置参数</td>
+</tr>
+<tr>
+<td style="text-align:center">hc_mult</td>
+<td style="text-align:center">int</td>
+<td style="text-align:center">标量</td>
+<td style="text-align:center">输入</td>
+<td style="text-align:center">隐藏维度参数，控制 pre/post/comb 的输出维度</td>
+</tr>
+<tr>
+<td style="text-align:center">hc_sinkhorn_iters</td>
+<td style="text-align:center">int</td>
+<td style="text-align:center">标量</td>
+<td style="text-align:center">输入</td>
+<td style="text-align:center">Sinkhorn 归一化的迭代次数</td>
+</tr>
+<tr>
+<td style="text-align:center">hc_eps</td>
+<td style="text-align:center">float</td>
+<td style="text-align:center">标量</td>
+<td style="text-align:center">输入</td>
+<td style="text-align:center">数值稳定性参数，防止除零，用于 sigmoid 和归一化</td>
+</tr>
+</tbody>
+</table>
+<p>输出参数：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">参数名</th>
+<th style="text-align:center">类型</th>
+<th style="text-align:center">维度</th>
+<th style="text-align:center">输入/输出</th>
+<th style="text-align:center">说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">pre</td>
+<td style="text-align:center">float32</td>
+<td style="text-align:center">(n, hc)</td>
+<td style="text-align:center">输出</td>
+<td style="text-align:center">前置参数，sigmoid 激活结果</td>
+</tr>
+<tr>
+<td style="text-align:center">post</td>
+<td style="text-align:center">float32</td>
+<td style="text-align:center">(n, hc)</td>
+<td style="text-align:center">输出</td>
+<td style="text-align:center">后置参数，sigmoid 激活结果乘以 2</td>
+</tr>
+<tr>
+<td style="text-align:center">comb</td>
+<td style="text-align:center">float32</td>
+<td style="text-align:center">(n, hc, hc)</td>
+<td style="text-align:center">输出</td>
+<td style="text-align:center">组合矩阵，经过 Sinkhorn 归一化的双随机矩阵</td>
+</tr>
+</tbody>
+</table>
+<p>其中输出的 pre 和 post 是由 mixes、hc_scale 以及 hc_base 计算得到的：</p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mtext>s</mtext><mi>i</mi><mi>g</mi><mi>m</mi><mi>o</mi><mi>i</mi><mi>d</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo>=</mo><mfrac><mn>1</mn><mrow><mn>1</mn><mo>+</mo><msup><mi>e</mi><mrow><mo>−</mo><mi>x</mi></mrow></msup></mrow></mfrac></mrow><annotation encoding="application/x-tex">\text sigmoid(x) = \dfrac{1}{1 + e^{-x}}
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord text"><span class="mord">s</span></span><span class="mord mathnormal">i</span><span class="mord mathnormal" style="margin-right:0.03588em;">g</span><span class="mord mathnormal">m</span><span class="mord mathnormal">o</span><span class="mord mathnormal">i</span><span class="mord mathnormal">d</span><span class="mopen">(</span><span class="mord mathnormal">x</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:2.09077em;vertical-align:-0.7693300000000001em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.32144em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">1</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mord"><span class="mord mathnormal">e</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.697331em;"><span style="top:-2.989em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">−</span><span class="mord mathnormal mtight">x</span></span></span></span></span></span></span></span></span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.7693300000000001em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span></span></p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mtext>pre</mtext><mo>=</mo><mtext>s</mtext><mi>i</mi><mi>g</mi><mi>m</mi><mi>o</mi><mi>i</mi><mi>d</mi><mrow><mo fence="true">(</mo><mi>m</mi><mi>i</mi><mi>x</mi><mi>e</mi><mi>s</mi><mo stretchy="false">[</mo><mn>0</mn><mo separator="true">,</mo><mi>j</mi><mo stretchy="false">]</mo><mo>⋅</mo><mi>s</mi><mi>c</mi><mi>a</mi><mi>l</mi><mi>e</mi><mo stretchy="false">[</mo><mn>0</mn><mo stretchy="false">]</mo><mo>+</mo><mi>b</mi><mi>a</mi><mi>s</mi><mi>e</mi><mo stretchy="false">[</mo><mn>0</mn><mtext>，</mtext><mi>m</mi><mi>u</mi><mi>l</mi><mi>t</mi><mo stretchy="false">]</mo><mo fence="true">)</mo></mrow></mrow><annotation encoding="application/x-tex">\text{pre} = \text sigmoid\left(mixes[0,j] \cdot scale[0] + base[0，mult]\right)
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.625em;vertical-align:-0.19444em;"></span><span class="mord text"><span class="mord">pre</span></span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord text"><span class="mord">s</span></span><span class="mord mathnormal">i</span><span class="mord mathnormal" style="margin-right:0.03588em;">g</span><span class="mord mathnormal">m</span><span class="mord mathnormal">o</span><span class="mord mathnormal">i</span><span class="mord mathnormal">d</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="minner"><span class="mopen delimcenter" style="top:0em;">(</span><span class="mord mathnormal">m</span><span class="mord mathnormal">i</span><span class="mord mathnormal">x</span><span class="mord mathnormal">e</span><span class="mord mathnormal">s</span><span class="mopen">[</span><span class="mord">0</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord mathnormal" style="margin-right:0.05724em;">j</span><span class="mclose">]</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mord mathnormal">s</span><span class="mord mathnormal">c</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.01968em;">l</span><span class="mord mathnormal">e</span><span class="mopen">[</span><span class="mord">0</span><span class="mclose">]</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mord mathnormal">b</span><span class="mord mathnormal">a</span><span class="mord mathnormal">s</span><span class="mord mathnormal">e</span><span class="mopen">[</span><span class="mord">0</span><span class="mord cjk_fallback">，</span><span class="mord mathnormal">m</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.01968em;">l</span><span class="mord mathnormal">t</span><span class="mclose">]</span><span class="mclose delimcenter" style="top:0em;">)</span></span></span></span></span></span></p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mtext>post</mtext><mo>=</mo><mtext>2</mtext><mo>∗</mo><mi>s</mi><mi>i</mi><mi>g</mi><mi>m</mi><mi>o</mi><mi>i</mi><mi>d</mi><mrow><mo fence="true">(</mo><mi>m</mi><mi>i</mi><mi>x</mi><mi>e</mi><mi>s</mi><mo stretchy="false">[</mo><mi>m</mi><mi>u</mi><mi>l</mi><mi>t</mi><mo separator="true">,</mo><mn>2</mn><mo>∗</mo><mi>m</mi><mi>u</mi><mi>l</mi><mi>t</mi><mo stretchy="false">]</mo><mo>⋅</mo><mi>s</mi><mi>c</mi><mi>a</mi><mi>l</mi><mi>e</mi><mo stretchy="false">[</mo><mn>1</mn><mo stretchy="false">]</mo><mo>+</mo><mi>b</mi><mi>a</mi><mi>s</mi><mi>e</mi><mo stretchy="false">[</mo><mi>m</mi><mi>u</mi><mi>l</mi><mi>t</mi><mo separator="true">,</mo><mn>2</mn><mo>∗</mo><mi>m</mi><mi>u</mi><mi>l</mi><mi>t</mi><mo stretchy="false">]</mo><mo fence="true">)</mo></mrow></mrow><annotation encoding="application/x-tex">\text{post} = \text 2 * sigmoid\left(mixes[mult,2*mult] \cdot scale[1] + base[mult,2*mult]\right)
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.80952em;vertical-align:-0.19444em;"></span><span class="mord text"><span class="mord">post</span></span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:0.64444em;vertical-align:0em;"></span><span class="mord text"><span class="mord">2</span></span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">∗</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">s</span><span class="mord mathnormal">i</span><span class="mord mathnormal" style="margin-right:0.03588em;">g</span><span class="mord mathnormal">m</span><span class="mord mathnormal">o</span><span class="mord mathnormal">i</span><span class="mord mathnormal">d</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="minner"><span class="mopen delimcenter" style="top:0em;">(</span><span class="mord mathnormal">m</span><span class="mord mathnormal">i</span><span class="mord mathnormal">x</span><span class="mord mathnormal">e</span><span class="mord mathnormal">s</span><span class="mopen">[</span><span class="mord mathnormal">m</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.01968em;">l</span><span class="mord mathnormal">t</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord">2</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">∗</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mord mathnormal">m</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.01968em;">l</span><span class="mord mathnormal">t</span><span class="mclose">]</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mord mathnormal">s</span><span class="mord mathnormal">c</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.01968em;">l</span><span class="mord mathnormal">e</span><span class="mopen">[</span><span class="mord">1</span><span class="mclose">]</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mord mathnormal">b</span><span class="mord mathnormal">a</span><span class="mord mathnormal">s</span><span class="mord mathnormal">e</span><span class="mopen">[</span><span class="mord mathnormal">m</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.01968em;">l</span><span class="mord mathnormal">t</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord">2</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">∗</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mord mathnormal">m</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.01968em;">l</span><span class="mord mathnormal">t</span><span class="mclose">]</span><span class="mclose delimcenter" style="top:0em;">)</span></span></span></span></span></span></p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mtext>comb</mtext><mo>=</mo><mi>m</mi><mi>i</mi><mi>x</mi><mi>e</mi><mi>s</mi><mo stretchy="false">[</mo><mn>2</mn><mo>∗</mo><mi>m</mi><mi>u</mi><mi>l</mi><mi>t</mi><mo separator="true">,</mo><mn>2</mn><mo>∗</mo><mi>m</mi><mi>u</mi><mi>l</mi><mi>t</mi><mo>+</mo><mi>m</mi><mi>u</mi><mi>l</mi><mi>t</mi><mo>∗</mo><mi>m</mi><mi>u</mi><mi>l</mi><mi>t</mi><mo stretchy="false">]</mo><mo>⋅</mo><mi>s</mi><mi>c</mi><mi>a</mi><mi>l</mi><mi>e</mi><mo stretchy="false">[</mo><mn>2</mn><mo stretchy="false">]</mo><mo>+</mo><mi>b</mi><mi>a</mi><mi>s</mi><mi>e</mi><mo stretchy="false">[</mo><mn>2</mn><mo>∗</mo><mi>m</mi><mi>u</mi><mi>l</mi><mi>t</mi><mo separator="true">,</mo><mn>2</mn><mo>∗</mo><mi>m</mi><mi>u</mi><mi>l</mi><mi>t</mi><mo>+</mo><mi>m</mi><mi>u</mi><mi>l</mi><mi>t</mi><mo>∗</mo><mi>m</mi><mi>u</mi><mi>l</mi><mi>t</mi><mo stretchy="false">]</mo></mrow><annotation encoding="application/x-tex">\text{comb} = mixes[2*mult,2*mult+mult*mult] \cdot scale[2] + base[2*mult,2*mult+mult*mult]
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.69444em;vertical-align:0em;"></span><span class="mord text"><span class="mord">comb</span></span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">m</span><span class="mord mathnormal">i</span><span class="mord mathnormal">x</span><span class="mord mathnormal">e</span><span class="mord mathnormal">s</span><span class="mopen">[</span><span class="mord">2</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">∗</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.8888799999999999em;vertical-align:-0.19444em;"></span><span class="mord mathnormal">m</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.01968em;">l</span><span class="mord mathnormal">t</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord">2</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">∗</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.77777em;vertical-align:-0.08333em;"></span><span class="mord mathnormal">m</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.01968em;">l</span><span class="mord mathnormal">t</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.69444em;vertical-align:0em;"></span><span class="mord mathnormal">m</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.01968em;">l</span><span class="mord mathnormal">t</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">∗</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">m</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.01968em;">l</span><span class="mord mathnormal">t</span><span class="mclose">]</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">s</span><span class="mord mathnormal">c</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.01968em;">l</span><span class="mord mathnormal">e</span><span class="mopen">[</span><span class="mord">2</span><span class="mclose">]</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">b</span><span class="mord mathnormal">a</span><span class="mord mathnormal">s</span><span class="mord mathnormal">e</span><span class="mopen">[</span><span class="mord">2</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">∗</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.8888799999999999em;vertical-align:-0.19444em;"></span><span class="mord mathnormal">m</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.01968em;">l</span><span class="mord mathnormal">t</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord">2</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">∗</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.77777em;vertical-align:-0.08333em;"></span><span class="mord mathnormal">m</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.01968em;">l</span><span class="mord mathnormal">t</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.69444em;vertical-align:0em;"></span><span class="mord mathnormal">m</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.01968em;">l</span><span class="mord mathnormal">t</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">∗</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">m</span><span class="mord mathnormal">u</span><span class="mord mathnormal" style="margin-right:0.01968em;">l</span><span class="mord mathnormal">t</span><span class="mclose">]</span></span></span></span></span></p>
+<p>在分出这三个 tensor 后，对最后一个 combination tensor 进行迭代的归一化：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">sinkhorn_normalize</span>(<span class="params">comb_frag: torch.Tensor, sinkhorn_iters: <span class="built_in">int</span>, eps: <span class="built_in">float</span> = <span class="number">1e-6</span></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    comb_frag: (hc, hc)</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># --- 第一次行归一化（带 softmax 数值稳定）---</span></span><br><span class="line">    row_max = torch.<span class="built_in">max</span>(comb_frag, dim=<span class="number">1</span>).values          <span class="comment"># (hc,)</span></span><br><span class="line">    comb_frag = torch.exp(comb_frag - row_max.unsqueeze(<span class="number">1</span>))</span><br><span class="line">    row_sum = torch.<span class="built_in">sum</span>(comb_frag, dim=<span class="number">1</span>)                 <span class="comment"># (hc,)</span></span><br><span class="line">    comb_frag = comb_frag / row_sum.unsqueeze(<span class="number">1</span>) + eps    <span class="comment"># 注意：eps 加在结果上</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># --- 第一次列归一化 ---</span></span><br><span class="line">    col_sum = torch.<span class="built_in">sum</span>(comb_frag, dim=<span class="number">0</span>)                 <span class="comment"># (hc,)</span></span><br><span class="line">    comb_frag = comb_frag / (col_sum.unsqueeze(<span class="number">0</span>) + eps)  <span class="comment"># 注意：eps 加在分母上</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># --- 交替迭代 sinkhorn_iters - 1 次 ---</span></span><br><span class="line">    <span class="keyword">for</span> _ <span class="keyword">in</span> <span class="built_in">range</span>(sinkhorn_iters - <span class="number">1</span>):</span><br><span class="line">        row_sum = torch.<span class="built_in">sum</span>(comb_frag, dim=<span class="number">1</span>)</span><br><span class="line">        comb_frag = comb_frag / (row_sum.unsqueeze(<span class="number">1</span>) + eps)</span><br><span class="line"></span><br><span class="line">        col_sum = torch.<span class="built_in">sum</span>(comb_frag, dim=<span class="number">0</span>)</span><br><span class="line">        comb_frag = comb_frag / (col_sum.unsqueeze(<span class="number">0</span>) + eps)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> comb_frag</span><br></pre></td></tr></table></figure>
+<h3 id="hc_post"><a class="markdownIt-Anchor" href="#hc_post"></a> hc_post</h3>
+<p>将注意力/FFN 的输出与残差进行加权组合，是 hc_pre 的逆操作。该部分是对 mhc 部分的后处理函数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">hc_post_torch_impl</span>(<span class="params">x, residual, post, comb</span>):</span><br><span class="line">    <span class="keyword">return</span> (</span><br><span class="line">        post.unsqueeze(-<span class="number">1</span>) * x.unsqueeze(<span class="number">1</span>)</span><br><span class="line">        + (comb.unsqueeze(-<span class="number">1</span>) * residual.unsqueeze(<span class="number">2</span>)).<span class="built_in">sum</span>(dim=<span class="number">1</span>)</span><br><span class="line">    ).type_as(x)</span><br></pre></td></tr></table></figure>
+<p>输入参数：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">参数</th>
+<th style="text-align:center">形状</th>
+<th style="text-align:center">含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">x</td>
+<td style="text-align:center">(n, hidden_dim)</td>
+<td style="text-align:center">当前层输出</td>
+</tr>
+<tr>
+<td style="text-align:center">residual</td>
+<td style="text-align:center">(n, hc_mult, hidden_dim)</td>
+<td style="text-align:center">来自 hc_pre 的多路残差</td>
+</tr>
+<tr>
+<td style="text-align:center">post</td>
+<td style="text-align:center">(n, hc_mult)</td>
+<td style="text-align:center">后处理权重</td>
+</tr>
+<tr>
+<td style="text-align:center">comb</td>
+<td style="text-align:center">(n, hc_mult, hc_mult)</td>
+<td style="text-align:center">组合权重矩阵</td>
+</tr>
+</tbody>
+</table>
+<p>输出参数：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">参数</th>
+<th style="text-align:center">形状</th>
+<th style="text-align:center">含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">output</td>
+<td style="text-align:center">(n, hc_mult, hidden_dim)</td>
+<td style="text-align:center">当前层输出</td>
+</tr>
+<tr>
+<td style="text-align:center">公式：</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+</tr>
+</tbody>
+</table>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mtext>out</mtext><mo>=</mo><mtext>post</mtext><mo>⋅</mo><mi>x</mi><mo>+</mo><mtext>comb</mtext><mo>⋅</mo><mtext>residual</mtext></mrow><annotation encoding="application/x-tex">\text{out} = \text{post} \cdot x + \text{comb} \cdot \text{residual} 
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.61508em;vertical-align:0em;"></span><span class="mord text"><span class="mord">out</span></span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:0.80952em;vertical-align:-0.19444em;"></span><span class="mord text"><span class="mord">post</span></span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.66666em;vertical-align:-0.08333em;"></span><span class="mord mathnormal">x</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.69444em;vertical-align:0em;"></span><span class="mord text"><span class="mord">comb</span></span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.69444em;vertical-align:0em;"></span><span class="mord text"><span class="mord">residual</span></span></span></span></span></span></p>
+<h2 id="总结"><a class="markdownIt-Anchor" href="#总结"></a> 总结</h2>
+<p>mhc 诞生主要为了解决：</p>
+<ol>
+<li>传统残差连接表达能力不足<br>
+标准残差连接只是简单的 out = x + f(x)，信息通路单一。<br>
+mHC 通过 hc_pre 将输入映射到多路混合空间（hc_mult 路），在 hc_post 阶段用 post 和 comb 对当前层输出和残差做加权组合，相当于同时维护了多条残差通路，增强了表征能力。</li>
+<li>原始 Hyper-Connections 深层训练崩溃<br>
+纯超连接在深层网络中容易出现数值不稳定或训练崩溃。<br>
+mHC 的核心创新是引入 Sinkhorn 归一化：将组合矩阵 comb 约束为双随机矩阵（每行、每列和均为 1）。<br>
+这保证了多路残差之间的信息流动是均衡且稳定的，避免了权重爆炸或消失，从而解决了深层训练崩溃问题。</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>caijizhuo
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://caijizhuo.github.io/20260509173709_2941642251/" title="mHC 流程解析">https://caijizhuo.github.io/20260509173709_2941642251/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/AI/" rel="tag"># AI</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/20260323103553_1895214780/" rel="prev" title="attention发展历程">
+      <i class="fa fa-chevron-left"></i> attention发展历程
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#mhc-manifold-constrained-hyper-connections"><span class="nav-number">1.</span> <span class="nav-text"> mHC Manifold-Constrained Hyper-Connections</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%A1%E7%AE%97%E6%B5%81%E7%A8%8B"><span class="nav-number">2.</span> <span class="nav-text"> 计算流程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#hc_pre"><span class="nav-number">2.1.</span> <span class="nav-text"> hc_pre</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hc_post"><span class="nav-number">2.2.</span> <span class="nav-text"> hc_post</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">3.</span> <span class="nav-text"> 总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="caijizhuo"
+      src="/images/portrait.jpg">
+  <p class="site-author-name" itemprop="name">caijizhuo</p>
+  <div class="site-description" itemprop="description">Looks delicious</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">70</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">12</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/caijizhuo" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;caijizhuo" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:zhao_yingzhuo@foxmail.com" title="E-Mail → mailto:zhao_yingzhuo@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">caijizhuo</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">68k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">4:07</span>
+</div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+      
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/katex@0/dist/katex.min.css">
+
+
+  
+<script src="https://unpkg.com/darkmode-js@1.5.7/lib/darkmode-js.min.js"></script>
+
+<script>
+var options = {
+  bottom: '72px',
+  right: 'unset',
+  left: '16px',
+  time: '0.5s',
+  mixColor: 'transparent',
+  backgroundColor: 'transparent',
+  buttonColorDark: '#100f2c',
+  buttonColorLight: '#fff',
+  saveInCookies: true,
+  label: '🌓',
+  autoMatchOsTheme: false
+}
+const darkmode = new Darkmode(options);
+window.darkmode = darkmode;
+darkmode.showWidget();
+</script>
+
+    </div>
+
+  <link rel="stylesheet" href="/dist/APlayer.min.css">
+  <div id="aplayer"></div>
+  <script type="text/javascript" src="/dist/APlayer.min.js"></script>
+  <script type="text/javascript" src="/dist/music.js"></script>
+
+        <style>
+            [bg-lazy] {
+                background-image: none !important;
+                background-color: #eee !important;
+            }
+        </style>
+        <script>
+            window.imageLazyLoadSetting = {
+                isSPA: true,
+                preloadRatio: 3,
+                processImages: null,
+            };
+        </script><script>window.addEventListener("load",function(){var t=/\.(gif|jpg|jpeg|tiff|png)$/i,r=/^data:image\/[a-z]+;base64,/;Array.prototype.slice.call(document.querySelectorAll("img[data-original]")).forEach(function(a){var e=a.parentNode;"A"===e.tagName&&(e.href.match(t)||e.href.match(r))&&(e.href=a.dataset.original)})});</script><script>!function(r){r.imageLazyLoadSetting.processImages=t;var e=r.imageLazyLoadSetting.isSPA,n=r.imageLazyLoadSetting.preloadRatio||1,c=a();function a(){var t=Array.prototype.slice.call(document.querySelectorAll("img[data-original]")),e=Array.prototype.slice.call(document.querySelectorAll("[bg-lazy]"));return t.concat(e)}function t(){e&&(c=a());for(var t,o=0;o<c.length;o++)0<=(t=(t=c[o]).getBoundingClientRect()).bottom&&0<=t.left&&t.top<=(r.innerHeight*n||document.documentElement.clientHeight*n)&&function(){var t,e,n,a,i=c[o];e=function(){c=c.filter(function(t){return i!==t}),r.imageLazyLoadSetting.onImageLoaded&&r.imageLazyLoadSetting.onImageLoaded(i)},(t=i).hasAttribute("bg-lazy")?(t.removeAttribute("bg-lazy"),e&&e()):(n=new Image,a=t.getAttribute("data-original"),n.onload=function(){t.src=a,t.removeAttribute("data-original"),e&&e()},t.src!==a&&(n.src=a))}()}function i(){clearTimeout(t.tId),t.tId=setTimeout(t,500)}t(),document.addEventListener("scroll",i),r.addEventListener("resize",i),r.addEventListener("orientationchange",i)}(this);</script></body>
+</html>
