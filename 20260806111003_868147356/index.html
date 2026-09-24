@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="EJdwSJxhW67liN5YZTmxFCA9mRU0UJt_B2-JNAGGU0Y">
+  <meta name="baidu-site-verification" content="codeva-hPTFkf6vHb">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"caijizhuo.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="1. 为什么需要并行和 Chunked Prefill 从存储和计算两个方面看：用资源&#x2F;通信换并行处理  1.1 存储压力 大模型推理时，模型显存中会存储：  模型权重 KV Cache 中间激活值  当我们使用比较大的模型进行长下文推理时，单卡显存会存不下，我们需要并行技术可以进行多卡推理，如： TP：按 head 切分模型权重 PP：按 layer 切分模型权重 EP：按 MoE exper">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LLM推理中的多卡切分">
+<meta property="og:url" content="https://caijizhuo.github.io/20260806111003_868147356/index.html">
+<meta property="og:site_name" content="caijizhuo">
+<meta property="og:description" content="1. 为什么需要并行和 Chunked Prefill 从存储和计算两个方面看：用资源&#x2F;通信换并行处理  1.1 存储压力 大模型推理时，模型显存中会存储：  模型权重 KV Cache 中间激活值  当我们使用比较大的模型进行长下文推理时，单卡显存会存不下，我们需要并行技术可以进行多卡推理，如： TP：按 head 切分模型权重 PP：按 layer 切分模型权重 EP：按 MoE exper">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://caijizhuo.github.io/20260806111003_868147356/1.png">
+<meta property="og:image" content="https://caijizhuo.github.io/20260806111003_868147356/2.png">
+<meta property="og:image" content="https://caijizhuo.github.io/20260806111003_868147356/3.png">
+<meta property="og:image" content="https://caijizhuo.github.io/20260806111003_868147356/4.png">
+<meta property="og:image" content="https://caijizhuo.github.io/20260806111003_868147356/5.png">
+<meta property="og:image" content="https://caijizhuo.github.io/20260806111003_868147356/7.png">
+<meta property="og:image" content="https://caijizhuo.github.io/20260806111003_868147356/8.png">
+<meta property="og:image" content="https://caijizhuo.github.io/20260806111003_868147356/9.png">
+<meta property="og:image" content="https://caijizhuo.github.io/20260806111003_868147356/10.png">
+<meta property="og:image" content="https://caijizhuo.github.io/20260806111003_868147356/11.png">
+<meta property="og:image" content="https://caijizhuo.github.io/20260806111003_868147356/12.png">
+<meta property="og:image" content="https://caijizhuo.github.io/20260806111003_868147356/13.png">
+<meta property="og:image" content="https://caijizhuo.github.io/20260806111003_868147356/14.png">
+<meta property="article:published_time" content="2026-08-06T03:10:03.000Z">
+<meta property="article:modified_time" content="2026-09-24T17:31:05.907Z">
+<meta property="article:author" content="caijizhuo">
+<meta property="article:tag" content="AI">
+<meta property="article:tag" content="LLM">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://caijizhuo.github.io/20260806111003_868147356/1.png">
+
+<link rel="canonical" href="https://caijizhuo.github.io/20260806111003_868147356/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LLM推理中的多卡切分 | caijizhuo</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<style>.darkmode--activated{--body-bg-color:#282828;--content-bg-color:#333;--card-bg-color:#555;--text-color:#ccc;--blockquote-color:#bbb;--link-color:#ccc;--link-hover-color:#eee;--brand-color:#ddd;--brand-hover-color:#ddd;--table-row-odd-bg-color:#282828;--table-row-hover-bg-color:#363636;--menu-item-bg-color:#555;--btn-default-bg:#222;--btn-default-color:#ccc;--btn-default-border-color:#555;--btn-default-hover-bg:#666;--btn-default-hover-color:#ccc;--btn-default-hover-border-color:#666;--highlight-background:#282b2e;--highlight-foreground:#a9b7c6;--highlight-gutter-background:#34393d;--highlight-gutter-foreground:#9ca9b6}.darkmode--activated img{opacity:.75}.darkmode--activated img:hover{opacity:.9}.darkmode--activated code{color:#69dbdc;background:0 0}button.darkmode-toggle{z-index:9999}.darkmode-ignore,img{display:flex!important}.beian img{display:inline-block!important}</style></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">caijizhuo</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20260806111003_868147356/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/portrait.jpg">
+      <meta itemprop="name" content="caijizhuo">
+      <meta itemprop="description" content="Looks delicious">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="caijizhuo">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LLM推理中的多卡切分
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-08-06 11:10:03" itemprop="dateCreated datePublished" datetime="2026-08-06T11:10:03+08:00">2026-08-06</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2026-09-25 01:31:05" itemprop="dateModified" datetime="2026-09-25T01:31:05+08:00">2026-09-25</time>
+              </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>6.9k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>25 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="1-为什么需要并行和-chunked-prefill"><a class="markdownIt-Anchor" href="#1-为什么需要并行和-chunked-prefill"></a> 1. 为什么需要并行和 Chunked Prefill</h2>
+<p>从<strong>存储</strong>和<strong>计算</strong>两个方面看：<strong>用资源/通信换并行处理</strong></p>
+<h3 id="11-存储压力"><a class="markdownIt-Anchor" href="#11-存储压力"></a> 1.1 存储压力</h3>
+<p>大模型推理时，模型显存中会存储：</p>
+<ul>
+<li>模型权重</li>
+<li>KV Cache</li>
+<li>中间激活值</li>
+</ul>
+<p>当我们使用比较大的模型进行长下文推理时，单卡显存会存不下，我们需要并行技术可以进行多卡推理，如：</p>
+<p>TP：按 head 切分模型权重<br>
+PP：按 layer 切分模型权重<br>
+EP：按 MoE expert 切分专家权重<br>
+CP：按 token 切分，每个 rank 推理不同的 token，降低 kv cache<br>
+DP：KV Cache 按请求分摊，MLA 模型不会复制冗余 kv cache<br>
+Chunked Prefill：降低单次 Prefill 的临时显存峰值</p>
+<h3 id="12-计算压力"><a class="markdownIt-Anchor" href="#12-计算压力"></a> 1.2 计算压力</h3>
+<p>我们需要使用并行等技术分摊计算量：</p>
+<p>TP：多卡分摊矩阵计算<br>
+PP：多卡分摊不同层计算<br>
+EP：多卡分摊不同 expert 计算<br>
+CP：多卡分摊长上下文 attention / KV 读取<br>
+DP：多张 GPU 并行处理不同请求，提高整体吞吐<br>
+Chunked Prefill：单机推理时，降低单次 Prefill 计算压力，避免长 Prefill 独占 GPU</p>
+<h3 id="13-简要总结"><a class="markdownIt-Anchor" href="#13-简要总结"></a> 1.3 简要总结</h3>
+<p>长上下文推理在推理引擎中面临的问题可以概括成三类：</p>
+<table>
+<thead>
+<tr>
+<th><strong>问题</strong></th>
+<th><strong>典型表现</strong></th>
+<th><strong>SGLang 中相关技术</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>模型权重大</td>
+<td>单卡放不下权重，单层 GEMM 过大</td>
+<td>TP、PP、EP、量化</td>
+</tr>
+<tr>
+<td>上下文长</td>
+<td>prefill TTFT 高，kv cache 存储压力大，长请求阻塞短请求</td>
+<td>Chunked Prefill、CP、DP、prefix cache、调度预算、PD 分离</td>
+</tr>
+<tr>
+<td>MoE 负载不均衡</td>
+<td>expert 参数巨大，token 路由不均衡，decode 阶段 all-to-all 延迟明显</td>
+<td>EP、DeepEP、TBO/SBO(计算和通信重叠)、EPLB</td>
+</tr>
+</tbody>
+</table>
+<p>针对上面的问题，目前已有的应对方案有以下几种：</p>
+<table>
+<thead>
+<tr>
+<th>技术</th>
+<th>定位</th>
+<th>主要收益</th>
+<th>主要代价</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Chunked Prefill</strong></td>
+<td>调度和显存水位控制技术</td>
+<td>不开chunk，长输入的峰值显存高导致oom服务崩溃。开chunk后，分块多轮forward降低峰值显存，解决oom问题，同时可以设置mem-fraction-static更大，增加kv cache上下文存储空间。</td>
+<td>ttft升高：单个长请求需要多轮 forward；增加调度、kernel launch 开销</td>
+</tr>
+<tr>
+<td><strong>TP</strong></td>
+<td>最通用的权重切分手段</td>
+<td>切分模型权重，降低单 rank 存储和计算压力</td>
+<td>小 GEMM 利用率下降，引入额外通信代价(all-reduce)</td>
+</tr>
+<tr>
+<td><strong>PP</strong></td>
+<td>跨设备/跨节点承载模型的 stage 并行</td>
+<td>降低单卡权重显存压力，并通过流水线方式提高多卡利用率</td>
+<td>引入额外通信代价(p2p)；存在 pipeline bubble；</td>
+</tr>
+<tr>
+<td><strong>DP(Attention)</strong></td>
+<td>attention 并行手段</td>
+<td>复制注意力权重，切分请求到不同 rank，主要降低单 rank 存储压力</td>
+<td>引入额外通信代价(all-gather)</td>
+</tr>
+<tr>
+<td><strong>EP</strong></td>
+<td>MoE 专家并行</td>
+<td>切分专家权重，降低单 rank 存储和计算压力</td>
+<td>引入额外通信代价(all-to-all)</td>
+</tr>
+<tr>
+<td><strong>CP</strong></td>
+<td>长上下文 prefill 的 sequence/context 并行</td>
+<td>长上下文激活和 KVCache 可以分摊到多卡，主要降低单 rank 存储压力</td>
+<td>引入额外通信代价(all-gather)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="2-sglang-并行推理概览"><a class="markdownIt-Anchor" href="#2-sglang-并行推理概览"></a> 2. SGLang 并行推理概览</h2>
+<h3 id="21-sglang-请求的推理流程"><a class="markdownIt-Anchor" href="#21-sglang-请求的推理流程"></a> 2.1 SGLang 请求的推理流程</h3>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20260806111003_868147356/1.png" alt="1"></p>
+<ol>
+<li>
+<p>请求排队：当前 Scheduler 中无请求，该 <code>req</code> 放入 <code>waiting_queue</code> 中</p>
+</li>
+<li>
+<p>控制 batch 内请求数量：创建 <code>PrefillAdder</code>，从 <code>waiting_queue</code> 中取出该请求，调用 <code>PrefillAdder::add_one_req()</code> prefill 会被截断分块，<code>can_run_list</code> 中只有这个 <code>req</code>，单个请求被打包成 <code>ScheduleBatch</code></p>
+</li>
+<li>
+<p>分配空闲 kv cache：调用 <code>ScheduleBatch::prepare_for_extend()</code> ，实际上调用 <code>alloc_for_extend()</code>，分配 <code>req_pool_indices</code> 以及为需要 extend 的长度申请真实的 KV 显存 <code>out_cache_loc</code>，并把对应关系记录到的 <code>req_to_token_pool</code></p>
+</li>
+<li>
+<p>模型推理 (<code>TpModelWorker</code> &amp; <code>ModelRunner</code>)</p>
+<ul>
+<li>进入模型层  <code>forward()</code>。</li>
+<li>Attention 执行 : 调用不同的 attention backend 根据 metadata 进行 attention 计算</li>
+<li>MLP/MoE：进行 MLP/MoE 计算</li>
+<li>lm_head：得到最终的 logits</li>
+</ul>
+</li>
+<li>
+<p>Sample：根据 req 中的 sample params 进行采样</p>
+</li>
+<li>
+<p>最后得到 batch_result，流式返回给 Detokenizer</p>
+</li>
+</ol>
+<h3 id="22-sglang-中的-chunked-prefill"><a class="markdownIt-Anchor" href="#22-sglang-中的-chunked-prefill"></a> 2.2 SGLang 中的 Chunked Prefill</h3>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20260806111003_868147356/2.png" alt="2"><br>
+SGLang 参数里有 <code>max_prefill_tokens</code>、<code>prefill_max_requests</code>、<code>max_running_requests</code>、<code>chunked_prefill_size</code> 等，它们共同决定一次 prefill 能放多少 token 和多少请求。</p>
+<p>SGLang 的 <code>chunked_prefill_size</code> 控制一个请求一次 prefill forward 最多处理多少新 token。调度器会将完整 req tokens 截断到当前剩余 budget。</p>
+<p>chunked prefill size 实际上是 MoE 层看到的 token 数，除以 <code>dp_size</code> 得到每个 DP rank 实际使用的 chunk size</p>
+<p>最开始提出是为了解决TPOT过高（因为continous batching将prefill和decode拼在一起算，导致prefill很长而decode空等待出现尖刺）问题以及长文本下激活值占用过大导致 OOM 问题</p>
+<ul>
+<li><code>chunked prefill size</code>增大，TTFT 减小，但需要预留更多显存给中间激活值，支持最大上下文减少</li>
+<li><code>chunked prefill size</code>减小，TTFT 增大，但可以支持更大上下文</li>
+</ul>
+<h3 id="23-sglang-中并行推理示例"><a class="markdownIt-Anchor" href="#23-sglang-中并行推理示例"></a> 2.3 SGLang 中并行推理示例</h3>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">python -m sglang.launch_server \</span><br><span class="line">  --model-path &lt;model&gt; \</span><br><span class="line">  --tp <span class="number">16</span> \</span><br><span class="line">  --dp <span class="number">2</span> \</span><br><span class="line">  --cp <span class="number">4</span> \</span><br><span class="line">  --ep <span class="number">16</span> \</span><br><span class="line">  --enable-dp-attention \</span><br><span class="line">  --enable-prefill-context-parallel \</span><br><span class="line">  --moe-a2a-backend deepep <span class="comment"># 开 deepep 后 shared_experts 不切分（tp_size=1）</span></span><br></pre></td></tr></table></figure>
+<p>核心公式：<code>tp_size = attn_dp_size × attn_cp_size × attn_tp_size</code></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">world_size  = tp_size * pp_size<span class="comment"># 全局卡数</span></span><br><span class="line">tp_size <span class="comment"># 一个 pipeline stage 内参与模型并行的 rank 数</span></span><br><span class="line">pp_size <span class="comment"># 有多少个 pipeline stage</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># attention 并行参数</span></span><br><span class="line">attn_dp_size = attention_data_parallel_size</span><br><span class="line">attn_cp_size = attention_context_model_parallel_size</span><br><span class="line">attn_tp_size = tensor_model_parallel_size // attn_cp_size // attn_dp_size</span><br><span class="line"></span><br><span class="line"><span class="comment"># moe 并行参数</span></span><br><span class="line">moe_ep_size = expert_model_parallel_size</span><br><span class="line">moe_dp_size = moe_data_model_parallel_size</span><br><span class="line">moe_tp_size = tensor_model_parallel_size // moe_ep_size // moe_dp_size</span><br></pre></td></tr></table></figure>
+<h4 id="231-rank-布局"><a class="markdownIt-Anchor" href="#231-rank-布局"></a> 2.3.1 Rank 布局</h4>
+<p>单个 rank layout <code>(dp, cp, tp)</code></p>
+<table>
+<thead>
+<tr>
+<th>全局 rank</th>
+<th>Attention 坐标</th>
+<th>MoE 坐标</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>DPA0, CP0, AttnTP0</td>
+<td>EP0</td>
+</tr>
+<tr>
+<td>1</td>
+<td>DPA0, CP0, AttnTP1</td>
+<td>EP1</td>
+</tr>
+<tr>
+<td>2</td>
+<td>DPA0, CP1, AttnTP0</td>
+<td>EP2</td>
+</tr>
+<tr>
+<td>3</td>
+<td>DPA0, CP1, AttnTP1</td>
+<td>EP3</td>
+</tr>
+<tr>
+<td>4</td>
+<td>DPA0, CP2, AttnTP0</td>
+<td>EP4</td>
+</tr>
+<tr>
+<td>5</td>
+<td>DPA0, CP2, AttnTP1</td>
+<td>EP5</td>
+</tr>
+<tr>
+<td>6</td>
+<td>DPA0, CP3, AttnTP0</td>
+<td>EP6</td>
+</tr>
+<tr>
+<td>7</td>
+<td>DPA0, CP3, AttnTP1</td>
+<td>EP7</td>
+</tr>
+<tr>
+<td>8</td>
+<td>DPA1, CP0, AttnTP0</td>
+<td>EP8</td>
+</tr>
+<tr>
+<td>9</td>
+<td>DPA1, CP0, AttnTP1</td>
+<td>EP9</td>
+</tr>
+<tr>
+<td>10</td>
+<td>DPA1, CP1, AttnTP0</td>
+<td>EP10</td>
+</tr>
+<tr>
+<td>11</td>
+<td>DPA1, CP1, AttnTP1</td>
+<td>EP11</td>
+</tr>
+<tr>
+<td>12</td>
+<td>DPA1, CP2, AttnTP0</td>
+<td>EP12</td>
+</tr>
+<tr>
+<td>13</td>
+<td>DPA1, CP2, AttnTP1</td>
+<td>EP13</td>
+</tr>
+<tr>
+<td>14</td>
+<td>DPA1, CP3, AttnTP0</td>
+<td>EP14</td>
+</tr>
+<tr>
+<td>15</td>
+<td>DPA1, CP3, AttnTP1</td>
+<td>EP15</td>
+</tr>
+</tbody>
+</table>
+<h4 id="232-参数设置开启-dp-tp-cp-ep"><a class="markdownIt-Anchor" href="#232-参数设置开启-dp-tp-cp-ep"></a> 2.3.2 参数设置（开启 DP, TP, CP, EP）</h4>
+<p>模型：NSA 模型(nsa indexer + MLA)</p>
+<p>16 卡示例参数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">python -m sglang.launch_server \</span><br><span class="line">  --model-path &lt;model&gt; \</span><br><span class="line">  --tp <span class="number">16</span> \</span><br><span class="line">  --dp <span class="number">2</span> \</span><br><span class="line">  --cp <span class="number">4</span> \</span><br><span class="line">  --ep <span class="number">16</span> \</span><br><span class="line">  --enable-dp-attention \</span><br><span class="line">  --enable-prefill-context-parallel \</span><br><span class="line">  --moe-a2a-backend deepep <span class="comment"># 开 deepep 后 shared_experts 不切分（tp_size=1）</span></span><br></pre></td></tr></table></figure>
+<h2 id="3-并行技术详细介绍"><a class="markdownIt-Anchor" href="#3-并行技术详细介绍"></a> 3. 并行技术详细介绍</h2>
+<h3 id="31-tptensor-parallelism"><a class="markdownIt-Anchor" href="#31-tptensor-parallelism"></a> 3.1 TP：Tensor Parallelism</h3>
+<p>解决单卡计算瓶颈和单卡显存瓶颈<br>
+当前模型都比较大，单张卡不能放得下，需要将模型权重按 hidden_dim 切分到不同卡上，通过通信来聚合中间结果 hidden_states，同时减少计算量和中间值的存储空间。</p>
+<p>主要有两种并行方式：<strong>Column Parallel (列并行)</strong>  和  <strong>Row Parallel (行并行)</strong>。通常它们会成对出现（例如在 MLP 中：先 Column 后 Row），以最小化通信开销。</p>
+<p><strong>以 TP=2 为例：单卡计算量、中间激活和权重都减半，代价是 row parallel 层后多一次 All-Reduce；输入在 column parallel 层是复制的（不切分），到 row parallel 层才按列切分</strong></p>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20260806111003_868147356/3.png" alt="3"><br>
+<code>shared_experts</code>内部用的是 <code>MergedColumnParallelLinear</code> 和 <code>RowParallelLinear</code>，实际上会走 tp 切分。</p>
+<p>如果设置 moe-a2a-backend <code>shared_experts</code> tp_size=1 不切分，复制到 rank</p>
+<p><strong>ColumnParallelLinear:</strong><br>
+<strong>数学原理</strong>：<br>
+输入  <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>X</mi></mrow><annotation encoding="application/x-tex">X</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.68333em;vertical-align:0em;"></span><span class="mord mathnormal" style="margin-right:0.07847em;">X</span></span></span></span>  是完整的（复制在所有 GPU 上）。每个 GPU 计算  <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>Y</mi><mi>i</mi></msub><mo>=</mo><mi>X</mi><msub><mi>A</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">Y_i=XA_i</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.83333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.22222em;">Y</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.31166399999999994em;"><span style="top:-2.5500000000000003em;margin-left:-0.22222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:0.83333em;vertical-align:-0.15em;"></span><span class="mord mathnormal" style="margin-right:0.07847em;">X</span><span class="mord"><span class="mord mathnormal">A</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.31166399999999994em;"><span style="top:-2.5500000000000003em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span>​。输出  <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Y</mi></mrow><annotation encoding="application/x-tex">Y</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.68333em;vertical-align:0em;"></span><span class="mord mathnormal" style="margin-right:0.22222em;">Y</span></span></span></span>被 切分为 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false">[</mo><msub><mi>Y</mi><mn>1</mn></msub><mo separator="true">,</mo><msub><mi>Y</mi><mn>2</mn></msub><mo separator="true">,</mo><mi mathvariant="normal">.</mi><mi mathvariant="normal">.</mi><mi mathvariant="normal">.</mi><mo separator="true">,</mo><msub><mi>Y</mi><mi>p</mi></msub><mo stretchy="false">]</mo></mrow><annotation encoding="application/x-tex">[Y_1,Y_2,...,Y_p]</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.036108em;vertical-align:-0.286108em;"></span><span class="mopen">[</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.22222em;">Y</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.30110799999999993em;"><span style="top:-2.5500000000000003em;margin-left:-0.22222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.22222em;">Y</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.30110799999999993em;"><span style="top:-2.5500000000000003em;margin-left:-0.22222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord">.</span><span class="mord">.</span><span class="mord">.</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.22222em;">Y</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.15139200000000003em;"><span style="top:-2.5500000000000003em;margin-left:-0.22222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">p</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.286108em;"><span></span></span></span></span></span></span><span class="mclose">]</span></span></span></span>，即每个 GPU 得到输出向量的一部分特征。<br>
+<strong>典型应用</strong>:</p>
+<ul>
+<li>Attention 的 QKV Projection (<code>QKVParallelLinear</code>)。</li>
+<li>MLP 的 Gate / Up Projection (<code>MergedColumnParallelLinear</code>)。</li>
+</ul>
+<p><strong>RowParallelLinear:</strong><br>
+<strong>数学原理</strong>：<br>
+为了匹配矩阵乘法规则，输入  <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>X</mi></mrow><annotation encoding="application/x-tex">X</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.68333em;vertical-align:0em;"></span><span class="mord mathnormal" style="margin-right:0.07847em;">X</span></span></span></span>  也必须按<strong>列</strong>切分为  <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false">[</mo><msub><mi>X</mi><mn>1</mn></msub><mtext>​</mtext><mo separator="true">,</mo><msub><mi>X</mi><mn>2</mn></msub><mtext>​</mtext><mo separator="true">,</mo><mi mathvariant="normal">.</mi><mi mathvariant="normal">.</mi><mi mathvariant="normal">.</mi><mo separator="true">,</mo><msub><mi>X</mi><mi>p</mi></msub><mtext>​</mtext><mo stretchy="false">]</mo></mrow><annotation encoding="application/x-tex">[X_1​,X_2​,...,X_p​]</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.036108em;vertical-align:-0.286108em;"></span><span class="mopen">[</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.07847em;">X</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.30110799999999993em;"><span style="top:-2.5500000000000003em;margin-left:-0.07847em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord">​</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.07847em;">X</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.30110799999999993em;"><span style="top:-2.5500000000000003em;margin-left:-0.07847em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord">​</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord">.</span><span class="mord">.</span><span class="mord">.</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.07847em;">X</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.15139200000000003em;"><span style="top:-2.5500000000000003em;margin-left:-0.07847em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">p</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.286108em;"><span></span></span></span></span></span></span><span class="mord">​</span><span class="mclose">]</span></span></span></span>（这正好是 ColumnParallelLinear 的输出格式）。每个 GPU 计算  <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>Y</mi><mi>i</mi></msub><mo>=</mo><msub><mi>X</mi><mi>i</mi></msub><msub><mi>A</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">Y_i=X_iA_i</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.83333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.22222em;">Y</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.31166399999999994em;"><span style="top:-2.5500000000000003em;margin-left:-0.22222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:0.83333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.07847em;">X</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.31166399999999994em;"><span style="top:-2.5500000000000003em;margin-left:-0.07847em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord"><span class="mord mathnormal">A</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.31166399999999994em;"><span style="top:-2.5500000000000003em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span>​。注意，<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>Y</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">Y_i</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.83333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.22222em;">Y</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.31166399999999994em;"><span style="top:-2.5500000000000003em;margin-left:-0.22222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> 的形状与最终输出  <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Y</mi></mrow><annotation encoding="application/x-tex">Y</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.68333em;vertical-align:0em;"></span><span class="mord mathnormal" style="margin-right:0.22222em;">Y</span></span></span></span>  相同，但它只是部分和。最终输出  <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Y</mi><mo>=</mo><mo>∑</mo><msub><mi>Y</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">Y = \sum Y_i</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.68333em;vertical-align:0em;"></span><span class="mord mathnormal" style="margin-right:0.22222em;">Y</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:1.00001em;vertical-align:-0.25001em;"></span><span class="mop op-symbol small-op" style="position:relative;top:-0.0000050000000000050004em;">∑</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.22222em;">Y</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.31166399999999994em;"><span style="top:-2.5500000000000003em;margin-left:-0.22222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span>​ ，需要一次  <strong>All-Reduce (Sum)</strong>  操作<br>
+<strong>典型应用</strong>：</p>
+<ul>
+<li>Attention 的 Output Projection (<code>o_proj</code>)。</li>
+<li>MLP 的 Down Projection (<code>down_proj</code>)。</li>
+</ul>
+<h3 id="32-pppipeline-parallelism"><a class="markdownIt-Anchor" href="#32-pppipeline-parallelism"></a> 3.2 PP：Pipeline Parallelism</h3>
+<p>解决单卡显存瓶颈和计算瓶颈<br>
+pipeline schedule:</p>
+<ul>
+<li>stage 0 处理 req 的输入和 embedding 层</li>
+<li>中间的 stage i th 从 i-1 th 接受上一轮的 output 并发送：</li>
+<li>非最后一个 PP rank forward 结束后返回 hidden states；最后一个 PP rank 才做 logits processor / lm_head。</li>
+</ul>
+<h3 id="33-dp-attentionmla-系列模型使用"><a class="markdownIt-Anchor" href="#33-dp-attentionmla-系列模型使用"></a> 3.3 DP Attention：MLA 系列模型使用</h3>
+<p>解决 MLA 模型的显存瓶颈：kv cache 大量冗余<br>
+MLA 的 KV Cache 与 head 数量无关（因为 KV 只有一个头，无法切分所以只能复制多份），使用常规的 TP 会重复存多份 KV Cache，造成显存浪费。DP attention 就是为了解决这个问题。</p>
+<ul>
+<li>DP Attention 每个 rank 复制 attention 权重，每个 attention 只存储自己分到这部分 token 的 KV Cache(用权重存储换 KV Cache 存储)</li>
+</ul>
+<p>SGLang 的 DP Attention：attention 层按 DP 切请求/token；MoE/MLP 仍然可以用 TP/EP。</p>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20260806111003_868147356/4.png" alt="4"><br>
+其目的是将一个大的张量并行（TP）组重组为几个较小的 TP 组，这些较小的 TP 组又形成一个专门用于注意力层的新的数据并行（DP）组。如 TP=8，拆分成DP=2，TP=4。</p>
+<ol>
+<li>对于模型中除 MLP 层以外的部分（如 Embedding, Self-Attention），每个数据并行单元（DP_Rank）内部的张量并行规模（TP_Size）设置为 1，即每个 DP_Rank 独立计算这些部分。</li>
+<li>对于 MLP 层，所有 DP_Rank 则共同组成一个大的张量并行组（TP_Group），该组的大小等于原始的 <code>tp_size</code>（图中示例 <code>attn_tp_size = 1</code>，所以恰好等于 DP 规模）。</li>
+</ol>
+<p>也就是说，原始 <code>tp_size</code> 被重新解释成：<code>tp_size = attn_dp_size × attn_cp_size  × attn_tp_size</code></p>
+<h4 id="331-dp-attention-的-gatherscatter"><a class="markdownIt-Anchor" href="#331-dp-attention-的-gatherscatter"></a> 3.3.1 DP Attention 的 gather/scatter</h4>
+<p>由于 attention 只处理本 DP rank 的 token，但 <strong>MLP/MoE 需要全局 token 布局</strong>，所以 SGLang 需要在 attention/MLP 边界做 gather/scatter。</p>
+<p>没有 MoE all-to-all 后端时，MoE 不能直接把 token 发给专家，只能先在 DP 组内把各 rank 的 token 收集成全局布局。为了满足 all-gather / all-reduce 的形状要求，需要根据 prefill/decode 和 token 分布，选择把每个 rank 的 batch padding 到 max_len 还是 sum_len，对应使用 all-gather 或 all-reduce；MoE 算完后再 scatter 回各 DP rank。常见情况是 prefill 用 SUM，decode 用 MAX，但 decode 分布很不均时会退化成 SUM。</p>
+<h3 id="34-epexpert-parallelism"><a class="markdownIt-Anchor" href="#34-epexpert-parallelism"></a> 3.4 EP：Expert Parallelism</h3>
+<p>现在参数量比较大的 MoE 模型，专家数量可能是几十到几百个。如果每张 GPU 都用TP做切分，在总卡数相同时不会增加每卡显存；主要问题是每个激活专家都要一次 TP all-reduce，不同专家无法并行，导致通信开销大、计算效率低、扩展性差。</p>
+<p>EP 一般流程</p>
+<p>MoE 层的 Dispatcher</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">hidden_states</span><br><span class="line">  -&gt; gate/router logits</span><br><span class="line">  -&gt; top-k expert ids + top-k weights</span><br><span class="line">  -&gt; dispatch (<span class="built_in">all</span>-to-<span class="built_in">all</span>)：按 expert <span class="built_in">id</span> 把 token 发到专家所在 GPU</span><br><span class="line">  -&gt; 本地按专家分组 -&gt; grouped GEMM（专家 FFN）</span><br><span class="line">  -&gt; [若专家内部有 TP：TP <span class="built_in">all</span>-reduce / reduce-scatter + <span class="built_in">all</span>-gather]</span><br><span class="line">  -&gt; combine (反向 <span class="built_in">all</span>-to-<span class="built_in">all</span>)：把专家输出送回原 token 所在 GPU</span><br><span class="line">  -&gt; 按 top-k weights 加权求和</span><br><span class="line">  -&gt; output</span><br></pre></td></tr></table></figure>
+<h4 id="341-standard-模式无-moe-a2a-backend"><a class="markdownIt-Anchor" href="#341-standard-模式无-moe-a2a-backend"></a> 3.4.1 Standard 模式（无 moe-a2a-backend）</h4>
+<p>Standard 模式 <strong>不做 All-to-All 通信</strong>，而是采用 <strong>AllGather 全量 token + 本地只算自己负责的专家 + AllReduce 归约</strong>的策略。</p>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20260806111003_868147356/5.png" alt="5"></p>
+<h5 id="3411-特点"><a class="markdownIt-Anchor" href="#3411-特点"></a> 3.4.1.1 特点</h5>
+<ol>
+<li><strong>无 token 物理搬移</strong>：dispatch 阶段不移动 token 数据，只重映射 expert ID</li>
+<li><strong>每个 rank 处理全部 token</strong>：但只在本地专家上计算，其余跳过（id=-1 的 token 贡献为 0）</li>
+<li><strong>靠 AllReduce 聚合</strong>：各 rank 的部分结果相加得到最终结果</li>
+</ol>
+<ul>
+<li>
+<p><strong>路由计算 (TopK Router)</strong></p>
+<ul>
+<li>计算 Token 路由，输出全局专家 ID (<code>topk_ids</code>) 及其对应权重。</li>
+</ul>
+</li>
+<li>
+<p><strong>本地分发 (Dispatch)</strong></p>
+<ul>
+<li>将全局专家 ID 映射为<strong>本地专家 ID</strong>（属于当前 Rank 的分配 Local ID，非本 Rank 的标记为 <code>-1</code>）。</li>
+</ul>
+</li>
+<li>
+<p><strong>专家执行 (MoE Runner)</strong></p>
+<ul>
+<li><strong>重排 (Pre-permute):</strong> 按专家 ID 对 Token 排序，直接过滤/跳过 ID 为 <code>-1</code> 的 Token。</li>
+<li><strong>计算 (Grouped GEMM):</strong> 仅对分配到本地的专家执行核心矩阵运算 (W13 + W2)。</li>
+<li><strong>还原 (Post-permute):</strong> 将计算后的 Token 恢复至原始输入顺序。</li>
+</ul>
+</li>
+<li>
+<p><strong>状态合并 (Combine)</strong></p>
+<ul>
+<li>输出当前 Rank 计算完成的隐藏层状态 (Hidden States)。</li>
+</ul>
+</li>
+<li>
+<p><strong>全局聚合 (AllReduce)</strong></p>
+<ul>
+<li>跨所有 EP/TP Rank 执行通信 (<code>AllReduce</code>)，将各节点分散计算的结果相加，得到最终完整输出。</li>
+</ul>
+</li>
+</ul>
+<h4 id="342-deepep-模式moe-a2a-backend-deepep"><a class="markdownIt-Anchor" href="#342-deepep-模式moe-a2a-backend-deepep"></a> 3.4.2 DeepEP 模式（–moe-a2a-backend deepep）</h4>
+<p>DeepEP 模式使用真正的 All-to-All 通信：将 token 物理发送到目标专家所在的 rank，每个 rank 只接收和处理路由到自己的 token。<br>
+传统固定形状 All-to-All：<br>
+Rank0 → Rank1: 5 个 token（其中 3 个是 padding）<br>
+Rank0 → Rank2: 5 个 token（其中 5 个是 padding，Rank2 根本不需要）<br>
+Rank0 → Rank3: 5 个 token（其中 4 个是 padding）</p>
+<p>DeepEP 动态 All-to-All：<br>
+Rank0 → Rank1: 2 个真实 token<br>
+Rank0 → Rank2: 0 个（根本不发）<br>
+Rank0 → Rank3: 1 个真实 token</p>
+<p>分为两种模式 Normal 和 LowLatency 模式</p>
+<ul>
+<li>prefill 使用 normal 模式</li>
+<li>decode 使用 low-latency 模式</li>
+</ul>
+<p>这是两者最根本的区别，源于对硬件拓扑的不同利用方式。</p>
+<p>Normal 模式（两级接力）：它利用了节点内 (Intra-node) NVLink 的高带宽（~160 GB/s） 和节点间 (Inter-node) RDMA 的相对低带宽（~50 GB/s） 的不对称性。其策略是：</p>
+<p>第一级 (RDMA)：源 GPU 只将一份数据通过 RDMA 发送到目标节点上编号相同的 GPU（例如，0号卡发给0号卡）。这大大减少了昂贵的跨节点数据传输量。<br>
+第二级 (NVLink)：接收节点上的 GPU 再通过高速 NVLink，将数据“扇出”给节点内所有需要此 token 的 GPU。<br>
+这种设计以牺牲一点路径长度为代价，换取了对稀缺 RDMA 带宽的高效利用，非常适合需要传输大量 token 的 Prefill 阶段。<br>
+Low-Latency 模式（一级直达）：它完全放弃了 NVLink 转发，所有通信都通过纯 RDMA 完成。其策略是：</p>
+<p>直接发送：每个 token 的通信请求，都通过 RDMA 直接发送到目标专家所在的 GPU，不经过中间节点转发。<br>
+虽然这可能增加 RDMA 的跳数，但路径最短，没有中间环节的等待和开销，因此单次通信延迟极低，完美契合 Decode 阶段每次只处理少量 token 的场景。</p>
+<h4 id="343-通信计算-overlap-机制"><a class="markdownIt-Anchor" href="#343-通信计算-overlap-机制"></a> 3.4.3 通信计算 overlap 机制</h4>
+<p>目的：为了提高 GPU 利用率</p>
+<h5 id="3431-tbotwo-batch-overlap-双批次重叠"><a class="markdownIt-Anchor" href="#3431-tbotwo-batch-overlap-双批次重叠"></a> 3.4.3.1 TBO（Two-Batch Overlap 双批次重叠）</h5>
+<p><strong>TBO 工作原理：</strong></p>
+<ul>
+<li>将一个 batch 拆成 2 个 sub-batch，在 attention 和 dispatch/combine 之间交错执行，隐藏通信延迟</li>
+<li>Sub-batch 0 的 MoE compute 与 Sub-batch 1 的 dispatch 通信重叠</li>
+<li>需要 2 个独立 dispatcher（各自有独立的 handle 和 buffer 状态）</li>
+</ul>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20260806111003_868147356/7.png" alt="7"></p>
+<p>重叠点：<br>
+当微批次 0 在进行 MoE 的 dispatch（发送 token）通信时，微批次 1 正在执行其注意力（Attention）的计算。反之亦然。</p>
+<p>效果：<br>
+计算流（Compute Stream）和通信流（Comm Stream）被交织在一起，原本串行的“计算-通信-计算”链条被打破，通信时间被有效利用起来做有用功。</p>
+<p>TBO 并非在所有场景下都能带来收益，它的效果与批次大小和部署环境密切相关。</p>
+<p>最佳场景：<br>
+大规模专家并行（EP）：特别是在多节点、跨节点带宽受限的环境下，通信瓶颈越突出，TBO 隐藏延迟的效果越好。<br>
+足够的批次大小（Batch Size）：TBO 只有在批次足够大时才能有效覆盖通信开销。在 SGLang 的测试中，当每个 DP rank 的批次大小超过 320 时，TBO 能带来约 5%~10% 的性能提升；但在小批次（如 bs=60）下，TBO 反而可能导致性能显著下降。</p>
+<p>默认策略：<br>
+在多数实现中，TBO 默认仅用于 Prefill 阶段。因为 Prefill 阶段计算密集，适合用计算来隐藏通信。若强行用于 Decode 阶段，由于 Decode 本身计算量小，拆分批次带来的开销可能超过收益，导致吞吐量下降。</p>
+<h5 id="3432-sbosingle-batch-overlap"><a class="markdownIt-Anchor" href="#3432-sbosingle-batch-overlap"></a> 3.4.3.2 SBO（Single-Batch Overlap）</h5>
+<p><strong>SBO 工作原理：</strong></p>
+<p>TBO 在超高并发下也可能遇到瓶颈。有实践发现，在特定硬件（如 H20）上，当并发极高时，TBO 的双批次策略可能导致延迟“爆炸”，反而变慢。为此，社区（如蚂蚁集团与 SGLang、DeepSeek 合作）提出了 SBO（Single-Batch Overlap） 作为改进方案。SBO 的优化在于，它不再等待整个批次完全准备好，而是在单个批次内部进行更细粒度的重叠，例如在计算 shared experts 的同时就启动 dispatch 通信，或者在计算完一个 block 后就立即发送，从而实现更极致的流水线。</p>
+<p>在单 batch 的 MoE 层内部，用多 stream 将通信（dispatch/combine）与计算（gemm/shared expert）重叠。</p>
+<ul>
+<li><code>combine</code> 操作与 <code>down_gemm</code> 重叠</li>
+<li><code>dispatch</code> 与 shared expert 计算重叠</li>
+</ul>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20260806111003_868147356/8.png" alt="8"><br>
+combine 以 <code>block_m=64</code> 为单位，down_gemm 每产出一块，combine 立刻消费一块，两者在 GPU 上并行执行（不同 SM 集合，不同 CUDA stream）</p>
+<p>上面是非 blackwell 的实现，Blackwell 在 <code>_pre_combine_hook</code> 中运行 shared expert：</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>H 卡值</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>enable_combine_down_gemm_two_stream_overlap</code></td>
+<td>True（如果 backend 是 deep_gemm）</td>
+<td>combine 和 down_gemm 双 stream 重叠</td>
+</tr>
+<tr>
+<td><code>enable_dispatch_shared_one_stream_overlap</code></td>
+<td><strong>True</strong></td>
+<td>dispatch 和 shared experts 同 stream 重叠</td>
+</tr>
+<tr>
+<td><code>enable_combine_shared_two_stream_overlap</code></td>
+<td>False</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>fuse_shared_experts_inside_sbo</code></td>
+<td>True</td>
+<td>shared experts 在 SBO 窗口内执行</td>
+</tr>
+</tbody>
+</table>
+<h4 id="344-eplbexpert-parallelism-load-balancer"><a class="markdownIt-Anchor" href="#344-eplbexpert-parallelism-load-balancer"></a> 3.4.4 EPLB（Expert Parallelism Load Balancer）</h4>
+<p>在 MoE 的专家并行中，不同的“专家”被放置在不同的 GPU 上。但由于输入数据的差异，某些“热门专家”会被大量 token 选中，其所在的 GPU 就会过载；而“冷门专家”所在的 GPU 则相对空闲。整个系统的速度取决于最慢的那块 GPU，这会造成严重的资源浪费。</p>
+<p>EPLB 的核心思想是：<br>
+动态地为高负载的“热门专家”创建冗余副本，并将这些副本智能地分配到不同 GPU 上，从而将负载从过载的 GPU 分摊出去，最终最小化所有 GPU 中的最大负载。</p>
+<p>EPLB 的工作流程分为三个主要步骤：</p>
+<ol>
+<li>收集负载数据：在模型运行时，持续统计每个专家被路由到的 token 数量，作为其“热度”指标。这些数据通常通过历史统计的移动平均值来估计。</li>
+<li>执行均衡算法：基于收集到的负载数据，EPLB 算法会计算出一个新的专家放置方案。这个方案决定了哪些专家需要被复制，以及所有专家（包括副本）应该被放置在哪些 GPU 上。</li>
+<li>动态重排专家：根据算法计算出的方案，在运行时动态地重新排列专家及其副本在 GPU 上的分布，以实现负载均衡。</li>
+</ol>
+<p>我们引用 DeepSeek 官方仓库中的一个经典例子来具体说明。</p>
+<p>场景设定：<br>
+一个两层的 MoE 模型。<br>
+每层有 12 个逻辑专家（编号 0-11）。<br>
+部署在 2 个节点上，每个节点有 4 个 GPU，共 8 个 GPU。<br>
+为每层引入 4 个冗余专家，因此每层总共有 12 + 4 = 16 个“物理专家副本”需要放置。<br>
+假设的负载情况：经过数据收集，假设在第1层中，专家 4、5、1、10 是“热门专家”，负载显著高于其他专家。</p>
+<p>EPLB 的分配过程（采用分层负载均衡）：<br>
+节点间均衡 (Step 1)：EPLB 先将 12 个逻辑专家分成 4 组，例如 (0-2), (3-5), (6-8), (9-11)。然后，将这 4 个组分配到 2 个节点上，确保每个节点分到的专家总“基础负载”大致相等。这是一个“背包问题”，可用贪心算法解决。<br>
+复制热门专家 (Step 2)：在节点内部，EPLB 识别出热门专家。假设节点A分到了专家组 (3-5)，其中专家 4 和 5 是热门的；节点B分到了专家组 (9-11)，其中专家 10 是热门的（专家 1 可能被分到了另一个组）。EPLB 会为这些热门专家创建副本。<br>
+节点内均衡 (Step 3)：最后，EPLB 将所有物理专家副本（包括原始专家和冗余副本）打包到该节点内的 4 个 GPU 上。它同样将此视为“背包问题”，目标是最小化每个 GPU 上的总负载。例如，它可能会将专家 4 的一个副本放在 GPU0，另一个副本放在 GPU2，从而分摊其负载，避免任何单个 GPU 过载。</p>
+<p>通过逻辑专家和实际物理专家的映射，原本因专家 4 和 5 而可能过载的某个 GPU，其负载被多个副本分摊到了不同 GPU 上，实现了节点内和节点间的负载均衡。</p>
+<p>动态统计专家热度 → 为热门专家复制多份完整权重副本 → 把所有专家副本重新排布到不同 GPU → 让路由把请求分散到副本上，从而最小化最大 GPU 负载。<br>
+缺点：需要事先申请冗余专家显存，降低了显存上限。</p>
+<h3 id="35-cpcontext-parallelism"><a class="markdownIt-Anchor" href="#35-cpcontext-parallelism"></a> 3.5 CP：Context Parallelism</h3>
+<p>将长上下文分发到多个 GPU 上计算，所以用了特殊的attention：</p>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20260806111003_868147356/9.png" alt="9"></p>
+<ol>
+<li>基础版：Ring Attention（环状注意力）<br>
+<strong>QKV序列分割</strong>：把长序列切成 N 块，分给 N 个 GPU（Rank）。<br>
+<strong>设备环状结构</strong>：GPU 之间形成一个环。每个 GPU 计算当前块的 Q 与当前块的 KV 的注意力，然后把自己的 KV 块发给下一个 GPU，同时接收上一个 GPU 发来的 KV 块。<br>
+<strong>完成条件</strong>：经过 N 次传递，每个 GPU 都看到了序列中所有的 KV 部分，计算完成。<br>
+<strong>开销隐藏</strong>：由于是异步通信，GPU 可以在等待接收下一个 KV 块的同时，计算当前块的注意力，从而把通信时间藏在计算时间背后（Overlap），实现近零开销。<br>
+<strong>核心痛点</strong>：Ring Attention 假设序列是均匀切分的（比如序列长 12，4 个 GPU，则 GPU0 拿 0-2，GPU1 拿 3-5，以此类推）。但在因果注意力（Causal Attention） 中，前面的 token 只能看自己，后面的 token 要看前面所有 token。这就导致排在后面的 GPU 计算量远大于排在前面的 GPU，产生严重的负载不均衡，环上的其他 GPU 必须等最慢的那个 GPU，流水线效率大打折扣。（上图中白色部分随着轮次越来越少）</li>
+</ol>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20260806111003_868147356/10.png" alt="10"><br>
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20260806111003_868147356/11.png" alt="11"><br>
+2. 改进版一：Striped Attention（条纹注意力）<br>
+Striped Attention 是为了解决上述因果掩码导致的负载不均衡而提出的。<br>
+它的做法不是按连续块切分，而是按“条纹”交错切分：<br>
+假设序列长 16，4 个 GPU。<br>
+GPU0 拿 token：0, 4, 8, 12<br>
+GPU1 拿 token：1, 5, 9, 13<br>
+GPU2 拿 token：2, 6, 10, 14<br>
+GPU3 拿 token：3, 7, 11, 15<br>
+<strong>效果</strong>：在因果注意力下，每个 GPU 拿到的 token 分布在序列的各个位置，每个 GPU 需要计算的注意力范围（即它需要看到的前序 KV 数量）变得大致相等。这就极大地缓解了负载不均衡，让环上的计算更加同步，提升了整体吞吐量。（可以看到图上白色部分每一轮大致相等）<br>
+任意两张卡上的 Q 与 K 之间的 attention mask，都是一个完整的方形，而且每张卡上的计算量也是相对平均的<br>
+每个 DP 组分配 <code>chunked_prefill_size // dp_size</code>，每个 CP rank 在组内又拿到 <code>1/cp_size</code> token。</p>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20260806111003_868147356/12.png" alt="12"><br>
+3. 改进版二：Zigzag Attention（锯齿注意力）<br>
+Zigzag Attention 是另一种解决因果掩码负载不均衡的切分策略，常见于后来的一些长上下文优化框架中。<br>
+<strong>原始块顺序</strong>：<code>block0 | block1 | block2 | block3 | block4 | block5 | block6 | block7</code><br>
+<strong>Zigzag 重排后</strong>：<code>block0 | block7 | block1 | block6 | block2 | block5 | block3 | block4</code></p>
+<h4 id="351-两种-cp-方式"><a class="markdownIt-Anchor" href="#351-两种-cp-方式"></a> 3.5.1 两种 CP 方式</h4>
+<p>主要为了<strong>降低 TTFT</strong></p>
+<ul>
+<li>CP 只用于 <strong>prefill（extend）阶段</strong>，decode 阶段不使用 CP（每次只生成 1 个 token，无法按 seq 切分）。</li>
+<li>Decode 时每个 rank 需要读取完整的历史 KV cache，因此 prefill 结束后每个 rank 的 kv_pool 必须包含完整序列的 KV。</li>
+</ul>
+<p>权重在 CP 维度上被复制了 <code>cp_size</code> 倍；但 attn 计算时每张 rank 只算 seq/cp_size 份 token（按 seq 切），CP 组内的 ranks 处理不同的 token（seq 按 CP 切分），它们的 o_proj 输出通过最后的 AllGather 合并，而不是 AllReduce<br>
+<strong>支持两种 CP 方式</strong></p>
+<p>round-robin-split：<code>token_idx % cp_size</code>，<code>rank i</code>拿到所有下标模 <code>cp_size</code> 等于 i 的 token<br>
+* batch 里所有 req 的 token 拼接成一维后的张量进行取模<br>
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20260806111003_868147356/13.png" alt="13"></p>
+<p>in-seq-split：序列切成 <code>2*cp_size</code> 个连续 block，<code>rank i</code> 取 <code>block i</code> 和 <code>block 2*cp_size-1-i</code> 只支持单个 req 进行切分<br>
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20260806111003_868147356/14.png" alt="14"></p>
+<p><strong>约束差异</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>round-robin-split</th>
+<th>in-seq-split</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>batch 约束</td>
+<td>支持 <strong>B ≥ 1</strong></td>
+<td><strong>强制 B=1</strong></td>
+</tr>
+<tr>
+<td>切分约束</td>
+<td><code>S % N == 0</code></td>
+<td><code>S ≥ 2N</code></td>
+</tr>
+<tr>
+<td>负载均衡</td>
+<td>token 均衡</td>
+<td>使用 zigzag 保证 Attention 计算均衡</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-总结"><a class="markdownIt-Anchor" href="#4-总结"></a> 4. 总结</h2>
+<h3 id="41-策略对指标的影响"><a class="markdownIt-Anchor" href="#41-策略对指标的影响"></a> 4.1 策略对指标的影响</h3>
+<p><strong>TTFT / Prefill</strong></p>
+<table>
+<thead>
+<tr>
+<th>并行</th>
+<th>通常影响</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TP</td>
+<td>降低 TTFT，但收益与通信开销相关</td>
+<td>**优势：**GEMM 权重读取和计算大致分到多个 GPU；<br>**代价：**o_proj/MLP 结果需要 all-reduce/gather。<br>长 prefill 中 GEMM 足够大，TP 通常有收益；小 batch/过大 TP 时通信和小 GEMM 效率会反噬。</td>
+</tr>
+<tr>
+<td>PP</td>
+<td>单请求 TTFT 不一定下降，常可能上升</td>
+<td>**优势：**GEMM 权重读取和计算大致分到多个 GPU；<br>**代价：**stage 边界通信和排队可能抵消收益。</td>
+</tr>
+<tr>
+<td>DP Attention</td>
+<td>高并发 prefill 更有价值，单请求收益有限</td>
+<td>**优势：**多请求 continuous batching 下，每个 attention DP rank 处理更少 KV/token ；<br>**代价：**dp_gather_partial / dp_scatter / reduce_scatter 会引入同步。</td>
+</tr>
+<tr>
+<td>EP</td>
+<td>MoE prefill 常降低显存和专家权重读压力</td>
+<td>**优势：**experts 分布到不同 GPU，每张卡只放/读部分 expert 权重。<br><strong>代价：all-to-all 通信</strong>；若 batch 很小，dispatch/combine 延迟会更明显。</td>
+</tr>
+<tr>
+<td>CP</td>
+<td>长上下文 prefill 开启降低每个 rank 的 kv cache 压力</td>
+<td>**优势：**Q token 被切到不同 CP rank，单 rank attention query 数下降；SGLang 用 zigzag/round-robin 缓解 causal mask 下前后块负载不均。<br><strong>代价：</strong> K/V/index K 的 CP all-gather。</td>
+</tr>
+</tbody>
+</table>
+<p><strong>TPOT / Decode</strong></p>
+<table>
+<thead>
+<tr>
+<th>并行</th>
+<th>通常影响</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TP</td>
+<td>降低 TPOT，但收益与通信开销相关</td>
+<td>**优势：**GEMM 权重读取和计算大致分到多个 GPU；<br>**代价：**o_proj/MLP 结果需要 all-reduce/gather。</td>
+</tr>
+<tr>
+<td>PP</td>
+<td>不适合降低单请求 TPOT</td>
+<td>每生成一个 token 都要按 stage 顺序过完整模型，并跨 stage 传 hidden。对单请求 decode latency，PP 往往增加 pipeline stage 等待和通信；它更偏容量扩展/多请求吞吐。</td>
+</tr>
+<tr>
+<td>DP Attention</td>
+<td>对高并发 TPS 提升有帮助，对单请求有限</td>
+<td>**优势：**多请求 continuous batching 下，每个 attention DP rank 处理更少 KV/token ；<br>**代价：**dp_gather_partial / dp_scatter / reduce_scatter 会引入同步。</td>
+</tr>
+<tr>
+<td>EP</td>
+<td>高并发/大 batch decode 有收益，使用 tbo/sbo 实现通信和计算重叠</td>
+<td>**优势：**experts 分布到不同 GPU，每张卡只放/读部分 expert 权重。<br><strong>代价：all-to-all 通信</strong>；若 batch 很小，dispatch/combine 延迟会更明显。</td>
+</tr>
+</tbody>
+</table>
+<p>decode cp 不使用，设置参数也会被忽略</p>
+<h3 id="42-选用何种并行组合"><a class="markdownIt-Anchor" href="#42-选用何种并行组合"></a> 4.2 选用何种并行组合</h3>
+<h4 id="421-dense-模型"><a class="markdownIt-Anchor" href="#421-dense-模型"></a> 4.2.1 Dense 模型</h4>
+<ul>
+<li><strong>选型推荐：TP (节点内) + PP (跨节点)</strong></li>
+<li><strong>依据：</strong>
+<ul>
+<li>Dense 模型的计算分布均匀，没有专家路由机制。首要解决的是<strong>单卡显存（装不下权重和 KV Cache）与单层算力不足</strong>的问题。</li>
+<li><strong>TP</strong> 是切分 Dense 模型最直接的方式，有效降低单次矩阵运算的维度。</li>
+</ul>
+</li>
+</ul>
+<h4 id="422-moe-nsa-模型"><a class="markdownIt-Anchor" href="#422-moe-nsa-模型"></a> 4.2.2 MoE + NSA 模型</h4>
+<ul>
+<li><strong>选型推荐：EP + TP + DP Attention</strong></li>
+<li><strong>依据：</strong>
+<ul>
+<li>**EP：**通过 EP 将海量专家参数分散到不同 GPU，避免全量复制带来的显存问题，同时提高 expert 的计算并行度。</li>
+<li><strong>DP Attention：</strong> 在多请求并发时大幅降低单个 Rank 的 KV Cache 压力。</li>
+<li><strong>TP：</strong> 用于处理 MoE 模型中未被路由的稠密层（如 QKV 投影、Dense MLP 层）。</li>
+</ul>
+</li>
+</ul>
+<h4 id="423-降低-tpot"><a class="markdownIt-Anchor" href="#423-降低-tpot"></a> 4.2.3 降低 TPOT</h4>
+<ul>
+<li><strong>选型推荐：最大化单机 TP + (MoE场景下引入 DP Attention) + 大并发下 EP</strong></li>
+<li><strong>依据：</strong>
+<ul>
+<li><strong>TP</strong> 提升聚合显存带宽，显著压低单次 GEMV 耗时。</li>
+<li><strong>DP Attention</strong> 允许更大的 Batch Size，摊薄每个 Token 的访存成本。</li>
+<li><strong>大并发下 EP</strong> 可以分摊权重读取成本</li>
+</ul>
+</li>
+</ul>
+<h4 id="424-降低-ttft"><a class="markdownIt-Anchor" href="#424-降低-ttft"></a> 4.2.4 降低 TTFT</h4>
+<ul>
+<li>**选型推荐：TP + EP + 按需引入 CP (针对长文本) **</li>
+<li><strong>核心依据：</strong>
+<ul>
+<li>**EP **将 Token 分发到不同 GPU 的特定专家上并行计算，实现通信和计算的 overlap</li>
+<li><strong>TP</strong> 能够将大矩阵切块，利用多卡算力直接并行计算</li>
+<li><strong>CP</strong> 可以多卡并行计算 req。</li>
+</ul>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>caijizhuo
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://caijizhuo.github.io/20260806111003_868147356/" title="LLM推理中的多卡切分">https://caijizhuo.github.io/20260806111003_868147356/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/AI/" rel="tag"># AI</a>
+              <a href="/tags/LLM/" rel="tag"># LLM</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/20260509173709_2941642251/" rel="prev" title="mHC 流程解析">
+      <i class="fa fa-chevron-left"></i> mHC 流程解析
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E5%B9%B6%E8%A1%8C%E5%92%8C-chunked-prefill"><span class="nav-number">1.</span> <span class="nav-text"> 1. 为什么需要并行和 Chunked Prefill</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#11-%E5%AD%98%E5%82%A8%E5%8E%8B%E5%8A%9B"><span class="nav-number">1.1.</span> <span class="nav-text"> 1.1 存储压力</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#12-%E8%AE%A1%E7%AE%97%E5%8E%8B%E5%8A%9B"><span class="nav-number">1.2.</span> <span class="nav-text"> 1.2 计算压力</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#13-%E7%AE%80%E8%A6%81%E6%80%BB%E7%BB%93"><span class="nav-number">1.3.</span> <span class="nav-text"> 1.3 简要总结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-sglang-%E5%B9%B6%E8%A1%8C%E6%8E%A8%E7%90%86%E6%A6%82%E8%A7%88"><span class="nav-number">2.</span> <span class="nav-text"> 2. SGLang 并行推理概览</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#21-sglang-%E8%AF%B7%E6%B1%82%E7%9A%84%E6%8E%A8%E7%90%86%E6%B5%81%E7%A8%8B"><span class="nav-number">2.1.</span> <span class="nav-text"> 2.1 SGLang 请求的推理流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#22-sglang-%E4%B8%AD%E7%9A%84-chunked-prefill"><span class="nav-number">2.2.</span> <span class="nav-text"> 2.2 SGLang 中的 Chunked Prefill</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#23-sglang-%E4%B8%AD%E5%B9%B6%E8%A1%8C%E6%8E%A8%E7%90%86%E7%A4%BA%E4%BE%8B"><span class="nav-number">2.3.</span> <span class="nav-text"> 2.3 SGLang 中并行推理示例</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#231-rank-%E5%B8%83%E5%B1%80"><span class="nav-number">2.3.1.</span> <span class="nav-text"> 2.3.1 Rank 布局</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#232-%E5%8F%82%E6%95%B0%E8%AE%BE%E7%BD%AE%E5%BC%80%E5%90%AF-dp-tp-cp-ep"><span class="nav-number">2.3.2.</span> <span class="nav-text"> 2.3.2 参数设置（开启 DP, TP, CP, EP）</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E5%B9%B6%E8%A1%8C%E6%8A%80%E6%9C%AF%E8%AF%A6%E7%BB%86%E4%BB%8B%E7%BB%8D"><span class="nav-number">3.</span> <span class="nav-text"> 3. 并行技术详细介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#31-tptensor-parallelism"><span class="nav-number">3.1.</span> <span class="nav-text"> 3.1 TP：Tensor Parallelism</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#32-pppipeline-parallelism"><span class="nav-number">3.2.</span> <span class="nav-text"> 3.2 PP：Pipeline Parallelism</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#33-dp-attentionmla-%E7%B3%BB%E5%88%97%E6%A8%A1%E5%9E%8B%E4%BD%BF%E7%94%A8"><span class="nav-number">3.3.</span> <span class="nav-text"> 3.3 DP Attention：MLA 系列模型使用</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#331-dp-attention-%E7%9A%84-gatherscatter"><span class="nav-number">3.3.1.</span> <span class="nav-text"> 3.3.1 DP Attention 的 gather&#x2F;scatter</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#34-epexpert-parallelism"><span class="nav-number">3.4.</span> <span class="nav-text"> 3.4 EP：Expert Parallelism</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#341-standard-%E6%A8%A1%E5%BC%8F%E6%97%A0-moe-a2a-backend"><span class="nav-number">3.4.1.</span> <span class="nav-text"> 3.4.1 Standard 模式（无 moe-a2a-backend）</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#3411-%E7%89%B9%E7%82%B9"><span class="nav-number">3.4.1.1.</span> <span class="nav-text"> 3.4.1.1 特点</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#342-deepep-%E6%A8%A1%E5%BC%8Fmoe-a2a-backend-deepep"><span class="nav-number">3.4.2.</span> <span class="nav-text"> 3.4.2 DeepEP 模式（–moe-a2a-backend deepep）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#343-%E9%80%9A%E4%BF%A1%E8%AE%A1%E7%AE%97-overlap-%E6%9C%BA%E5%88%B6"><span class="nav-number">3.4.3.</span> <span class="nav-text"> 3.4.3 通信计算 overlap 机制</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#3431-tbotwo-batch-overlap-%E5%8F%8C%E6%89%B9%E6%AC%A1%E9%87%8D%E5%8F%A0"><span class="nav-number">3.4.3.1.</span> <span class="nav-text"> 3.4.3.1 TBO（Two-Batch Overlap 双批次重叠）</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#3432-sbosingle-batch-overlap"><span class="nav-number">3.4.3.2.</span> <span class="nav-text"> 3.4.3.2 SBO（Single-Batch Overlap）</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#344-eplbexpert-parallelism-load-balancer"><span class="nav-number">3.4.4.</span> <span class="nav-text"> 3.4.4 EPLB（Expert Parallelism Load Balancer）</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#35-cpcontext-parallelism"><span class="nav-number">3.5.</span> <span class="nav-text"> 3.5 CP：Context Parallelism</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#351-%E4%B8%A4%E7%A7%8D-cp-%E6%96%B9%E5%BC%8F"><span class="nav-number">3.5.1.</span> <span class="nav-text"> 3.5.1 两种 CP 方式</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E6%80%BB%E7%BB%93"><span class="nav-number">4.</span> <span class="nav-text"> 4. 总结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#41-%E7%AD%96%E7%95%A5%E5%AF%B9%E6%8C%87%E6%A0%87%E7%9A%84%E5%BD%B1%E5%93%8D"><span class="nav-number">4.1.</span> <span class="nav-text"> 4.1 策略对指标的影响</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#42-%E9%80%89%E7%94%A8%E4%BD%95%E7%A7%8D%E5%B9%B6%E8%A1%8C%E7%BB%84%E5%90%88"><span class="nav-number">4.2.</span> <span class="nav-text"> 4.2 选用何种并行组合</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#421-dense-%E6%A8%A1%E5%9E%8B"><span class="nav-number">4.2.1.</span> <span class="nav-text"> 4.2.1 Dense 模型</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#422-moe-nsa-%E6%A8%A1%E5%9E%8B"><span class="nav-number">4.2.2.</span> <span class="nav-text"> 4.2.2 MoE + NSA 模型</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#423-%E9%99%8D%E4%BD%8E-tpot"><span class="nav-number">4.2.3.</span> <span class="nav-text"> 4.2.3 降低 TPOT</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#424-%E9%99%8D%E4%BD%8E-ttft"><span class="nav-number">4.2.4.</span> <span class="nav-text"> 4.2.4 降低 TTFT</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="caijizhuo"
+      src="/images/portrait.jpg">
+  <p class="site-author-name" itemprop="name">caijizhuo</p>
+  <div class="site-description" itemprop="description">Looks delicious</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">71</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">12</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/caijizhuo" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;caijizhuo" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:zhao_yingzhuo@foxmail.com" title="E-Mail → mailto:zhao_yingzhuo@foxmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">caijizhuo</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">76k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">4:38</span>
+</div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'forest',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+      
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/katex@0/dist/katex.min.css">
+
+
+  
+<script src="https://unpkg.com/darkmode-js@1.5.7/lib/darkmode-js.min.js"></script>
+
+<script>
+var options = {
+  bottom: '72px',
+  right: 'unset',
+  left: '16px',
+  time: '0.5s',
+  mixColor: 'transparent',
+  backgroundColor: 'transparent',
+  buttonColorDark: '#100f2c',
+  buttonColorLight: '#fff',
+  saveInCookies: true,
+  label: '🌓',
+  autoMatchOsTheme: false
+}
+const darkmode = new Darkmode(options);
+window.darkmode = darkmode;
+darkmode.showWidget();
+</script>
+
+    </div>
+
+  <link rel="stylesheet" href="/dist/APlayer.min.css">
+  <div id="aplayer"></div>
+  <script type="text/javascript" src="/dist/APlayer.min.js"></script>
+  <script type="text/javascript" src="/dist/music.js"></script>
+
+        <style>
+            [bg-lazy] {
+                background-image: none !important;
+                background-color: #eee !important;
+            }
+        </style>
+        <script>
+            window.imageLazyLoadSetting = {
+                isSPA: true,
+                preloadRatio: 3,
+                processImages: null,
+            };
+        </script><script>window.addEventListener("load",function(){var t=/\.(gif|jpg|jpeg|tiff|png)$/i,r=/^data:image\/[a-z]+;base64,/;Array.prototype.slice.call(document.querySelectorAll("img[data-original]")).forEach(function(a){var e=a.parentNode;"A"===e.tagName&&(e.href.match(t)||e.href.match(r))&&(e.href=a.dataset.original)})});</script><script>!function(r){r.imageLazyLoadSetting.processImages=t;var e=r.imageLazyLoadSetting.isSPA,n=r.imageLazyLoadSetting.preloadRatio||1,c=a();function a(){var t=Array.prototype.slice.call(document.querySelectorAll("img[data-original]")),e=Array.prototype.slice.call(document.querySelectorAll("[bg-lazy]"));return t.concat(e)}function t(){e&&(c=a());for(var t,o=0;o<c.length;o++)0<=(t=(t=c[o]).getBoundingClientRect()).bottom&&0<=t.left&&t.top<=(r.innerHeight*n||document.documentElement.clientHeight*n)&&function(){var t,e,n,a,i=c[o];e=function(){c=c.filter(function(t){return i!==t}),r.imageLazyLoadSetting.onImageLoaded&&r.imageLazyLoadSetting.onImageLoaded(i)},(t=i).hasAttribute("bg-lazy")?(t.removeAttribute("bg-lazy"),e&&e()):(n=new Image,a=t.getAttribute("data-original"),n.onload=function(){t.src=a,t.removeAttribute("data-original"),e&&e()},t.src!==a&&(n.src=a))}()}function i(){clearTimeout(t.tId),t.tId=setTimeout(t,500)}t(),document.addEventListener("scroll",i),r.addEventListener("resize",i),r.addEventListener("orientationchange",i)}(this);</script></body>
+</html>
