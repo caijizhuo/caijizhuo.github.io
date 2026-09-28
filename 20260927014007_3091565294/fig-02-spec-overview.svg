@@ -1,0 +1,144 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 540" width="100%" role="img" aria-label="投机解码的草稿-验证-接受三步流程">
+  <style>
+    .h    { font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; font-size:14.5px; font-weight:600; fill:#0f172a; }
+    .lbl  { font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; font-size:12px; fill:#334155; }
+    .lbls { font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; font-size:11px; fill:#64748b; }
+    .tok  { font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; font-size:15px; font-weight:600; fill:#0f172a; }
+    .q    { font-family:Consolas,Cascadia Mono,monospace; font-size:11px; fill:#b45309; }
+    .p    { font-family:Consolas,Cascadia Mono,monospace; font-size:11px; fill:#1d4ed8; }
+    .ok   { font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; font-size:12px; font-weight:600; fill:#15803d; }
+    .no   { font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; font-size:12px; font-weight:600; fill:#b91c1c; }
+    .mono { font-family:Consolas,Cascadia Mono,monospace; font-size:12px; fill:#0f172a; }
+  </style>
+  <defs>
+    <marker id="f2a" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#b45309"/>
+    </marker>
+    <marker id="f2b" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1d4ed8"/>
+    </marker>
+    <marker id="f2c" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#475569"/>
+    </marker>
+  </defs>
+  <rect width="900" height="540" fill="#ffffff"/>
+
+  <!-- ================= band 1: draft ================= -->
+  <rect x="16" y="14" width="868" height="146" rx="12" fill="#fffbeb" stroke="#fde68a" stroke-width="1.5"/>
+  <text class="h" x="36" y="42">① 草稿 Draft：小模型（Mq）自回归地猜出 γ = 4 个 token</text>
+  <text class="lbls" x="36" y="62">草稿模型只有几十 M ~ 几 B 参数，4 次前向的总耗时也远小于目标模型 1 次</text>
+
+  <rect x="36" y="80" width="128" height="44" rx="8" fill="#f1f5f9" stroke="#cbd5e1"/>
+  <text class="lbl" x="100" y="100" text-anchor="middle">已生成上下文</text>
+  <text class="lbl" x="100" y="116" text-anchor="middle">「…中国的首都是」</text>
+
+  <line x1="170" y1="102" x2="196" y2="102" stroke="#b45309" stroke-width="2" marker-end="url(#f2a)"/>
+
+  <g>
+    <rect x="200" y="80" width="76" height="44" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+    <text class="tok" x="238" y="100" text-anchor="middle">北京</text>
+    <text class="q"   x="238" y="117" text-anchor="middle">q = 0.71</text>
+    <rect x="292" y="80" width="76" height="44" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+    <text class="tok" x="330" y="100" text-anchor="middle">是</text>
+    <text class="q"   x="330" y="117" text-anchor="middle">q = 0.66</text>
+    <rect x="384" y="80" width="76" height="44" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+    <text class="tok" x="422" y="100" text-anchor="middle">中国</text>
+    <text class="q"   x="422" y="117" text-anchor="middle">q = 0.48</text>
+    <rect x="476" y="80" width="76" height="44" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+    <text class="tok" x="514" y="100" text-anchor="middle">的</text>
+    <text class="q"   x="514" y="117" text-anchor="middle">q = 0.52</text>
+  </g>
+  <g stroke="#b45309" stroke-width="1.8" marker-end="url(#f2a)">
+    <line x1="278" y1="102" x2="288" y2="102"/>
+    <line x1="370" y1="102" x2="380" y2="102"/>
+    <line x1="462" y1="102" x2="472" y2="102"/>
+  </g>
+
+  <rect x="580" y="80" width="284" height="44" rx="8" fill="#ffffff" stroke="#fcd34d"/>
+  <text class="lbl" x="596" y="100">4 次串行小前向，但每一步都很便宜</text>
+  <text class="lbl" x="596" y="117">q = 草稿模型给出的概率（置信度）</text>
+
+  <!-- ================= band 2: verify ================= -->
+  <rect x="16" y="172" width="868" height="196" rx="12" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.5"/>
+  <text class="h" x="36" y="200">② 验证 Verify：目标模型（Mp）用 1 次前向，并行算出每个位置的概率分布</text>
+  <text class="lbls" x="36" y="220">把「上下文 + 4 个草稿 token」整段喂进去，因果掩码保证每个位置只能看见自己之前的 token</text>
+
+  <!-- the 5 positions -->
+  <g>
+    <rect x="36" y="236" width="128" height="40" rx="8" fill="#e2e8f0" stroke="#94a3b8"/>
+    <text class="lbl" x="100" y="261" text-anchor="middle">…中国的首都是</text>
+
+    <rect x="180" y="236" width="128" height="40" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+    <text class="tok" x="244" y="262" text-anchor="middle">北京</text>
+
+    <rect x="324" y="236" width="128" height="40" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+    <text class="tok" x="388" y="262" text-anchor="middle">是</text>
+
+    <rect x="468" y="236" width="128" height="40" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+    <text class="tok" x="532" y="262" text-anchor="middle">中国</text>
+
+    <rect x="612" y="236" width="128" height="40" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+    <text class="tok" x="676" y="262" text-anchor="middle">的</text>
+
+    <rect x="756" y="236" width="112" height="40" rx="8" fill="#e2e8f0" stroke="#94a3b8" stroke-dasharray="4 3"/>
+    <text class="lbl" x="812" y="261" text-anchor="middle">（第 5 个位置）</text>
+  </g>
+
+  <!-- arrows down to distributions -->
+  <g stroke="#1d4ed8" stroke-width="1.8" marker-end="url(#f2b)">
+    <line x1="244" y1="278" x2="244" y2="300"/>
+    <line x1="388" y1="278" x2="388" y2="300"/>
+    <line x1="532" y1="278" x2="532" y2="300"/>
+    <line x1="676" y1="278" x2="676" y2="300"/>
+    <line x1="812" y1="278" x2="812" y2="300"/>
+  </g>
+
+  <!-- distribution chips -->
+  <g>
+    <rect x="180" y="304" width="128" height="52" rx="8" fill="#ffffff" stroke="#93c5fd"/>
+    <text class="lbls" x="244" y="320" text-anchor="middle">目标模型认为：</text>
+    <text class="p"    x="244" y="336" text-anchor="middle">p(北京) = 0.92</text>
+    <text class="lbls" x="244" y="350" text-anchor="middle">草稿猜对了</text>
+
+    <rect x="324" y="304" width="128" height="52" rx="8" fill="#ffffff" stroke="#93c5fd"/>
+    <text class="lbls" x="388" y="320" text-anchor="middle">目标模型认为：</text>
+    <text class="p"    x="388" y="336" text-anchor="middle">p(是) = 0.85</text>
+    <text class="lbls" x="388" y="350" text-anchor="middle">草稿猜对了</text>
+
+    <rect x="468" y="304" width="128" height="52" rx="8" fill="#ffffff" stroke="#93c5fd"/>
+    <text class="lbls" x="532" y="320" text-anchor="middle">目标模型认为：</text>
+    <text class="p"    x="532" y="336" text-anchor="middle">p(中国) = 0.31</text>
+    <text class="lbls" x="532" y="350" text-anchor="middle">更想要「一座」0.44</text>
+
+    <rect x="612" y="304" width="128" height="52" rx="8" fill="#ffffff" stroke="#93c5fd"/>
+    <text class="lbls" x="676" y="320" text-anchor="middle">前缀已错，</text>
+    <text class="lbls" x="676" y="338" text-anchor="middle">该位置的概率</text>
+    <text class="lbls" x="676" y="354" text-anchor="middle">作废</text>
+
+    <rect x="756" y="304" width="112" height="52" rx="8" fill="#ffffff" stroke="#93c5fd"/>
+    <text class="lbls" x="812" y="326" text-anchor="middle">免费赠送的</text>
+    <text class="lbls" x="812" y="344" text-anchor="middle">bonus token</text>
+  </g>
+
+  <!-- ================= band 3: accept ================= -->
+  <rect x="16" y="384" width="868" height="142" rx="12" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="1.5"/>
+  <text class="h" x="36" y="412">③ 接受 Accept：从左向右逐个判定，遇到第一个分歧就截断</text>
+
+  <g>
+    <rect x="36" y="428" width="96" height="34" rx="7" fill="#dcfce7" stroke="#4ade80"/>
+    <text class="tok" x="84" y="451" text-anchor="middle">北京 ✓</text>
+    <rect x="144" y="428" width="96" height="34" rx="7" fill="#dcfce7" stroke="#4ade80"/>
+    <text class="tok" x="192" y="451" text-anchor="middle">是 ✓</text>
+    <rect x="252" y="428" width="96" height="34" rx="7" fill="#fee2e2" stroke="#f87171"/>
+    <text class="tok" x="300" y="451" text-anchor="middle">中国 ✗</text>
+    <rect x="360" y="428" width="120" height="34" rx="7" fill="#f1f5f9" stroke="#cbd5e1" stroke-dasharray="4 3"/>
+    <text class="tok" x="420" y="451" text-anchor="middle" fill="#94a3b8">的（丢弃）</text>
+  </g>
+
+  <line x1="492" y1="445" x2="502" y2="445" stroke="#475569" stroke-width="2" marker-end="url(#f2c)"/>
+  <rect x="506" y="428" width="362" height="34" rx="7" fill="#ffffff" stroke="#4ade80" stroke-width="1.5"/>
+  <text class="lbl" x="520" y="451">从残差分布 (p − q)₊ 重采样，得到「一座」</text>
+
+  <text class="lbl" x="36" y="492">本轮真正输出 <tspan font-weight="600" fill="#15803d">3 个 token</tspan>（北京、是、一座），而目标模型只跑了 <tspan font-weight="600" fill="#15803d">1 次</tspan>前向 → 该轮相当于 <tspan class="mono">3×</tspan></text>
+  <text class="lbls" x="36" y="512">最终文本的分布与「目标模型自己一个 token 一个 token 解码」完全一致 —— 因此投机解码是无损（lossless）的加速</text>
+</svg>

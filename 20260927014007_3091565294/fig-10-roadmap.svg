@@ -1,0 +1,162 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 640" width="100%" role="img" aria-label="EAGLE 三代演进、加速比对比与 batch size 权衡">
+  <style>
+    .h    { font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; font-size:14.5px; font-weight:600; fill:#0f172a; }
+    .h2   { font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; font-size:12.5px; font-weight:600; fill:#1e293b; }
+    .lbl  { font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; font-size:11.5px; fill:#334155; }
+    .lbls { font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; font-size:10.5px; fill:#64748b; }
+    .mono { font-family:Consolas,Cascadia Mono,monospace; font-size:10.5px; fill:#0f172a; }
+    .monos{ font-family:Consolas,Cascadia Mono,monospace; font-size:9.5px; fill:#64748b; }
+    .ax   { font-family:Consolas,Cascadia Mono,monospace; font-size:9.5px; fill:#94a3b8; }
+    .val  { font-family:Consolas,Cascadia Mono,monospace; font-size:10px; fill:#334155; }
+  </style>
+  <rect width="900" height="640" fill="#ffffff"/>
+
+  <!-- ==================== panel A: timeline ==================== -->
+  <text class="h" x="16" y="26">三代 EAGLE：一句话一个版本</text>
+
+  <rect x="36" y="40" width="240" height="104" rx="10" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.5"/>
+  <text class="h2" x="50" y="64">EAGLE（2024.01）</text>
+  <text class="lbl" x="50" y="86">特征级自回归</text>
+  <text class="lbl" x="50" y="104">＋「超前一步」的 token 消解不确定性</text>
+  <text class="lbls" x="50" y="126">静态树 25 节点 / 深度 5；MT-bench 上</text>
+  <text class="lbls" x="50" y="140">2.78×–3.07×（τ ≈ 3.6–4.0）</text>
+
+  <rect x="330" y="40" width="240" height="104" rx="10" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.5"/>
+  <text class="h2" x="344" y="64">EAGLE-2（2024.06）</text>
+  <text class="lbl" x="344" y="86">上下文感知的动态草稿树</text>
+  <text class="lbl" x="344" y="104">置信度 ≈ 接受率，按分数全局分配节点</text>
+  <text class="lbls" x="344" y="126">3.05×–4.26×，比 EAGLE-1 快 20%–40%；</text>
+  <text class="lbls" x="344" y="140">注意：单 token 接受率并未改变，涨的是 τ</text>
+
+  <rect x="624" y="40" width="240" height="104" rx="10" fill="#eef2ff" stroke="#a5b4fc" stroke-width="1.5"/>
+  <text class="h2" x="638" y="64">EAGLE-3（2025.03）</text>
+  <text class="lbl" x="638" y="86">training-time test</text>
+  <text class="lbl" x="638" y="104">＋低/中/高三层特征融合，改回直接预测 token</text>
+  <text class="lbls" x="638" y="126">最高 6.5×，比 EAGLE-2 约 1.4×；</text>
+  <text class="lbls" x="638" y="140">能继续从训练数据规模增长中获益</text>
+
+  <!-- ==================== panel B: speedup bars ==================== -->
+  <rect x="16" y="160" width="868" height="252" rx="12" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
+  <text class="h2" x="34" y="186">MT-bench / temp = 0 的端到端加速比（τ = 平均每轮接受的 token 数）</text>
+
+  <g class="ax" text-anchor="end">
+    <text x="66" y="364">0</text>
+    <text x="66" y="314">2×</text>
+    <text x="66" y="264">4×</text>
+    <text x="66" y="214">6×</text>
+  </g>
+  <g stroke="#e2e8f0" stroke-width="1" stroke-dasharray="3 3">
+    <line x1="72" y1="360" x2="866" y2="360"/>
+    <line x1="72" y1="310" x2="866" y2="310"/>
+    <line x1="72" y1="260" x2="866" y2="260"/>
+    <line x1="72" y1="210" x2="866" y2="210"/>
+  </g>
+  <line x1="72" y1="200" x2="72" y2="360" stroke="#94a3b8" stroke-width="1.5"/>
+  <line x1="72" y1="360" x2="866" y2="360" stroke="#94a3b8" stroke-width="1.5"/>
+
+  <!-- group 1: Vicuna-13B -->
+  <g>
+    <rect x="114" y="283" width="34" height="77" rx="3" fill="#93c5fd"/>
+    <rect x="154" y="255" width="34" height="105" rx="3" fill="#3b82f6"/>
+    <rect x="194" y="222" width="34" height="138" rx="3" fill="#1e3a8a"/>
+    <text class="val" x="131" y="279" text-anchor="middle">3.07</text>
+    <text class="val" x="171" y="251" text-anchor="middle">4.22</text>
+    <text class="val" x="211" y="218" text-anchor="middle">5.51</text>
+  </g>
+  <text class="lbl" x="171" y="378" text-anchor="middle">Vicuna-13B</text>
+  <text class="monos" x="171" y="394" text-anchor="middle">τ 3.98 / 4.83 / 6.62</text>
+
+  <!-- group 2: LLaMA-3.1-8B -->
+  <g>
+    <rect x="294" y="279" width="34" height="81" rx="3" fill="#3b82f6"/>
+    <rect x="334" y="249" width="34" height="111" rx="3" fill="#1e3a8a"/>
+    <text class="val" x="311" y="275" text-anchor="middle">3.23</text>
+    <text class="val" x="351" y="245" text-anchor="middle">4.44</text>
+  </g>
+  <text class="lbl" x="331" y="378" text-anchor="middle">LLaMA-3.1-8B</text>
+  <text class="monos" x="331" y="394" text-anchor="middle">τ — / 4.11 / 6.23</text>
+
+  <!-- group 3: LLaMA-3.3-70B -->
+  <g>
+    <rect x="474" y="289" width="34" height="71" rx="3" fill="#3b82f6"/>
+    <rect x="514" y="257" width="34" height="103" rx="3" fill="#1e3a8a"/>
+    <text class="val" x="491" y="285" text-anchor="middle">2.85</text>
+    <text class="val" x="531" y="253" text-anchor="middle">4.12</text>
+  </g>
+  <text class="lbl" x="511" y="378" text-anchor="middle">LLaMA-3.3-70B</text>
+  <text class="monos" x="511" y="394" text-anchor="middle">τ — / 3.78 / 5.88</text>
+
+  <!-- group 4: DS-R1-Distill-8B -->
+  <g>
+    <rect x="654" y="279" width="34" height="81" rx="3" fill="#3b82f6"/>
+    <rect x="694" y="256" width="34" height="104" rx="3" fill="#1e3a8a"/>
+    <text class="val" x="671" y="275" text-anchor="middle">3.26</text>
+    <text class="val" x="711" y="252" text-anchor="middle">4.16</text>
+  </g>
+  <text class="lbl" x="691" y="378" text-anchor="middle">DS-R1-Distill-8B</text>
+  <text class="monos" x="691" y="394" text-anchor="middle">τ — / 3.92 / 5.84</text>
+
+  <rect x="760" y="252" width="12" height="12" rx="2" fill="#93c5fd"/>
+  <text class="lbls" x="778" y="262">EAGLE-1</text>
+  <rect x="760" y="276" width="12" height="12" rx="2" fill="#3b82f6"/>
+  <text class="lbls" x="778" y="286">EAGLE-2</text>
+  <rect x="760" y="300" width="12" height="12" rx="2" fill="#1e3a8a"/>
+  <text class="lbls" x="778" y="310">EAGLE-3</text>
+  <text class="monos" x="760" y="336">8B/70B/DS 无</text>
+  <text class="monos" x="760" y="350">同口径 EAGLE-1</text>
+
+  <!-- ==================== panel C: batch tradeoff ==================== -->
+  <rect x="16" y="424" width="868" height="200" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+  <text class="h2" x="34" y="452">加速比随 batch size 上升而衰减（SGLang / H100 / LLaMA-3.1-8B）</text>
+
+  <rect x="34" y="466" width="12" height="10" rx="2" fill="#3b82f6"/>
+  <text class="lbls" x="52" y="475">EAGLE-2</text>
+  <rect x="120" y="466" width="12" height="10" rx="2" fill="#1e3a8a"/>
+  <text class="lbls" x="138" y="475">EAGLE-3</text>
+  <text class="monos" x="216" y="475">虚线 = 1.0×（加了投机解码反而更慢的分界）</text>
+
+  <g stroke="#e2e8f0" stroke-width="1" stroke-dasharray="3 3">
+    <line x1="92" y1="480" x2="828" y2="480"/>
+    <line x1="92" y1="500" x2="828" y2="500"/>
+    <line x1="92" y1="520" x2="828" y2="520"/>
+    <line x1="92" y1="540" x2="828" y2="540"/>
+  </g>
+  <g class="ax" text-anchor="end">
+    <text x="86" y="484">1.8×</text>
+    <text x="86" y="504">1.6×</text>
+    <text x="86" y="524">1.4×</text>
+    <text x="86" y="544">1.2×</text>
+    <text x="86" y="564">1.0×</text>
+  </g>
+  <line x1="92" y1="560" x2="828" y2="560" stroke="#f87171" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <line x1="92" y1="476" x2="828" y2="476" stroke="#cbd5e1" stroke-width="1"/>
+  <line x1="92" y1="476" x2="92" y2="580" stroke="#94a3b8" stroke-width="1.5"/>
+  <line x1="92" y1="580" x2="828" y2="580" stroke="#94a3b8" stroke-width="1.5"/>
+
+  <!-- EAGLE-2 polyline: y = 560 - (v-1)*100 -->
+  <polyline fill="none" stroke="#3b82f6" stroke-width="2.2"
+    points="92,520 184,522 276,537 368,558 460,567 552,566 644,572 736,559 828,559"/>
+  <g fill="#3b82f6">
+    <circle cx="92" cy="520" r="3.5"/><circle cx="184" cy="522" r="3.5"/><circle cx="276" cy="537" r="3.5"/>
+    <circle cx="368" cy="558" r="3.5"/><circle cx="460" cy="567" r="3.5"/><circle cx="552" cy="566" r="3.5"/>
+    <circle cx="644" cy="572" r="3.5"/><circle cx="736" cy="559" r="3.5"/><circle cx="828" cy="559" r="3.5"/>
+  </g>
+
+  <!-- EAGLE-3 polyline -->
+  <polyline fill="none" stroke="#1e3a8a" stroke-width="2.2"
+    points="92,479 184,478 276,498 368,512 460,521 552,528 644,522 736,526 828,522"/>
+  <g fill="#1e3a8a">
+    <circle cx="92" cy="479" r="3.5"/><circle cx="184" cy="478" r="3.5"/><circle cx="276" cy="498" r="3.5"/>
+    <circle cx="368" cy="512" r="3.5"/><circle cx="460" cy="521" r="3.5"/><circle cx="552" cy="528" r="3.5"/>
+    <circle cx="644" cy="522" r="3.5"/><circle cx="736" cy="526" r="3.5"/><circle cx="828" cy="522" r="3.5"/>
+  </g>
+
+  <g class="ax" text-anchor="middle">
+    <text x="92" y="596">2</text><text x="184" y="596">4</text><text x="276" y="596">8</text>
+    <text x="368" y="596">16</text><text x="460" y="596">24</text><text x="552" y="596">32</text>
+    <text x="644" y="596">48</text><text x="736" y="596">56</text><text x="828" y="596">64</text>
+  </g>
+  <text class="lbls" x="460" y="614" text-anchor="middle">batch size（并发序列数）</text>
+  <text class="lbls" x="640" y="484">EAGLE-3 在 bs=64 仍有 1.38×（官方口径）</text>
+  <text class="lbls" x="640" y="576">EAGLE-2 从 bs≥24 起跌破 1.0×</text>
+</svg>

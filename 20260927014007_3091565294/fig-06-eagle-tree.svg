@@ -1,0 +1,152 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 620" width="100%" role="img" aria-label="EAGLE 的草稿树、树形注意力掩码与一次前向验证">
+  <style>
+    .h    { font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; font-size:14.5px; font-weight:600; fill:#0f172a; }
+    .h2   { font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; font-size:12.5px; font-weight:600; fill:#1e293b; }
+    .lbl  { font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; font-size:12px; fill:#334155; }
+    .lbls { font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; font-size:11px; fill:#64748b; }
+    .tok  { font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; font-size:12px; font-weight:600; fill:#0f172a; }
+    .cf   { font-family:Consolas,Cascadia Mono,monospace; font-size:10px; fill:#b45309; }
+    .mono { font-family:Consolas,Cascadia Mono,monospace; font-size:11.5px; fill:#0f172a; }
+    .cellnum { font-family:Consolas,Cascadia Mono,monospace; font-size:10px; fill:#94a3b8; }
+    .rowlab  { font-family:Consolas,Cascadia Mono,monospace; font-size:10px; fill:#475569; }
+    .good { font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; font-size:11.5px; font-weight:600; fill:#15803d; }
+  </style>
+  <defs>
+    <marker id="f6a" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1d4ed8"/>
+    </marker>
+  </defs>
+  <rect width="900" height="620" fill="#ffffff"/>
+
+  <!-- ===================== panel A: draft tree ===================== -->
+  <rect x="16" y="16" width="452" height="330" rx="12" fill="#fffbeb" stroke="#fde68a" stroke-width="1.5"/>
+  <text class="h" x="34" y="44">① 草稿树：一次前向生成多个候选分支</text>
+  <text class="lbls" x="34" y="64">每个节点旁边是草稿模型给的置信度 q（用于后续排序 / 剪枝）</text>
+
+  <!-- edges -->
+  <g stroke="#cbd5e1" stroke-width="1.6" fill="none">
+    <path d="M242 104 L140 138"/>
+    <path d="M242 104 L344 138"/>
+    <path d="M140 174 L76 208"/>
+    <path d="M140 174 L204 208"/>
+    <path d="M344 174 L280 208"/>
+    <path d="M344 174 L408 208"/>
+    <path d="M76 244 L52 276"/>
+    <path d="M76 244 L128 276"/>
+  </g>
+
+  <!-- root -->
+  <rect x="157" y="70" width="170" height="34" rx="8" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1.5"/>
+  <text class="tok" x="242" y="92" text-anchor="middle">…中国的首都是</text>
+
+  <!-- level1 -->
+  <rect x="92" y="140" width="96" height="34" rx="8" fill="#dcfce7" stroke="#4ade80" stroke-width="2"/>
+  <text class="tok" x="140" y="157" text-anchor="middle">北京</text>
+  <text class="cf"  x="140" y="169" text-anchor="middle">q = 0.71</text>
+
+  <rect x="296" y="140" width="96" height="34" rx="8" fill="#fef3c7" stroke="#f59e0b"/>
+  <text class="tok" x="344" y="157" text-anchor="middle">一座</text>
+  <text class="cf"  x="344" y="169" text-anchor="middle">q = 0.12</text>
+
+  <!-- level2 -->
+  <rect x="34" y="210" width="84" height="34" rx="8" fill="#dcfce7" stroke="#4ade80" stroke-width="2"/>
+  <text class="tok" x="76" y="227" text-anchor="middle">是</text>
+  <text class="cf"  x="76" y="239" text-anchor="middle">q = 0.66</text>
+
+  <rect x="162" y="210" width="84" height="34" rx="8" fill="#fef3c7" stroke="#f59e0b"/>
+  <text class="tok" x="204" y="227" text-anchor="middle">的</text>
+  <text class="cf"  x="204" y="239" text-anchor="middle">q = 0.09</text>
+
+  <rect x="238" y="210" width="84" height="34" rx="8" fill="#fef3c7" stroke="#f59e0b"/>
+  <text class="tok" x="280" y="227" text-anchor="middle">位于</text>
+  <text class="cf"  x="280" y="239" text-anchor="middle">q = 0.05</text>
+
+  <rect x="366" y="210" width="84" height="34" rx="8" fill="#fef3c7" stroke="#f59e0b"/>
+  <text class="tok" x="408" y="227" text-anchor="middle">是</text>
+  <text class="cf"  x="408" y="239" text-anchor="middle">q = 0.04</text>
+
+  <!-- level3 -->
+  <rect x="20" y="280" width="64" height="34" rx="8" fill="#dcfce7" stroke="#4ade80" stroke-width="2"/>
+  <text class="tok" x="52" y="297" text-anchor="middle">中国</text>
+  <text class="cf"  x="52" y="309" text-anchor="middle">q = 0.48</text>
+
+  <rect x="96" y="280" width="64" height="34" rx="8" fill="#fef3c7" stroke="#f59e0b"/>
+  <text class="tok" x="128" y="297" text-anchor="middle">一座</text>
+  <text class="cf"  x="128" y="309" text-anchor="middle">q = 0.21</text>
+
+  <text class="lbls" x="34" y="336">绿色 = 置信度最高的那条主干路径（逐层贪心扩张的结果）</text>
+
+  <!-- ===================== panel B: mask ===================== -->
+  <rect x="484" y="16" width="400" height="330" rx="12" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
+  <text class="h" x="502" y="44">② 树形注意力掩码：一次前向算完整棵树</text>
+  <text class="lbls" x="502" y="64">每行是一个节点，它只能看见「自己 + 全部祖先」</text>
+
+  <!-- grid -->
+  <g>
+    <g class="cellnum" text-anchor="middle">
+      <text x="612" y="86">0</text><text x="636" y="86">1</text><text x="660" y="86">2</text>
+      <text x="684" y="86">3</text><text x="708" y="86">4</text><text x="732" y="86">5</text>
+      <text x="756" y="86">6</text>
+    </g>
+    <!-- rows -->
+    <g class="rowlab" text-anchor="end">
+      <text x="596" y="107">0 root</text>
+      <text x="596" y="131">1 北京</text>
+      <text x="596" y="155">2 一座</text>
+      <text x="596" y="179">3 北京·是</text>
+      <text x="596" y="203">4 北京·的</text>
+      <text x="596" y="227">5 一座·位于</text>
+      <text x="596" y="251">6 一座·是</text>
+    </g>
+    <!-- cells: 24x24 at x=600+24*c, y=94+24*r -->
+    <g stroke="#ffffff" stroke-width="1">
+      <!-- row0 -->
+      <rect x="600" y="94"  width="24" height="24" fill="#93c5fd"/><rect x="624" y="94"  width="24" height="24" fill="#e2e8f0"/><rect x="648" y="94"  width="24" height="24" fill="#e2e8f0"/><rect x="672" y="94"  width="24" height="24" fill="#e2e8f0"/><rect x="696" y="94"  width="24" height="24" fill="#e2e8f0"/><rect x="720" y="94"  width="24" height="24" fill="#e2e8f0"/><rect x="744" y="94"  width="24" height="24" fill="#e2e8f0"/>
+      <!-- row1 -->
+      <rect x="600" y="118" width="24" height="24" fill="#93c5fd"/><rect x="624" y="118" width="24" height="24" fill="#93c5fd"/><rect x="648" y="118" width="24" height="24" fill="#e2e8f0"/><rect x="672" y="118" width="24" height="24" fill="#e2e8f0"/><rect x="696" y="118" width="24" height="24" fill="#e2e8f0"/><rect x="720" y="118" width="24" height="24" fill="#e2e8f0"/><rect x="744" y="118" width="24" height="24" fill="#e2e8f0"/>
+      <!-- row2 -->
+      <rect x="600" y="142" width="24" height="24" fill="#93c5fd"/><rect x="624" y="142" width="24" height="24" fill="#e2e8f0"/><rect x="648" y="142" width="24" height="24" fill="#93c5fd"/><rect x="672" y="142" width="24" height="24" fill="#e2e8f0"/><rect x="696" y="142" width="24" height="24" fill="#e2e8f0"/><rect x="720" y="142" width="24" height="24" fill="#e2e8f0"/><rect x="744" y="142" width="24" height="24" fill="#e2e8f0"/>
+      <!-- row3 -->
+      <rect x="600" y="166" width="24" height="24" fill="#93c5fd"/><rect x="624" y="166" width="24" height="24" fill="#93c5fd"/><rect x="648" y="166" width="24" height="24" fill="#e2e8f0"/><rect x="672" y="166" width="24" height="24" fill="#93c5fd"/><rect x="696" y="166" width="24" height="24" fill="#e2e8f0"/><rect x="720" y="166" width="24" height="24" fill="#e2e8f0"/><rect x="744" y="166" width="24" height="24" fill="#e2e8f0"/>
+      <!-- row4 -->
+      <rect x="600" y="190" width="24" height="24" fill="#93c5fd"/><rect x="624" y="190" width="24" height="24" fill="#93c5fd"/><rect x="648" y="190" width="24" height="24" fill="#e2e8f0"/><rect x="672" y="190" width="24" height="24" fill="#e2e8f0"/><rect x="696" y="190" width="24" height="24" fill="#93c5fd"/><rect x="720" y="190" width="24" height="24" fill="#e2e8f0"/><rect x="744" y="190" width="24" height="24" fill="#e2e8f0"/>
+      <!-- row5 -->
+      <rect x="600" y="214" width="24" height="24" fill="#93c5fd"/><rect x="624" y="214" width="24" height="24" fill="#e2e8f0"/><rect x="648" y="214" width="24" height="24" fill="#93c5fd"/><rect x="672" y="214" width="24" height="24" fill="#e2e8f0"/><rect x="696" y="214" width="24" height="24" fill="#e2e8f0"/><rect x="720" y="214" width="24" height="24" fill="#93c5fd"/><rect x="744" y="214" width="24" height="24" fill="#e2e8f0"/>
+      <!-- row6 -->
+      <rect x="600" y="238" width="24" height="24" fill="#93c5fd"/><rect x="624" y="238" width="24" height="24" fill="#e2e8f0"/><rect x="648" y="238" width="24" height="24" fill="#93c5fd"/><rect x="672" y="238" width="24" height="24" fill="#e2e8f0"/><rect x="696" y="238" width="24" height="24" fill="#e2e8f0"/><rect x="720" y="238" width="24" height="24" fill="#e2e8f0"/><rect x="744" y="238" width="24" height="24" fill="#93c5fd"/>
+    </g>
+    <rect x="600" y="94" width="168" height="168" fill="none" stroke="#94a3b8" stroke-width="1.5"/>
+  </g>
+
+  <rect x="502" y="278" width="12" height="12" rx="2" fill="#93c5fd"/>
+  <text class="lbls" x="520" y="288">可见（自己 + 祖先）</text>
+  <rect x="652" y="278" width="12" height="12" rx="2" fill="#e2e8f0"/>
+  <text class="lbls" x="670" y="288">屏蔽</text>
+  <text class="lbls" x="502" y="316">掩码规则：每个节点只看得见 root + 自己的所有祖先 + 自己；</text>
+  <text class="lbls" x="502" y="334">root 只看自己。因此一次前向就能同时算出所有候选路径的概率。</text>
+
+  <!-- ===================== panel C: verify + accept ===================== -->
+  <rect x="16" y="362" width="868" height="118" rx="12" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.5"/>
+  <text class="h" x="34" y="390">③ 验证：目标模型对整棵树只做 1 次前向，然后沿树「走」出最长可接受前缀</text>
+
+  <g>
+    <rect x="34" y="404" width="230" height="34" rx="8" fill="#ffffff" stroke="#93c5fd"/>
+    <text class="lbl" x="149" y="426" text-anchor="middle">1 次前向 → 每个节点的 p</text>
+    <rect x="286" y="404" width="230" height="34" rx="8" fill="#ffffff" stroke="#93c5fd"/>
+    <text class="lbl" x="401" y="426" text-anchor="middle">自 root 向下逐层比对 p 与 q</text>
+    <rect x="538" y="404" width="330" height="34" rx="8" fill="#dcfce7" stroke="#4ade80"/>
+    <text class="lbl" x="703" y="426" text-anchor="middle">接受「北京」「是」→ 再从残差采样 1 个 bonus token</text>
+  </g>
+  <g stroke="#1d4ed8" stroke-width="1.8" fill="none">
+    <path d="M266 421 L284 421" marker-end="url(#f6a)"/>
+    <path d="M518 421 L536 421" marker-end="url(#f6a)"/>
+  </g>
+  <text class="lbls" x="34" y="464">关键收益：原本生成同样 3 个 token 需要目标模型跑 3 次前向（串行），现在只要 1 次（并行）—— 树越宽越深，能「捞」回的被接受 token 越多。</text>
+
+  <!-- ===================== panel D: kv note ===================== -->
+  <rect x="16" y="494" width="868" height="112" rx="12" fill="#fff7ed" stroke="#fed7aa" stroke-width="1.5"/>
+  <text class="h2" x="34" y="522">工程细节：接受之后要压缩 KV Cache（代码实现，论文未展开）</text>
+  <text class="lbl" x="34" y="546">一轮验证结束后，只有被接受路径上的 token 会成为正式输出。实现上是把这条路径对应的 KV 行按索引 gather 出来、</text>
+  <text class="lbl" x="34" y="568">连续地拷回前缀之后（其余分支直接丢弃），草稿模型侧同样要重排被接受 token 对应的特征，作为下一轮的输入。</text>
+  <text class="lbls" x="34" y="590">这一步只是显存搬运和索引重排，没有额外矩阵运算，开销远小于目标模型的一次前向。</text>
+</svg>

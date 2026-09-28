@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 540" width="100%" role="img" aria-label="EAGLE-3 的两个关键改动：training-time test 与多层特征融合">
+  <style>
+    .h    { font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; font-size:14.5px; font-weight:600; fill:#0f172a; }
+    .h2   { font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; font-size:12.5px; font-weight:600; fill:#1e293b; }
+    .lbl  { font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; font-size:11.5px; fill:#334155; }
+    .lbls { font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; font-size:10.5px; fill:#64748b; }
+    .mono { font-family:Consolas,Cascadia Mono,monospace; font-size:10.5px; fill:#0f172a; }
+    .bad  { font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; font-size:11.5px; font-weight:600; fill:#b91c1c; }
+    .good { font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; font-size:11.5px; font-weight:600; fill:#15803d; }
+  </style>
+  <defs>
+    <marker id="f9a" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#475569"/>
+    </marker>
+    <marker id="f9g" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#15803d"/>
+    </marker>
+    <marker id="f9o" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#6366f1"/>
+    </marker>
+  </defs>
+  <rect width="900" height="540" fill="#ffffff"/>
+
+  <!-- ============ panel A: training-time test ============ -->
+  <rect x="16" y="16" width="868" height="292" rx="12" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
+  <text class="h" x="34" y="44">改动一：training-time test —— 训练时就按推理的样子跑多步</text>
+
+  <!-- left: old -->
+  <rect x="34" y="58" width="404" height="226" rx="10" fill="#fef2f2" stroke="#fecaca"/>
+  <text class="h2" x="50" y="82">EAGLE-1 / EAGLE-2：只训练单步</text>
+
+  <rect x="50" y="96" width="128" height="32" rx="7" fill="#ede9fe" stroke="#a78bfa"/>
+  <text class="lbl" x="114" y="117" text-anchor="middle">f_t（真特征）</text>
+  <rect x="50" y="136" width="128" height="32" rx="7" fill="#fef3c7" stroke="#f59e0b"/>
+  <text class="lbl" x="114" y="157" text-anchor="middle">embed(x_{t+1})</text>
+  <line x1="184" y1="112" x2="212" y2="126" stroke="#475569" stroke-width="1.6" marker-end="url(#f9a)"/>
+  <line x1="184" y1="152" x2="212" y2="138" stroke="#475569" stroke-width="1.6" marker-end="url(#f9a)"/>
+  <rect x="216" y="96" width="86" height="72" rx="7" fill="#fde68a" stroke="#d97706"/>
+  <text class="lbl" x="259" y="127" text-anchor="middle" font-weight="600">草稿</text>
+  <text class="lbl" x="259" y="145" text-anchor="middle" font-weight="600">模型</text>
+  <line x1="306" y1="132" x2="320" y2="132" stroke="#475569" stroke-width="1.6" marker-end="url(#f9a)"/>
+  <text class="mono" x="326" y="126">f̂_{t+1}</text>
+  <text class="mono" x="326" y="146">p_{t+2}</text>
+
+  <text class="mono" x="50" y="190" fill="#b91c1c">损失 L = L_reg(f̂ , f) + 0.1 · L_cls</text>
+  <text class="lbls" x="50" y="214">训练时输入永远是目标模型的真特征，只算一步的损失。</text>
+  <text class="bad"  x="50" y="238">问题：推理到第 2 步，输入就变成草稿自己猜的 f̂。</text>
+  <text class="lbls" x="50" y="258">训练分布 ≠ 推理分布，误差一旦产生就没人教它怎么纠正 ——</text>
+  <text class="lbls" x="50" y="276">这正是「加大训练数据也涨不动」的根因之一。</text>
+
+  <!-- right: new -->
+  <rect x="452" y="58" width="416" height="226" rx="10" fill="#f0fdf4" stroke="#bbf7d0"/>
+  <text class="h2" x="468" y="82">EAGLE-3：训练时把输出喂回去，跑多步（代码里 7 步）</text>
+
+  <g>
+    <rect x="490" y="96" width="104" height="28" rx="6" fill="#ede9fe" stroke="#a78bfa"/>
+    <text class="mono" x="542" y="115" text-anchor="middle">f_t（真）</text>
+    <line x1="600" y1="110" x2="616" y2="110" stroke="#475569" stroke-width="1.6" marker-end="url(#f9a)"/>
+    <rect x="622" y="96" width="72" height="28" rx="6" fill="#fde68a" stroke="#d97706"/>
+    <text class="lbls" x="658" y="115" text-anchor="middle">草稿</text>
+    <line x1="700" y1="110" x2="714" y2="110" stroke="#475569" stroke-width="1.6" marker-end="url(#f9a)"/>
+    <text class="mono" x="722" y="115">p₁ → loss₁</text>
+  </g>
+  <g>
+    <rect x="490" y="148" width="104" height="28" rx="6" fill="#dcfce7" stroke="#4ade80"/>
+    <text class="mono" x="542" y="167" text-anchor="middle">f̂（自产）</text>
+    <line x1="600" y1="162" x2="616" y2="162" stroke="#475569" stroke-width="1.6" marker-end="url(#f9a)"/>
+    <rect x="622" y="148" width="72" height="28" rx="6" fill="#fde68a" stroke="#d97706"/>
+    <text class="lbls" x="658" y="167" text-anchor="middle">草稿</text>
+    <line x1="700" y1="162" x2="714" y2="162" stroke="#475569" stroke-width="1.6" marker-end="url(#f9a)"/>
+    <text class="mono" x="722" y="167">p₂ → loss₂</text>
+  </g>
+  <g>
+    <rect x="490" y="200" width="104" height="28" rx="6" fill="#dcfce7" stroke="#4ade80"/>
+    <text class="mono" x="542" y="219" text-anchor="middle">f̂（自产）</text>
+    <line x1="600" y1="214" x2="616" y2="214" stroke="#475569" stroke-width="1.6" marker-end="url(#f9a)"/>
+    <rect x="622" y="200" width="72" height="28" rx="6" fill="#fde68a" stroke="#d97706"/>
+    <text class="lbls" x="658" y="219" text-anchor="middle">草稿</text>
+    <line x1="700" y1="214" x2="714" y2="214" stroke="#475569" stroke-width="1.6" marker-end="url(#f9a)"/>
+    <text class="mono" x="722" y="219">p₇ → loss₇</text>
+  </g>
+
+  <!-- feedback brackets on the left -->
+  <path d="M486 110 L466 110 L466 162 L482 162" fill="none" stroke="#15803d" stroke-width="1.6" marker-end="url(#f9g)"/>
+  <path d="M486 162 L456 162 L456 214 L482 214" fill="none" stroke="#15803d" stroke-width="1.6" marker-end="url(#f9g)"/>
+
+  <text class="lbls" x="468" y="252">左侧折线：把上一步的输出喂回去，当作下一步的输入；</text>
+  <text class="good" x="468" y="272">目标模型只算一次特征，反复跑的只有 1 层草稿模型，因此很便宜。</text>
+
+  <!-- ============ panel B: multi-layer fusion ============ -->
+  <rect x="16" y="322" width="868" height="200" rx="12" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.5"/>
+  <text class="h" x="34" y="350">改动二：多层特征融合 —— 不再只盯住顶层下面那一层</text>
+
+  <g>
+    <rect x="40" y="364" width="72" height="30" rx="6" fill="#f1f5f9" stroke="#cbd5e1"/>
+    <text class="lbls" x="76" y="384" text-anchor="middle">Layer 1</text>
+    <rect x="120" y="364" width="72" height="30" rx="6" fill="#a5b4fc" stroke="#6366f1" stroke-width="2"/>
+    <text class="lbls" x="156" y="384" text-anchor="middle" fill="#1e1b4b">Layer 2</text>
+    <rect x="200" y="364" width="72" height="30" rx="6" fill="#f1f5f9" stroke="#cbd5e1"/>
+    <text class="lbls" x="236" y="384" text-anchor="middle">⋯</text>
+    <rect x="280" y="364" width="90" height="30" rx="6" fill="#a5b4fc" stroke="#6366f1" stroke-width="2"/>
+    <text class="lbls" x="325" y="384" text-anchor="middle" fill="#1e1b4b">Layer L/2</text>
+    <rect x="378" y="364" width="72" height="30" rx="6" fill="#f1f5f9" stroke="#cbd5e1"/>
+    <text class="lbls" x="414" y="384" text-anchor="middle">⋯</text>
+    <rect x="458" y="364" width="90" height="30" rx="6" fill="#a5b4fc" stroke="#6366f1" stroke-width="2"/>
+    <text class="lbls" x="503" y="384" text-anchor="middle" fill="#1e1b4b">Layer L−3</text>
+    <rect x="556" y="364" width="72" height="30" rx="6" fill="#dbeafe" stroke="#93c5fd"/>
+    <text class="lbls" x="592" y="384" text-anchor="middle">Layer L</text>
+  </g>
+  <text class="lbls" x="40" y="414">低层（第 2 层）/ 中层（L/2）/ 高层（L−3）各取一个 k 维特征向量</text>
+
+  <g stroke="#6366f1" stroke-width="1.8" marker-end="url(#f9o)">
+    <line x1="156" y1="420" x2="156" y2="436"/>
+    <line x1="325" y1="420" x2="325" y2="436"/>
+    <line x1="503" y1="420" x2="503" y2="436"/>
+  </g>
+  <rect x="120" y="440" width="120" height="30" rx="6" fill="#ffffff" stroke="#a5b4fc"/>
+  <text class="mono" x="180" y="460" text-anchor="middle">low</text>
+  <rect x="265" y="440" width="120" height="30" rx="6" fill="#ffffff" stroke="#a5b4fc"/>
+  <text class="mono" x="325" y="460" text-anchor="middle">mid</text>
+  <rect x="443" y="440" width="120" height="30" rx="6" fill="#ffffff" stroke="#a5b4fc"/>
+  <text class="mono" x="503" y="460" text-anchor="middle">high</text>
+
+  <line x1="244" y1="455" x2="261" y2="455" stroke="#6366f1" stroke-width="1.6" marker-end="url(#f9o)"/>
+  <line x1="389" y1="455" x2="439" y2="455" stroke="#6366f1" stroke-width="1.6" marker-end="url(#f9o)"/>
+  <line x1="567" y1="455" x2="600" y2="455" stroke="#6366f1" stroke-width="1.8" marker-end="url(#f9o)"/>
+  <rect x="606" y="440" width="120" height="30" rx="6" fill="#eef2ff" stroke="#6366f1"/>
+  <text class="mono" x="666" y="460" text-anchor="middle">concat → 3k</text>
+  <line x1="730" y1="455" x2="752" y2="455" stroke="#6366f1" stroke-width="1.8" marker-end="url(#f9o)"/>
+  <rect x="758" y="440" width="108" height="30" rx="6" fill="#eef2ff" stroke="#6366f1"/>
+  <text class="mono" x="812" y="460" text-anchor="middle">FC 3k→k</text>
+
+  <text class="lbls" x="40" y="494">低层特征更接近词形 / 位置，高层更接近语义 —— 三者拼接让草稿模型在</text>
+  <text class="lbls" x="40" y="512">「预测下一个 token」上有更完整的信息，也更容易从数据量增长中获益。</text>
+  <text class="lbls" x="560" y="494">拼接后过一个无 bias 的线性层压回 k 维，再送进草稿模型。</text>
+  <text class="lbls" x="560" y="512">对比：EAGLE-1/2 只用 Layer L−1 这一层。</text>
+</svg>

@@ -1,0 +1,138 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600" width="100%" role="img" aria-label="EAGLE 一轮解码的完整流程：取特征、草稿建树、一次前向验证、沿树接受、更新 KV">
+  <style>
+    .h    { font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; font-size:14.5px; font-weight:600; fill:#0f172a; }
+    .h2   { font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; font-size:12.5px; font-weight:600; fill:#1e293b; }
+    .lbl  { font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; font-size:12px; fill:#334155; }
+    .lbls { font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; font-size:10.5px; fill:#64748b; }
+    .mono { font-family:Consolas,Cascadia Mono,monospace; font-size:10.5px; fill:#0f172a; }
+    .stg  { font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; font-size:12px; font-weight:600; fill:#0f172a; }
+    .badge{ font-family:Consolas,Cascadia Mono,monospace; font-size:10px; fill:#7c2d12; }
+    .inbar{ font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; font-size:11px; fill:#ffffff; }
+  </style>
+  <defs>
+    <marker id="f7a" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#475569"/>
+    </marker>
+    <marker id="f7b" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#b45309"/>
+    </marker>
+  </defs>
+  <rect width="900" height="600" fill="#ffffff"/>
+
+  <!-- ============ panel 1: pipeline ============ -->
+  <text class="h" x="16" y="26">一轮 EAGLE 解码的五个阶段</text>
+
+  <g>
+    <rect x="34" y="42" width="148" height="58" rx="9" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.5"/>
+    <text class="stg" x="108" y="66" text-anchor="middle">① 取特征</text>
+    <text class="lbls" x="108" y="86" text-anchor="middle">取 LM Head 的输入</text>
+
+    <rect x="202" y="42" width="148" height="58" rx="9" fill="#fffbeb" stroke="#fde68a" stroke-width="1.5"/>
+    <text class="stg" x="276" y="66" text-anchor="middle">② EAGLE 草稿</text>
+    <text class="lbls" x="276" y="86" text-anchor="middle">5 次小前向 → 25 节点树</text>
+
+    <rect x="370" y="42" width="148" height="58" rx="9" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.5"/>
+    <text class="stg" x="444" y="66" text-anchor="middle">③ 目标模型验证</text>
+    <text class="lbls" x="444" y="86" text-anchor="middle">1 次前向算完整棵树</text>
+
+    <rect x="538" y="42" width="148" height="58" rx="9" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="1.5"/>
+    <text class="stg" x="612" y="66" text-anchor="middle">④ 沿树接受</text>
+    <text class="lbls" x="612" y="86" text-anchor="middle">最长可接受路径</text>
+
+    <rect x="706" y="42" width="148" height="58" rx="9" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
+    <text class="stg" x="780" y="66" text-anchor="middle">⑤ 更新 KV</text>
+    <text class="lbls" x="780" y="86" text-anchor="middle">保留主干，回到 ②</text>
+  </g>
+  <g stroke="#475569" stroke-width="1.8" marker-end="url(#f7a)">
+    <line x1="184" y1="71" x2="198" y2="71"/>
+    <line x1="352" y1="71" x2="366" y2="71"/>
+    <line x1="520" y1="71" x2="534" y2="71"/>
+    <line x1="688" y1="71" x2="702" y2="71"/>
+  </g>
+
+  <!-- ============ panel 2: tree building ============ -->
+  <rect x="16" y="116" width="868" height="288" rx="12" fill="#fffbeb" stroke="#fde68a" stroke-width="1.5"/>
+  <text class="h2" x="34" y="144">② 草稿阶段：同一层的节点拼成一个 batch，因此 m 次小前向就能长出深度 m 的树（下方为简化示意）</text>
+
+  <!-- row 1 -->
+  <rect x="30" y="158" width="840" height="66" rx="9" fill="#ffffff" stroke="#f1f5f9"/>
+  <rect x="42" y="172" width="56" height="20" rx="5" fill="#fde68a"/>
+  <text class="badge" x="70" y="186" text-anchor="middle">pass 1</text>
+  <rect x="110" y="168" width="180" height="30" rx="7" fill="#e2e8f0" stroke="#94a3b8"/>
+  <text class="lbl" x="200" y="188" text-anchor="middle">root（前缀最后一位）</text>
+  <line x1="296" y1="183" x2="356" y2="183" stroke="#b45309" stroke-width="1.8" marker-end="url(#f7b)"/>
+  <text class="mono" x="326" y="176" text-anchor="middle" fill="#b45309">1 次前向</text>
+  <rect x="364" y="168" width="128" height="30" rx="7" fill="#fef3c7" stroke="#f59e0b"/>
+  <text class="mono" x="428" y="188" text-anchor="middle">北京 q=.71</text>
+  <rect x="500" y="168" width="128" height="30" rx="7" fill="#fef3c7" stroke="#f59e0b"/>
+  <text class="mono" x="564" y="188" text-anchor="middle">一座 q=.12</text>
+  <text class="lbls" x="644" y="188">→ 第 1 层：top-2 分支</text>
+
+  <!-- row 2 -->
+  <rect x="30" y="230" width="840" height="66" rx="9" fill="#ffffff" stroke="#f1f5f9"/>
+  <rect x="42" y="244" width="56" height="20" rx="5" fill="#fde68a"/>
+  <text class="badge" x="70" y="258" text-anchor="middle">pass 2</text>
+  <rect x="110" y="240" width="180" height="30" rx="7" fill="#fef3c7" stroke="#f59e0b"/>
+  <text class="lbl" x="200" y="260" text-anchor="middle">北京、一座（拼 batch）</text>
+  <line x1="296" y1="255" x2="356" y2="255" stroke="#b45309" stroke-width="1.8" marker-end="url(#f7b)"/>
+  <text class="mono" x="326" y="248" text-anchor="middle" fill="#b45309">1 次前向</text>
+  <rect x="364" y="240" width="110" height="30" rx="7" fill="#fef3c7" stroke="#f59e0b"/>
+  <text class="mono" x="419" y="260" text-anchor="middle">是 q=.66</text>
+  <rect x="482" y="240" width="110" height="30" rx="7" fill="#fef3c7" stroke="#f59e0b"/>
+  <text class="mono" x="537" y="260" text-anchor="middle">的 q=.09</text>
+  <rect x="600" y="240" width="110" height="30" rx="7" fill="#fef3c7" stroke="#f59e0b"/>
+  <text class="mono" x="655" y="260" text-anchor="middle">位于 q=.05</text>
+  <rect x="718" y="240" width="110" height="30" rx="7" fill="#fef3c7" stroke="#f59e0b"/>
+  <text class="mono" x="773" y="260" text-anchor="middle">是 q=.04</text>
+  <text class="lbls" x="364" y="288">→ 第 2 层：每个父亲再出 top-2</text>
+
+  <!-- row 3 -->
+  <rect x="30" y="302" width="840" height="66" rx="9" fill="#ffffff" stroke="#f1f5f9"/>
+  <rect x="42" y="316" width="56" height="20" rx="5" fill="#fde68a"/>
+  <text class="badge" x="70" y="330" text-anchor="middle">pass 3</text>
+  <rect x="110" y="312" width="180" height="30" rx="7" fill="#fef3c7" stroke="#f59e0b"/>
+  <text class="lbl" x="200" y="332" text-anchor="middle">第 2 层全部节点（拼 batch）</text>
+  <line x1="296" y1="327" x2="356" y2="327" stroke="#b45309" stroke-width="1.8" marker-end="url(#f7b)"/>
+  <text class="mono" x="326" y="320" text-anchor="middle" fill="#b45309">1 次前向</text>
+  <rect x="364" y="312" width="110" height="30" rx="7" fill="#dcfce7" stroke="#4ade80"/>
+  <text class="mono" x="419" y="332" text-anchor="middle">中国 q=.48</text>
+  <rect x="482" y="312" width="110" height="30" rx="7" fill="#fef3c7" stroke="#f59e0b"/>
+  <text class="mono" x="537" y="332" text-anchor="middle">一座 q=.21</text>
+  <rect x="600" y="312" width="110" height="30" rx="7" fill="#fef3c7" stroke="#f59e0b"/>
+  <text class="mono" x="655" y="332" text-anchor="middle">的 q=.03</text>
+  <rect x="718" y="312" width="110" height="30" rx="7" fill="#fef3c7" stroke="#f59e0b"/>
+  <text class="mono" x="773" y="332" text-anchor="middle">是 q=.02</text>
+  <text class="lbls" x="364" y="360">→ 第 3 层：累计 2 + 4 + 4 = 10 个节点</text>
+
+  <text class="lbls" x="34" y="394">真实默认配置：25 个节点、深度 5，root 取 top-4，其余节点每层 top-k 最多 10 → 5 次草稿前向 + 1 次目标前向。</text>
+
+  <!-- ============ panel 3: time accounting ============ -->
+  <rect x="16" y="418" width="868" height="166" rx="12" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
+  <text class="h2" x="34" y="444">时间账：生成约 4 个 token，各需要几次「贵」的目标模型前向？</text>
+
+  <text class="lbl" x="34" y="470">自回归基线</text>
+  <g>
+    <rect x="170" y="454" width="156" height="24" rx="4" fill="#3b82f6"/>
+    <text class="inbar" x="248" y="471" text-anchor="middle">目标前向 ①</text>
+    <rect x="330" y="454" width="156" height="24" rx="4" fill="#3b82f6"/>
+    <text class="inbar" x="408" y="471" text-anchor="middle">目标前向 ②</text>
+    <rect x="490" y="454" width="156" height="24" rx="4" fill="#3b82f6"/>
+    <text class="inbar" x="568" y="471" text-anchor="middle">目标前向 ③</text>
+    <rect x="650" y="454" width="156" height="24" rx="4" fill="#3b82f6"/>
+    <text class="inbar" x="728" y="471" text-anchor="middle">目标前向 ④</text>
+  </g>
+  <text class="lbls" x="170" y="496">4 条必须串行等待 → 总耗时 = 4.00 个单位</text>
+
+  <text class="lbl" x="34" y="524">EAGLE-1</text>
+  <g>
+    <rect x="170" y="508" width="12" height="24" rx="2" fill="#f59e0b"/>
+    <rect x="184" y="508" width="12" height="24" rx="2" fill="#f59e0b"/>
+    <rect x="198" y="508" width="12" height="24" rx="2" fill="#f59e0b"/>
+    <rect x="212" y="508" width="12" height="24" rx="2" fill="#f59e0b"/>
+    <rect x="226" y="508" width="12" height="24" rx="2" fill="#f59e0b"/>
+    <rect x="244" y="508" width="160" height="24" rx="4" fill="#3b82f6"/>
+    <text class="inbar" x="324" y="525" text-anchor="middle">目标模型验证 1 次</text>
+  </g>
+  <text class="lbls" x="170" y="550">5 次草稿前向（橙色，单次仅约 7%）+ 1 次目标前向 → 总耗时 ≈ 1.36 个单位</text>
+  <text class="lbl" x="34" y="574">加速比 ≈ 4.00 / 1.36 ≈ 2.9× —— 与论文在 MT-bench 上实测的 Vicuna-7B 2.90×（平均接受长度 τ≈3.94）吻合。</text>
+</svg>
