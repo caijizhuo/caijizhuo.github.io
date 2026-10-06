@@ -195,6 +195,101 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20220316211246_20228/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/portrait.jpg">
+      <meta itemprop="name" content="caijizhuo">
+      <meta itemprop="description" content="Looks delicious">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="caijizhuo">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/20220316211246_20228/" class="post-title-link" itemprop="url">父子进程信号量</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-03-16 21:12:46" itemprop="dateCreated datePublished" datetime="2022-03-16T21:12:46+08:00">2022-03-16</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2026-03-23 22:18:30" itemprop="dateModified" datetime="2026-03-23T22:18:30+08:00">2026-03-23</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/concurrent-programming/" itemprop="url" rel="index"><span itemprop="name">concurrent-programming</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>389</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/sem.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/wait.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">union</span> <span class="title class_">semun</span> &#123;                   <span class="comment">// 此结构体为semctl系统调用的第四个参数的推荐格式，由sys/sem.h给出</span></span><br><span class="line">    <span class="type">int</span> val;                    <span class="comment">// 用于SETVAL命令</span></span><br><span class="line">    <span class="keyword">struct</span> <span class="title class_">semid_ds</span>* buf;       <span class="comment">// 用于IPC_STAT和IPC_SET命令</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">short</span> <span class="type">int</span>* array;  <span class="comment">// 用于GETALL和SETALL命令</span></span><br><span class="line">    <span class="keyword">struct</span> <span class="title class_">seminfo</span>* __buf;      <span class="comment">// 用于IPC_INFO命令</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">pv</span><span class="params">(<span class="type">int</span> sem_id, <span class="type">int</span> op)</span> </span>&#123; <span class="comment">// 此函数用于操作sem_id信号集的信号量，对其做出 +op 的操作</span></span><br><span class="line">    <span class="keyword">struct</span> <span class="title class_">sembuf</span> sem_b;      <span class="comment">// 每一个sembuf结构体都对应一个信号量操作</span></span><br><span class="line">    sem_b.sem_num = <span class="number">0</span>;        <span class="comment">// 信号集中信号量的编号，0表示信号集中第0个信号量</span></span><br><span class="line">    sem_b.sem_op = op;</span><br><span class="line">    sem_b.sem_flg = SEM_UNDO; <span class="comment">// 该标志意思为，当进程退出时取消正在进行的semop操作</span></span><br><span class="line">    <span class="built_in">semop</span>(sem_id, &amp;sem_b, <span class="number">1</span>); <span class="comment">// 失败时 数组内所有操作都不执行</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span>* argv[])</span> </span>&#123;</span><br><span class="line">    <span class="type">int</span> sem_id = <span class="built_in">semget</span>(IPC_PRIVATE, <span class="number">1</span>, <span class="number">0666</span>); <span class="comment">// 无论信号量是否已经存在，都会创建一个 新 的信号量。IPC_NEW这个名字更合适</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">union</span> <span class="title class_">semun</span> sem_un;</span><br><span class="line">    sem_un.val = <span class="number">1</span>;</span><br><span class="line">    <span class="built_in">semctl</span>(sem_id, <span class="number">0</span>, SETVAL, sem_un);         <span class="comment">// 第0个信号，执行SETVAL命令，参数为sum_un</span></span><br><span class="line"></span><br><span class="line">    <span class="type">pid_t</span> id = fork();</span><br><span class="line">    <span class="keyword">if</span> (id &lt; <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (id == <span class="number">0</span>) &#123; <span class="comment">// 子进程</span></span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;child try to get binary sem\n&quot;</span>);</span><br><span class="line">        <span class="built_in">pv</span>(sem_id, <span class="number">-1</span>);</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;child get the sem and would release it after 5 seconds\n&quot;</span>);</span><br><span class="line">        <span class="built_in">sleep</span>(<span class="number">5</span>);</span><br><span class="line">        <span class="built_in">pv</span>(sem_id, <span class="number">1</span>);</span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">0</span>);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123; <span class="comment">// 父进程</span></span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;parent try to get binary sem\n&quot;</span>);</span><br><span class="line">        <span class="built_in">pv</span>(sem_id, <span class="number">-1</span>);</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;parent get the sem and would release it after 5 seconds\n&quot;</span>);</span><br><span class="line">        <span class="built_in">sleep</span>(<span class="number">5</span>);</span><br><span class="line">        <span class="built_in">pv</span>(sem_id, <span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">waitpid</span>(id, <span class="literal">NULL</span>, <span class="number">0</span>); <span class="comment">// 父进程等待子进程结束</span></span><br><span class="line">    <span class="built_in">semctl</span>(sem_id, <span class="number">0</span>, IPC_RMID, sem_un); <span class="comment">// remove id 删除信号量</span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20220316211246_20228/1.png" alt="在这里插入图片描述"></p>
+<hr>
+<p>reference: linux高性能服务器编程——游双</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20220310205117_35219/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1100,112 +1195,6 @@ linux高性能服务器编程——游双</p>
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20220215093634_43852/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/portrait.jpg">
-      <meta itemprop="name" content="caijizhuo">
-      <meta itemprop="description" content="Looks delicious">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="caijizhuo">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/20220215093634_43852/" class="post-title-link" itemprop="url">调用者保存寄存器和非调用者保存寄存器</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-02-15 09:36:34" itemprop="dateCreated datePublished" datetime="2022-02-15T09:36:34+08:00">2022-02-15</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2026-03-23 22:18:30" itemprop="dateModified" datetime="2026-03-23T22:18:30+08:00">2026-03-23</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>232</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id="定义"><a class="markdownIt-Anchor" href="#定义"></a> 定义</h1>
-<p>假设有如下场景：函数 A 调用了函数 B。寄存器 %rbx 需要在调用 B 函数前后保持一致。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">func A:</span><br><span class="line">    ...</span><br><span class="line">    call func B</span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">func B:</span><br><span class="line">    ...</span><br></pre></td></tr></table></figure>
-<p><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mstyle mathcolor="red"><mtext>调用者保存寄存器：</mtext></mstyle></mrow><annotation encoding="application/x-tex">\color{red}{调用者保存寄存器：}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.68333em;vertical-align:0em;"></span><span class="mord" style="color:red;"><span class="mord cjk_fallback" style="color:red;">调</span><span class="mord cjk_fallback" style="color:red;">用</span><span class="mord cjk_fallback" style="color:red;">者</span><span class="mord cjk_fallback" style="color:red;">保</span><span class="mord cjk_fallback" style="color:red;">存</span><span class="mord cjk_fallback" style="color:red;">寄</span><span class="mord cjk_fallback" style="color:red;">存</span><span class="mord cjk_fallback" style="color:red;">器</span><span class="mord cjk_fallback" style="color:red;">：</span></span></span></span></span></p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">func A:</span><br><span class="line">    ...</span><br><span class="line">    save register %rbx</span><br><span class="line">    call func B</span><br><span class="line">    restore register %rbx</span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">func B:</span><br><span class="line">    ...</span><br></pre></td></tr></table></figure>
-<p>如上图所示，寄存器 %rbx 是由函数 B 的调用者，即函数 func A 来保存并且恢复的。函数 B 感知不到这个情况，可以尽情使用寄存器 %rbx。</p>
-<p><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mstyle mathcolor="red"><mtext>被调用者保存寄存器：</mtext></mstyle></mrow><annotation encoding="application/x-tex">\color{red}{被调用者保存寄存器：}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.68333em;vertical-align:0em;"></span><span class="mord" style="color:red;"><span class="mord cjk_fallback" style="color:red;">被</span><span class="mord cjk_fallback" style="color:red;">调</span><span class="mord cjk_fallback" style="color:red;">用</span><span class="mord cjk_fallback" style="color:red;">者</span><span class="mord cjk_fallback" style="color:red;">保</span><span class="mord cjk_fallback" style="color:red;">存</span><span class="mord cjk_fallback" style="color:red;">寄</span><span class="mord cjk_fallback" style="color:red;">存</span><span class="mord cjk_fallback" style="color:red;">器</span><span class="mord cjk_fallback" style="color:red;">：</span></span></span></span></span></p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">func A:</span><br><span class="line">    ...</span><br><span class="line">    call func B</span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">func B:</span><br><span class="line">    save register %rbx</span><br><span class="line">    ...</span><br><span class="line">    restore register %rbx</span><br></pre></td></tr></table></figure>
-<p>如图所示，寄存器 %rbx 是由被调用函数，即函数 B 来保存并回复的。函数 A 感知不到这个情况。</p>
-<h1 id="寄存器分类"><a class="markdownIt-Anchor" href="#寄存器分类"></a> 寄存器分类</h1>
-<p>不同的寄存器有不同的保存策略。<br>
-<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mstyle mathcolor="red"><mrow><mi>c</mi><mi>a</mi><mi>l</mi><mi>l</mi><mi>e</mi><mi>e</mi><mtext> </mtext><mi>s</mi><mi>a</mi><mi>v</mi><mi>e</mi><mi>d</mi><mo stretchy="false">(</mo><mtext>被调用者保存）：</mtext></mrow></mstyle></mrow><annotation encoding="application/x-tex">\color{red}{callee \ saved(被调用者保存）：}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord" style="color:red;"><span class="mord mathnormal" style="color:red;">c</span><span class="mord mathnormal" style="color:red;">a</span><span class="mord mathnormal" style="margin-right:0.01968em;color:red;">l</span><span class="mord mathnormal" style="margin-right:0.01968em;color:red;">l</span><span class="mord mathnormal" style="color:red;">e</span><span class="mord mathnormal" style="color:red;">e</span><span class="mspace" style="color:red;"><span style="color:red;"> </span></span><span class="mord mathnormal" style="color:red;">s</span><span class="mord mathnormal" style="color:red;">a</span><span class="mord mathnormal" style="margin-right:0.03588em;color:red;">v</span><span class="mord mathnormal" style="color:red;">e</span><span class="mord mathnormal" style="color:red;">d</span><span class="mopen" style="color:red;">(</span><span class="mord cjk_fallback" style="color:red;">被</span><span class="mord cjk_fallback" style="color:red;">调</span><span class="mord cjk_fallback" style="color:red;">用</span><span class="mord cjk_fallback" style="color:red;">者</span><span class="mord cjk_fallback" style="color:red;">保</span><span class="mord cjk_fallback" style="color:red;">存</span><span class="mord cjk_fallback" style="color:red;">）</span><span class="mord cjk_fallback" style="color:red;">：</span></span></span></span></span></p>
-<blockquote>
-<p>%rbx ，%rbp，%r12，%r13，%r14，%r15</p>
-</blockquote>
-<p><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mstyle mathcolor="red"><mrow><mi>c</mi><mi>a</mi><mi>l</mi><mi>l</mi><mi>e</mi><mi>r</mi><mtext> </mtext><mi>s</mi><mi>a</mi><mi>v</mi><mi>e</mi><mi>d</mi><mo stretchy="false">(</mo><mtext>调用者保存</mtext><mo stretchy="false">)</mo><mtext>：</mtext></mrow></mstyle></mrow><annotation encoding="application/x-tex">\color{red}{caller \ saved(调用者保存)：}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord" style="color:red;"><span class="mord mathnormal" style="color:red;">c</span><span class="mord mathnormal" style="color:red;">a</span><span class="mord mathnormal" style="margin-right:0.01968em;color:red;">l</span><span class="mord mathnormal" style="margin-right:0.01968em;color:red;">l</span><span class="mord mathnormal" style="color:red;">e</span><span class="mord mathnormal" style="margin-right:0.02778em;color:red;">r</span><span class="mspace" style="color:red;"><span style="color:red;"> </span></span><span class="mord mathnormal" style="color:red;">s</span><span class="mord mathnormal" style="color:red;">a</span><span class="mord mathnormal" style="margin-right:0.03588em;color:red;">v</span><span class="mord mathnormal" style="color:red;">e</span><span class="mord mathnormal" style="color:red;">d</span><span class="mopen" style="color:red;">(</span><span class="mord cjk_fallback" style="color:red;">调</span><span class="mord cjk_fallback" style="color:red;">用</span><span class="mord cjk_fallback" style="color:red;">者</span><span class="mord cjk_fallback" style="color:red;">保</span><span class="mord cjk_fallback" style="color:red;">存</span><span class="mclose" style="color:red;">)</span><span class="mord cjk_fallback" style="color:red;">：</span></span></span></span></span></p>
-<blockquote>
-<p>%rax，%rdi，%rsi，%rdx，%rcx，%8，%r9，%r10，%r11</p>
-</blockquote>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1277,7 +1266,7 @@ linux高性能服务器编程——游双</p>
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">72</span>
+          <span class="site-state-item-count">73</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1290,7 +1279,7 @@ linux高性能服务器编程——游双</p>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-count">20</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -1339,13 +1328,13 @@ linux高性能服务器编程——游双</p>
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">80k</span>
+    <span title="站点总字数">84k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">4:49</span>
+    <span title="站点阅读时长">5:07</span>
 </div>
 
         

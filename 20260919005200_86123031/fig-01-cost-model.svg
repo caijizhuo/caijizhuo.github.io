@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 520" width="960" height="520" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif">
+  <rect width="960" height="520" fill="#ffffff"/>
+
+  <text x="480" y="36" text-anchor="middle" font-size="22" font-weight="700" fill="#111827">成本模型：草稿的「姿势」决定加速上限</text>
+  <text x="480" y="62" text-anchor="middle" font-size="13.5" fill="#6b7280">横轴 = 时间。同样要产出 γ 个草稿 token，两种草稿方式的耗时完全不同</text>
+
+  <!-- TOP: autoregressive -->
+  <rect x="40" y="88" width="880" height="190" rx="12" fill="#fdf6f6" stroke="#f0c9c9" stroke-width="1.6"/>
+  <text x="64" y="116" font-size="15.5" font-weight="700" fill="#b91c1c">自回归草稿（EAGLE 系列 / MTP）</text>
+  <text x="64" y="138" font-size="12.5" fill="#7f1d1d">第 γ 个 token 必须等第 γ−1 个算完 —— 延迟随 γ 线性增长</text>
+
+  <g font-size="11" fill="#9ca3af">
+    <text x="98" y="172">t₁</text><text x="190" y="172">t₂</text><text x="282" y="172">t₃</text>
+    <text x="374" y="172">t₄</text><text x="466" y="172">t₅</text><text x="558" y="172">t₆</text>
+    <text x="650" y="172">t₇</text><text x="742" y="172">t₈</text>
+  </g>
+
+  <g>
+    <rect x="64" y="182" width="76" height="40" rx="7" fill="#fca5a5" stroke="#ef4444" stroke-width="1.5"/>
+    <text x="102" y="207" text-anchor="middle" font-size="12.5" font-weight="700" fill="#7f1d1d">d₁</text>
+    <rect x="156" y="182" width="76" height="40" rx="7" fill="#fca5a5" stroke="#ef4444" stroke-width="1.5"/>
+    <text x="194" y="207" text-anchor="middle" font-size="12.5" font-weight="700" fill="#7f1d1d">d₂</text>
+    <rect x="248" y="182" width="76" height="40" rx="7" fill="#fca5a5" stroke="#ef4444" stroke-width="1.5"/>
+    <text x="286" y="207" text-anchor="middle" font-size="12.5" font-weight="700" fill="#7f1d1d">d₃</text>
+    <rect x="340" y="182" width="76" height="40" rx="7" fill="#fca5a5" stroke="#ef4444" stroke-width="1.5"/>
+    <text x="378" y="207" text-anchor="middle" font-size="12.5" font-weight="700" fill="#7f1d1d">d₄</text>
+    <rect x="432" y="182" width="76" height="40" rx="7" fill="#fca5a5" stroke="#ef4444" stroke-width="1.5"/>
+    <text x="470" y="207" text-anchor="middle" font-size="12.5" font-weight="700" fill="#7f1d1d">d₅</text>
+    <rect x="524" y="182" width="76" height="40" rx="7" fill="#fca5a5" stroke="#ef4444" stroke-width="1.5"/>
+    <text x="562" y="207" text-anchor="middle" font-size="12.5" font-weight="700" fill="#7f1d1d">d₆</text>
+    <rect x="616" y="182" width="76" height="40" rx="7" fill="#fca5a5" stroke="#ef4444" stroke-width="1.5"/>
+    <text x="654" y="207" text-anchor="middle" font-size="12.5" font-weight="700" fill="#7f1d1d">d₇</text>
+    <rect x="708" y="182" width="76" height="40" rx="7" fill="#fca5a5" stroke="#ef4444" stroke-width="1.5"/>
+    <text x="746" y="207" text-anchor="middle" font-size="12.5" font-weight="700" fill="#7f1d1d">d₈</text>
+  </g>
+  <g stroke="#ef4444" stroke-width="1.5">
+    <line x1="140" y1="202" x2="154" y2="202"/><line x1="232" y1="202" x2="246" y2="202"/>
+    <line x1="324" y1="202" x2="338" y2="202"/><line x1="416" y1="202" x2="430" y2="202"/>
+    <line x1="508" y1="202" x2="522" y2="202"/><line x1="600" y1="202" x2="614" y2="202"/>
+    <line x1="692" y1="202" x2="706" y2="202"/>
+  </g>
+  <text x="64" y="254" font-size="13" font-weight="700" fill="#b91c1c">T_draft = γ · t_step　→ 想让 γ 变大，草稿就线性变慢，于是只能把草稿模型做得极浅</text>
+
+  <!-- BOTTOM: diffusion -->
+  <rect x="40" y="292" width="880" height="190" rx="12" fill="#f4faf6" stroke="#bfe3cd" stroke-width="1.6"/>
+  <text x="64" y="320" font-size="15.5" font-weight="700" fill="#15803d">块扩散草稿（DFlash）</text>
+  <text x="64" y="342" font-size="12.5" fill="#166534">B−1 个 mask 位置在同一次前向内被并行解出，位置之间不需要互相等待</text>
+
+  <g font-size="11" fill="#9ca3af">
+    <text x="98" y="376">t₁</text><text x="190" y="376">t₂</text><text x="282" y="376">t₃</text>
+    <text x="374" y="376">t₄</text><text x="466" y="376">t₅</text><text x="558" y="376">t₆</text>
+    <text x="650" y="376">t₇</text><text x="742" y="376">t₈</text>
+  </g>
+
+  <rect x="64" y="386" width="720" height="42" rx="8" fill="#86efac" stroke="#16a34a" stroke-width="1.8"/>
+  <rect x="64" y="386" width="88" height="42" rx="8" fill="#4ade80" stroke="#15803d" stroke-width="1.8"/>
+  <text x="108" y="413" text-anchor="middle" font-size="12.5" font-weight="700" fill="#14532d">anchor a</text>
+  <g font-size="12" fill="#166534">
+    <text x="198" y="413" text-anchor="middle">d₁</text><text x="288" y="413" text-anchor="middle">d₂</text>
+    <text x="378" y="413" text-anchor="middle">d₃</text><text x="468" y="413" text-anchor="middle">d₄</text>
+    <text x="558" y="413" text-anchor="middle">d₅</text><text x="648" y="413" text-anchor="middle">d₆</text>
+    <text x="738" y="413" text-anchor="middle">d₇</text>
+  </g>
+  <text x="64" y="458" font-size="13" font-weight="700" fill="#15803d">T_draft = t_parallel　→ 成本基本与 γ 无关，省下的预算可以换成「更深的草稿」</text>
+</svg>

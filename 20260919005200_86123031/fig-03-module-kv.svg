@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 500" width="960" height="500" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif">
+  <rect width="960" height="500" fill="#ffffff"/>
+
+  <text x="480" y="36" text-anchor="middle" font-size="22" font-weight="700" fill="#111827">草稿模块结构：目标特征如何注入到每一层</text>
+  <text x="480" y="62" text-anchor="middle" font-size="13.5" fill="#6b7280">KV Injection —— 与 EAGLE 式「只在输入层融合一次」的关键区别</text>
+
+  <defs>
+    <marker id="m3" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 z" fill="#6b7280"/>
+    </marker>
+  </defs>
+
+  <!-- ===== LEFT: target feature fusion ===== -->
+  <rect x="30" y="88" width="252" height="300" rx="13" fill="#fffbeb" stroke="#fcd34d" stroke-width="1.7"/>
+  <text x="156" y="116" text-anchor="middle" font-size="14.5" font-weight="700" fill="#92400e">目标模型（frozen）</text>
+  <text x="156" y="138" text-anchor="middle" font-size="11.5" fill="#92400e">从浅到深均匀抽取 L 层隐状态</text>
+
+  <g font-size="10.5" fill="#78350f">
+    <rect x="48" y="152" width="216" height="22" rx="5" fill="#fef3c7" stroke="#fbbf24"/>
+    <text x="156" y="167" text-anchor="middle">H⁽ˡ¹⁾</text>
+    <rect x="48" y="178" width="216" height="22" rx="5" fill="#fef3c7" stroke="#fbbf24"/>
+    <text x="156" y="193" text-anchor="middle">H⁽ˡ²⁾　…　H⁽ˡᴸ⁾</text>
+  </g>
+  <line x1="48" y1="212" x2="264" y2="212" stroke="#fcd34d" stroke-width="1.2"/>
+  <text x="156" y="232" text-anchor="middle" font-size="10.5" fill="#92400e">拼接后一次投影（只训练这一个投影）：</text>
+
+  <rect x="48" y="240" width="216" height="28" rx="6" fill="#fcd34d" stroke="#f59e0b" stroke-width="1.4"/>
+  <text x="156" y="259" text-anchor="middle" font-size="11" font-weight="700" fill="#78350f">H_c = RMSNorm(W_c · [H⁽ˡ¹⁾; …; H⁽ˡᴸ⁾])</text>
+
+  <text x="156" y="290" text-anchor="middle" font-size="10.5" fill="#92400e">W_c 维度 D × L·D，所有草稿层共享</text>
+  <text x="156" y="310" text-anchor="middle" font-size="10.5" fill="#92400e">词嵌入表与 LM head 亦与目标模型共享</text>
+  <text x="156" y="332" text-anchor="middle" font-size="10.5" font-weight="700" fill="#b45309">新增参数 = W_c + 若干草稿层</text>
+  <text x="156" y="352" text-anchor="middle" font-size="10.5" fill="#92400e">量级约占目标模型 1.6%</text>
+  <text x="156" y="374" text-anchor="middle" font-size="10" fill="#6b7280">（论文默认 N=5 层，block size=16）</text>
+
+  <line x1="286" y1="240" x2="332" y2="240" stroke="#6b7280" stroke-width="2" marker-end="url(#m3)"/>
+
+  <!-- ===== MIDDLE: draft layer detail ===== -->
+  <rect x="342" y="88" width="336" height="300" rx="13" fill="#eef2ff" stroke="#4f46e5" stroke-width="1.8"/>
+  <text x="510" y="116" text-anchor="middle" font-size="14.5" font-weight="700" fill="#312e81">草稿 Transformer 单层（共 N 层）</text>
+
+  <rect x="360" y="132" width="140" height="42" rx="7" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1.4"/>
+  <text x="430" y="151" text-anchor="middle" font-size="11" fill="#374151">块内嵌入 H_b</text>
+  <text x="430" y="166" text-anchor="middle" font-size="10" fill="#6b7280">[a, MASK, …]</text>
+
+  <rect x="520" y="132" width="140" height="42" rx="7" fill="#fde68a" stroke="#f59e0b" stroke-width="1.4"/>
+  <text x="590" y="151" text-anchor="middle" font-size="11" fill="#78350f">上下文特征 H_c</text>
+  <text x="590" y="166" text-anchor="middle" font-size="10" fill="#92400e">来自目标模型</text>
+
+  <path d="M430 174 L430 192" stroke="#6b7280" stroke-width="1.6" marker-end="url(#m3)"/>
+  <path d="M590 174 L590 192" stroke="#6b7280" stroke-width="1.6" marker-end="url(#m3)"/>
+
+  <g font-size="10.5">
+    <rect x="360" y="194" width="140" height="32" rx="6" fill="#c7d2fe" stroke="#4f46e5" stroke-width="1.4"/>
+    <text x="430" y="214" text-anchor="middle" fill="#312e81">Q = W_Q · H_b</text>
+
+    <rect x="520" y="194" width="140" height="32" rx="6" fill="#fcd34d" stroke="#f59e0b" stroke-width="1.4"/>
+    <text x="590" y="214" text-anchor="middle" fill="#78350f">K_c = W_c^K · H_c</text>
+
+    <rect x="360" y="234" width="140" height="32" rx="6" fill="#a5b4fc" stroke="#4f46e5" stroke-width="1.4"/>
+    <text x="430" y="254" text-anchor="middle" fill="#312e81">K_b = W_b^K · H_b</text>
+
+    <rect x="520" y="234" width="140" height="32" rx="6" fill="#fcd34d" stroke="#f59e0b" stroke-width="1.4"/>
+    <text x="590" y="254" text-anchor="middle" fill="#78350f">V_c = W_c^V · H_c</text>
+
+    <rect x="360" y="274" width="140" height="32" rx="6" fill="#a5b4fc" stroke="#4f46e5" stroke-width="1.4"/>
+    <text x="430" y="294" text-anchor="middle" fill="#312e81">V_b = W_b^V · H_b</text>
+  </g>
+
+  <rect x="360" y="320" width="300" height="46" rx="8" fill="#e0e7ff" stroke="#4f46e5" stroke-width="1.5"/>
+  <text x="510" y="339" text-anchor="middle" font-size="11" font-weight="700" fill="#312e81">attn(Q, [K_c ; K_b], [V_c ; V_b])</text>
+  <text x="510" y="357" text-anchor="middle" font-size="10" fill="#4338ca">上下文特征只作为额外 KV 条目，绕过 Q 投影 / 输出投影 / FFN</text>
+
+  <!-- ===== RIGHT: output ===== -->
+  <rect x="692" y="88" width="238" height="300" rx="13" fill="#f4faf6" stroke="#16a34a" stroke-width="1.7"/>
+  <text x="811" y="116" text-anchor="middle" font-size="14.5" font-weight="700" fill="#15803d">输出</text>
+  <text x="811" y="138" text-anchor="middle" font-size="11.5" fill="#166534">共享目标模型的 LM head</text>
+
+  <g font-size="12" fill="#14532d">
+    <rect x="710" y="156" width="46" height="36" rx="6" fill="#4ade80" stroke="#15803d" stroke-width="1.5"/>
+    <text x="733" y="180" text-anchor="middle" font-weight="700">a</text>
+    <rect x="762" y="156" width="46" height="36" rx="6" fill="#86efac" stroke="#16a34a" stroke-width="1.4"/>
+    <text x="785" y="180" text-anchor="middle" font-weight="700">京</text>
+    <rect x="814" y="156" width="46" height="36" rx="6" fill="#86efac" stroke="#16a34a" stroke-width="1.4"/>
+    <text x="837" y="180" text-anchor="middle" font-weight="700">是</text>
+    <rect x="866" y="156" width="46" height="36" rx="6" fill="#86efac" stroke="#16a34a" stroke-width="1.4"/>
+    <text x="889" y="180" text-anchor="middle" font-weight="700">中</text>
+  </g>
+
+  <text x="811" y="214" text-anchor="middle" font-size="11" fill="#166534">anchor 自身不再预测，</text>
+  <text x="811" y="232" text-anchor="middle" font-size="11" fill="#166534">其余 B−1 个位置同时给出</text>
+
+  <line x1="710" y1="250" x2="912" y2="250" stroke="#bbf7d0" stroke-width="1.3"/>
+  <text x="811" y="272" text-anchor="middle" font-size="11.5" font-weight="700" fill="#15803d">复用而非新增</text>
+  <text x="811" y="294" text-anchor="middle" font-size="10.5" fill="#374151">词嵌入表（冻结）</text>
+  <text x="811" y="312" text-anchor="middle" font-size="10.5" fill="#374151">LM head（冻结）</text>
+  <text x="811" y="330" text-anchor="middle" font-size="10.5" fill="#374151">KV cache 机制</text>
+  <text x="811" y="356" text-anchor="middle" font-size="10" fill="#6b7280">H_c 可提前物化，</text>
+  <text x="811" y="372" text-anchor="middle" font-size="10" fill="#6b7280">前缀相同的请求可共享</text>
+
+  <!-- footer -->
+  <text x="480" y="424" text-anchor="middle" font-size="12.5" font-weight="700" fill="#15803d">每一层都能重新看到目标上下文 ⇒ 信号不被深度稀释，接受长度才随 N 有效增长</text>
+  <text x="480" y="448" text-anchor="middle" font-size="11" fill="#6b7280">（EAGLE 式只在输入层融合一次，加深草稿的边际收益会迅速饱和）</text>
+  <text x="480" y="478" text-anchor="middle" font-size="11" fill="#6b7280">消融（论文 Table 9，Qwen3-4B，N=5）：输入融合 3.5 / 2.9×　→　KV 注入 4.2 / 3.3×　（τ / 加速）</text>
+</svg>

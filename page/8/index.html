@@ -195,6 +195,112 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20220215093634_43852/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/portrait.jpg">
+      <meta itemprop="name" content="caijizhuo">
+      <meta itemprop="description" content="Looks delicious">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="caijizhuo">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/20220215093634_43852/" class="post-title-link" itemprop="url">调用者保存寄存器和非调用者保存寄存器</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-02-15 09:36:34" itemprop="dateCreated datePublished" datetime="2022-02-15T09:36:34+08:00">2022-02-15</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2026-03-23 22:18:30" itemprop="dateModified" datetime="2026-03-23T22:18:30+08:00">2026-03-23</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>232</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="定义"><a class="markdownIt-Anchor" href="#定义"></a> 定义</h1>
+<p>假设有如下场景：函数 A 调用了函数 B。寄存器 %rbx 需要在调用 B 函数前后保持一致。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">func A:</span><br><span class="line">    ...</span><br><span class="line">    call func B</span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">func B:</span><br><span class="line">    ...</span><br></pre></td></tr></table></figure>
+<p><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mstyle mathcolor="red"><mtext>调用者保存寄存器：</mtext></mstyle></mrow><annotation encoding="application/x-tex">\color{red}{调用者保存寄存器：}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.68333em;vertical-align:0em;"></span><span class="mord" style="color:red;"><span class="mord cjk_fallback" style="color:red;">调</span><span class="mord cjk_fallback" style="color:red;">用</span><span class="mord cjk_fallback" style="color:red;">者</span><span class="mord cjk_fallback" style="color:red;">保</span><span class="mord cjk_fallback" style="color:red;">存</span><span class="mord cjk_fallback" style="color:red;">寄</span><span class="mord cjk_fallback" style="color:red;">存</span><span class="mord cjk_fallback" style="color:red;">器</span><span class="mord cjk_fallback" style="color:red;">：</span></span></span></span></span></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">func A:</span><br><span class="line">    ...</span><br><span class="line">    save register %rbx</span><br><span class="line">    call func B</span><br><span class="line">    restore register %rbx</span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">func B:</span><br><span class="line">    ...</span><br></pre></td></tr></table></figure>
+<p>如上图所示，寄存器 %rbx 是由函数 B 的调用者，即函数 func A 来保存并且恢复的。函数 B 感知不到这个情况，可以尽情使用寄存器 %rbx。</p>
+<p><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mstyle mathcolor="red"><mtext>被调用者保存寄存器：</mtext></mstyle></mrow><annotation encoding="application/x-tex">\color{red}{被调用者保存寄存器：}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.68333em;vertical-align:0em;"></span><span class="mord" style="color:red;"><span class="mord cjk_fallback" style="color:red;">被</span><span class="mord cjk_fallback" style="color:red;">调</span><span class="mord cjk_fallback" style="color:red;">用</span><span class="mord cjk_fallback" style="color:red;">者</span><span class="mord cjk_fallback" style="color:red;">保</span><span class="mord cjk_fallback" style="color:red;">存</span><span class="mord cjk_fallback" style="color:red;">寄</span><span class="mord cjk_fallback" style="color:red;">存</span><span class="mord cjk_fallback" style="color:red;">器</span><span class="mord cjk_fallback" style="color:red;">：</span></span></span></span></span></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">func A:</span><br><span class="line">    ...</span><br><span class="line">    call func B</span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">func B:</span><br><span class="line">    save register %rbx</span><br><span class="line">    ...</span><br><span class="line">    restore register %rbx</span><br></pre></td></tr></table></figure>
+<p>如图所示，寄存器 %rbx 是由被调用函数，即函数 B 来保存并回复的。函数 A 感知不到这个情况。</p>
+<h1 id="寄存器分类"><a class="markdownIt-Anchor" href="#寄存器分类"></a> 寄存器分类</h1>
+<p>不同的寄存器有不同的保存策略。<br>
+<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mstyle mathcolor="red"><mrow><mi>c</mi><mi>a</mi><mi>l</mi><mi>l</mi><mi>e</mi><mi>e</mi><mtext> </mtext><mi>s</mi><mi>a</mi><mi>v</mi><mi>e</mi><mi>d</mi><mo stretchy="false">(</mo><mtext>被调用者保存）：</mtext></mrow></mstyle></mrow><annotation encoding="application/x-tex">\color{red}{callee \ saved(被调用者保存）：}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord" style="color:red;"><span class="mord mathnormal" style="color:red;">c</span><span class="mord mathnormal" style="color:red;">a</span><span class="mord mathnormal" style="margin-right:0.01968em;color:red;">l</span><span class="mord mathnormal" style="margin-right:0.01968em;color:red;">l</span><span class="mord mathnormal" style="color:red;">e</span><span class="mord mathnormal" style="color:red;">e</span><span class="mspace" style="color:red;"><span style="color:red;"> </span></span><span class="mord mathnormal" style="color:red;">s</span><span class="mord mathnormal" style="color:red;">a</span><span class="mord mathnormal" style="margin-right:0.03588em;color:red;">v</span><span class="mord mathnormal" style="color:red;">e</span><span class="mord mathnormal" style="color:red;">d</span><span class="mopen" style="color:red;">(</span><span class="mord cjk_fallback" style="color:red;">被</span><span class="mord cjk_fallback" style="color:red;">调</span><span class="mord cjk_fallback" style="color:red;">用</span><span class="mord cjk_fallback" style="color:red;">者</span><span class="mord cjk_fallback" style="color:red;">保</span><span class="mord cjk_fallback" style="color:red;">存</span><span class="mord cjk_fallback" style="color:red;">）</span><span class="mord cjk_fallback" style="color:red;">：</span></span></span></span></span></p>
+<blockquote>
+<p>%rbx ，%rbp，%r12，%r13，%r14，%r15</p>
+</blockquote>
+<p><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mstyle mathcolor="red"><mrow><mi>c</mi><mi>a</mi><mi>l</mi><mi>l</mi><mi>e</mi><mi>r</mi><mtext> </mtext><mi>s</mi><mi>a</mi><mi>v</mi><mi>e</mi><mi>d</mi><mo stretchy="false">(</mo><mtext>调用者保存</mtext><mo stretchy="false">)</mo><mtext>：</mtext></mrow></mstyle></mrow><annotation encoding="application/x-tex">\color{red}{caller \ saved(调用者保存)：}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord" style="color:red;"><span class="mord mathnormal" style="color:red;">c</span><span class="mord mathnormal" style="color:red;">a</span><span class="mord mathnormal" style="margin-right:0.01968em;color:red;">l</span><span class="mord mathnormal" style="margin-right:0.01968em;color:red;">l</span><span class="mord mathnormal" style="color:red;">e</span><span class="mord mathnormal" style="margin-right:0.02778em;color:red;">r</span><span class="mspace" style="color:red;"><span style="color:red;"> </span></span><span class="mord mathnormal" style="color:red;">s</span><span class="mord mathnormal" style="color:red;">a</span><span class="mord mathnormal" style="margin-right:0.03588em;color:red;">v</span><span class="mord mathnormal" style="color:red;">e</span><span class="mord mathnormal" style="color:red;">d</span><span class="mopen" style="color:red;">(</span><span class="mord cjk_fallback" style="color:red;">调</span><span class="mord cjk_fallback" style="color:red;">用</span><span class="mord cjk_fallback" style="color:red;">者</span><span class="mord cjk_fallback" style="color:red;">保</span><span class="mord cjk_fallback" style="color:red;">存</span><span class="mclose" style="color:red;">)</span><span class="mord cjk_fallback" style="color:red;">：</span></span></span></span></span></p>
+<blockquote>
+<p>%rax，%rdi，%rsi，%rdx，%rcx，%8，%r9，%r10，%r11</p>
+</blockquote>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20220214012513_19332/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -491,7 +597,7 @@ linux高性能服务器编程——游双P153-P157</p>
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">72</span>
+          <span class="site-state-item-count">73</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -504,7 +610,7 @@ linux高性能服务器编程——游双P153-P157</p>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-count">20</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -553,13 +659,13 @@ linux高性能服务器编程——游双P153-P157</p>
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">80k</span>
+    <span title="站点总字数">84k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">4:49</span>
+    <span title="站点阅读时长">5:07</span>
 </div>
 
         

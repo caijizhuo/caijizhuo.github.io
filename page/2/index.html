@@ -195,6 +195,152 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20230609105733_4112471478/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/portrait.jpg">
+      <meta itemprop="name" content="caijizhuo">
+      <meta itemprop="description" content="Looks delicious">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="caijizhuo">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/20230609105733_4112471478/" class="post-title-link" itemprop="url">内嵌汇编</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-06-09 10:57:33" itemprop="dateCreated datePublished" datetime="2023-06-09T10:57:33+08:00">2023-06-09</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2026-03-23 22:18:30" itemprop="dateModified" datetime="2026-03-23T22:18:30+08:00">2026-03-23</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>469</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="为什么要使用内嵌汇编"><a class="markdownIt-Anchor" href="#为什么要使用内嵌汇编"></a> 为什么要使用内嵌汇编？</h2>
+<p>内嵌汇编通常用于在程序中实现一些高效、精确的操作。例如，在嵌入式平台上运行的程序，如果需要代码占用内存更小、程序运行的效率更高或需要准确地操作寄存器时，嵌入汇编会是不错的选择。</p>
+<h2 id="基本语法"><a class="markdownIt-Anchor" href="#基本语法"></a> 基本语法</h2>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">asm</span>(<span class="string">&quot;assembly code&quot;</span>        <span class="comment">/* 汇编代码 */</span></span><br><span class="line">    :output_operand        <span class="comment">/* 输出参数列表 */</span>          </span><br><span class="line">    :input_operand         <span class="comment">/* 输入参数列表 */</span>          </span><br><span class="line">    :clobbered_operand     <span class="comment">/* 被改变的操作对象列表 */</span>      </span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 举例</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">value_assignment</span><span class="params">(<span class="type">int</span> input)</span> &#123;</span><br><span class="line">    <span class="type">int</span> ret = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">asm</span> <span class="title function_">volatile</span><span class="params">(</span></span><br><span class="line"><span class="params">        <span class="string">&quot;movl %1, %0\n&quot;</span>   <span class="comment">// 超过一条指令就要用 \n 来分割，排版整齐还要加 \t</span></span></span><br><span class="line"><span class="params">        :<span class="string">&quot;=r&quot;</span>(ret)</span></span><br><span class="line"><span class="params">        :<span class="string">&quot;r&quot;</span>(input)</span></span><br><span class="line"><span class="params">    )</span>;</span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="被改变的操作对象列表"><a class="markdownIt-Anchor" href="#被改变的操作对象列表"></a> 被改变的操作对象列表</h3>
+<p>在被改变的参数列表 clobbered_operand 中有一个比较有用的标识符：memory。指定 memory，相当于对编译器形成了一个内存读写的屏障，保证<strong>在内联汇编执行前，编译器将某些寄存器里的值刷新进内存，同时在内联汇编执行后，编译器重新加载相关变量的值</strong>。<br>
+所以我们可以见到这样的代码：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">asm</span> <span class="title function_">volatile</span> <span class="params">(<span class="string">&quot;&quot;</span> ::: <span class="string">&quot;memory&quot;</span>)</span>;</span><br></pre></td></tr></table></figure>
+<p>作为内存屏障，保证编译器的优化不会跨过这道屏障。加上 volatile 告诉编译器不要优化汇编。</p>
+<h3 id="修饰符"><a class="markdownIt-Anchor" href="#修饰符"></a> 修饰符</h3>
+<p>修饰符一般跟在参数列表前面。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">修饰符</th>
+<th style="text-align:center">含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">=</td>
+<td style="text-align:center">只写，常用于修饰所有输出操作数</td>
+</tr>
+<tr>
+<td style="text-align:center">无</td>
+<td style="text-align:center">只读</td>
+</tr>
+<tr>
+<td style="text-align:center">+</td>
+<td style="text-align:center">可读可写</td>
+</tr>
+<tr>
+<td style="text-align:center">r</td>
+<td style="text-align:center">可以是任意通用寄存器存储其值</td>
+</tr>
+<tr>
+<td style="text-align:center">m</td>
+<td style="text-align:center">一个有效的内存地址</td>
+</tr>
+<tr>
+<td style="text-align:center">i</td>
+<td style="text-align:center">是立即数</td>
+</tr>
+<tr>
+<td style="text-align:center">%</td>
+<td style="text-align:center">被修饰的操作数可以和下一个互换</td>
+</tr>
+<tr>
+<td style="text-align:center">&amp;</td>
+<td style="text-align:center">只能做输出，一般和 “=” 一起使用，如 “=&amp;r(val)”</td>
+</tr>
+<tr>
+<td style="text-align:center">x</td>
+<td style="text-align:center">只能做输入</td>
+</tr>
+</tbody>
+</table>
+<h3 id="占位符"><a class="markdownIt-Anchor" href="#占位符"></a> 占位符</h3>
+<p>%0 表示输入和输出列表合并的第 1 个操作数，%1 表示第 2 个，以此类推。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20230607171855_854612321/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1542,130 +1688,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20230501161003_1606969208/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/portrait.jpg">
-      <meta itemprop="name" content="caijizhuo">
-      <meta itemprop="description" content="Looks delicious">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="caijizhuo">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/20230501161003_1606969208/" class="post-title-link" itemprop="url">cpp中auto和decltype区别</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2023-05-01 16:10:03" itemprop="dateCreated datePublished" datetime="2023-05-01T16:10:03+08:00">2023-05-01</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2026-03-23 22:18:30" itemprop="dateModified" datetime="2026-03-23T22:18:30+08:00">2026-03-23</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/cpp/" itemprop="url" rel="index"><span itemprop="name">cpp</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>722</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>3 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="auto"><a class="markdownIt-Anchor" href="#auto"></a> auto</h2>
-<p>C++11 中，使用 auto 关键字来进行自动类型推导。语法如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">auto</span> name = value;</span><br></pre></td></tr></table></figure>
-<p>其中，name 是变量的名字。value 是变量的初始值。其中 auto 是一个占位符，会在<strong>编译期间</strong>由编译器推导出来。而且由 auto 推导的变量必须<strong>初始化</strong>，因为是占位符的原因，不能用作声明。</p>
-<p>限制：</p>
-<ol>
-<li>auto 不能在函数的参数中使用。</li>
-</ol>
-<blockquote>
-<p>我们在定义函数的时候只是对参数进行了声明，指明了参数的类型，但并没有给它赋值，只有在实际调用函数的时候才会给参数赋值。而 auto 要求必须对变量进行初始化。</p>
-</blockquote>
-<ol start="2">
-<li>auto 不能作用于类的非静态成员变量（即没有 static 关键字修饰的成员变量）中。</li>
-<li>auto 关键字不能定义数组，比如下面的例子就是错误的：</li>
-</ol>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">char</span> a[] = <span class="string">&quot;abcdefg&quot;</span>;  </span><br><span class="line"><span class="keyword">auto</span> b[] = a; <span class="comment">// a 为数组，所以不能使用 auto</span></span><br></pre></td></tr></table></figure>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">error: ‘b’ declared as array of ‘auto’</span><br></pre></td></tr></table></figure>
-<ol start="4">
-<li>auto 不能作用于模板参数</li>
-</ol>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">A</span> &#123;</span><br><span class="line">    <span class="comment">//<span class="doctag">TODO:</span></span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">    A&lt;<span class="type">int</span>&gt; C1;</span><br><span class="line">    A&lt;<span class="keyword">auto</span>&gt; C2 = C1;  <span class="comment">// 错误</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">error: invalid use of ‘auto’</span><br></pre></td></tr></table></figure>
-<h2 id="decltype"><a class="markdownIt-Anchor" href="#decltype"></a> decltype</h2>
-<p>decltype 是 C++11 新增的一个关键字，它和 auto 的功能一样，都用来在<strong>编译时期</strong>进行自动类型推导。<br>
-auto 和 decltype 关键字都可以自动推导出变量的类型，但它们的用法是有区别的：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">auto</span> varname = value;</span><br><span class="line"><span class="keyword">decltype</span>(exp) varname = value;</span><br><span class="line"><span class="keyword">decltype</span>(exp) varname;</span><br></pre></td></tr></table></figure>
-<p>其中，varname 表示变量名，value 表示赋给变量的值，exp 表示一个表达式。</p>
-<p>auto 根据<strong>等号右边的初始值 value 推导出变量的类型</strong>，而 decltype 根据 <strong>exp 表达式推导出变量的类型</strong>，跟等号右边的 value 没有关系。</p>
-<p>另外，auto 要求变量必须初始化，而 decltype 不要求。auto 是根据变量的初始值来推导出变量类型的，如果不初始化，变量的类型也就无法推导了。此外，我们必须要保证 exp 的结果是有类型的，不能是 void。例如，当 exp 调用一个返回值类型为 void 的函数时，exp 的结果也是 void 类型，此时就会导致编译错误。</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">error: variable or field ‘b’ declared void</span><br></pre></td></tr></table></figure>
-<p>注意：</p>
-<ol>
-<li>如果 exp 是一个不被括号包围的表达式，或者是类成员访问表达式，或者是单独的变量，那么 decltype(exp) 的类型就和 exp 一致。</li>
-<li>如果 exp 是函数调用，那么 decltype(exp) 的类型就和函数返回值的类型一致。</li>
-<li>如果 exp 是一个左值，或者被括号包围，那么 decltype(exp) 的类型就是 exp 的<strong>引用</strong>。假设 exp 的类型为 T，那么 decltype(exp) 的类型就是 T&amp;。</li>
-<li>decltype 如果是函数调用，因为是在编译时确定，和 sizeof 一样，不会调用一次函数。</li>
-</ol>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1737,7 +1759,7 @@ auto 和 decltype 关键字都可以自动推导出变量的类型，但它们�
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">72</span>
+          <span class="site-state-item-count">73</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1750,7 +1772,7 @@ auto 和 decltype 关键字都可以自动推导出变量的类型，但它们�
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-count">20</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -1799,13 +1821,13 @@ auto 和 decltype 关键字都可以自动推导出变量的类型，但它们�
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">80k</span>
+    <span title="站点总字数">84k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">4:49</span>
+    <span title="站点阅读时长">5:07</span>
 </div>
 
         

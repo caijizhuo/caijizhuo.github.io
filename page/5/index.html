@@ -195,6 +195,128 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20221118151625_3415377200/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/portrait.jpg">
+      <meta itemprop="name" content="caijizhuo">
+      <meta itemprop="description" content="Looks delicious">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="caijizhuo">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/20221118151625_3415377200/" class="post-title-link" itemprop="url">cpp不同种类构造函数</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-11-18 15:16:25" itemprop="dateCreated datePublished" datetime="2022-11-18T15:16:25+08:00">2022-11-18</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2026-03-23 22:18:30" itemprop="dateModified" datetime="2026-03-23T22:18:30+08:00">2026-03-23</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/cpp/" itemprop="url" rel="index"><span itemprop="name">cpp</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>646</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="cpp-的构造函数种类"><a class="markdownIt-Anchor" href="#cpp-的构造函数种类"></a> cpp 的构造函数种类</h1>
+<ol>
+<li>构造函数：生成一个新的对象。</li>
+<li>拷贝构造函数：参数是 const T&amp; x，用于拷贝。</li>
+<li>赋值构造函数：这个严格意义来说不是构造函数，是赋值运算符 = 的重载。初始化的时候不会调用这个函数！</li>
+<li>移动构造函数：参数是 T &amp;&amp;x，用于移动构造，提升效率。</li>
+</ol>
+<h1 id="代码示例"><a class="markdownIt-Anchor" href="#代码示例"></a> 代码示例</h1>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Integer</span> &#123;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="type">int</span>* m_ptr;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="comment">//  普通构造函数</span></span><br><span class="line">    <span class="built_in">Integer</span>(<span class="type">int</span> value) : <span class="built_in">m_ptr</span>(<span class="keyword">new</span> <span class="built_in">int</span>(value)) &#123;</span><br><span class="line">        cout &lt;&lt; <span class="string">&quot;constructor&quot;</span> &lt;&lt; endl;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//  拷贝构造函数</span></span><br><span class="line">    <span class="built_in">Integer</span>(<span class="type">const</span> Integer&amp; source) : <span class="built_in">m_ptr</span>(<span class="keyword">new</span> <span class="built_in">int</span>(*source.m_ptr)) &#123;</span><br><span class="line">        cout &lt;&lt; <span class="string">&quot;copy constructor&quot;</span> &lt;&lt; endl;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//  移动构造函数</span></span><br><span class="line">    <span class="built_in">Integer</span>(Integer&amp;&amp; source) : <span class="built_in">m_ptr</span>(source.m_ptr) &#123;</span><br><span class="line">        source.m_ptr = <span class="literal">nullptr</span>;</span><br><span class="line">        cout &lt;&lt; <span class="string">&quot;move constructor&quot;</span> &lt;&lt; endl;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//  赋值运算符重载</span></span><br><span class="line">    Integer&amp; <span class="keyword">operator</span>=(<span class="type">const</span> Integer&amp; source) &#123;</span><br><span class="line">        m_ptr = <span class="keyword">new</span> <span class="built_in">int</span>(*source.m_ptr);</span><br><span class="line">        cout &lt;&lt; <span class="string">&quot;copy assignment constructor&quot;</span> &lt;&lt; endl;</span><br><span class="line">        <span class="keyword">return</span> *<span class="keyword">this</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    ~<span class="built_in">Integer</span>() &#123;</span><br><span class="line">        cout &lt;&lt; <span class="string">&quot;destructor:&quot;</span> &lt;&lt; <span class="built_in">GetValue</span>() &lt;&lt; endl;</span><br><span class="line">        <span class="keyword">delete</span> m_ptr;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">GetValue</span><span class="params">(<span class="type">void</span>)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (m_ptr) &#123;</span><br><span class="line">            <span class="keyword">return</span> *m_ptr;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function">Integer <span class="title">getNum</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="function">Integer <span class="title">a</span><span class="params">(<span class="number">100</span>)</span></span>;</span><br><span class="line">    <span class="keyword">return</span> a;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span> <span class="type">const</span>* argv[])</span> </span>&#123;</span><br><span class="line">    <span class="function">Integer <span class="title">a</span><span class="params">(getNum())</span></span>; </span><br><span class="line">    cout &lt;&lt; <span class="string">&quot;a=&quot;</span> &lt;&lt; a.<span class="built_in">GetValue</span>() &lt;&lt; endl;</span><br><span class="line">    cout &lt;&lt; <span class="string">&quot;-----------------&quot;</span> &lt;&lt; endl;</span><br><span class="line">    <span class="function">Integer <span class="title">temp</span><span class="params">(<span class="number">10000</span>)</span></span>;</span><br><span class="line">    <span class="function">Integer <span class="title">b</span><span class="params">(temp)</span></span>;</span><br><span class="line">    cout &lt;&lt; <span class="string">&quot;b=&quot;</span> &lt;&lt; b.<span class="built_in">GetValue</span>() &lt;&lt; endl;</span><br><span class="line">    cout &lt;&lt; <span class="string">&quot;-----------------&quot;</span> &lt;&lt; endl;</span><br><span class="line">    Integer c = b;</span><br><span class="line">    c = a;</span><br><span class="line">    cout &lt;&lt; <span class="string">&quot;c=&quot;</span> &lt;&lt; c.<span class="built_in">GetValue</span>() &lt;&lt; endl;</span><br><span class="line">    cout &lt;&lt; <span class="string">&quot;-----------------&quot;</span> &lt;&lt; endl;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在编译的时候一定要指定编译选项 --no-elide-constructors，否则会被编译器优化！</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # ./a.out </span><br><span class="line">constructor</span><br><span class="line">move constructor</span><br><span class="line">destructor:-1</span><br><span class="line">move constructor</span><br><span class="line">destructor:-1</span><br><span class="line">a=100</span><br><span class="line">-----------------</span><br><span class="line">constructor</span><br><span class="line">copy constructor</span><br><span class="line">b=10000</span><br><span class="line">-----------------</span><br><span class="line">copy constructor</span><br><span class="line">copy assignment constructor</span><br><span class="line">c=100</span><br><span class="line">-----------------</span><br><span class="line">destructor:100</span><br><span class="line">destructor:10000</span><br><span class="line">destructor:10000</span><br><span class="line">destructor:100</span><br></pre></td></tr></table></figure>
+<h1 id="分析"><a class="markdownIt-Anchor" href="#分析"></a> 分析</h1>
+<h2 id="a"><a class="markdownIt-Anchor" href="#a"></a> a</h2>
+<ol>
+<li>第一个 constructor，是在 getNum() 中首句 Integer a(100) 所打印的，调用默认的构造函数。</li>
+<li>第二个 move constructor 是因为 return a 的时候，这个 a 是个右值，作为 main 函数 getNum() 的返回值，而调用的移动构造函数，将 getNum() 函数内的返回值移动构造给 main 函数接收 getNum() 的对象。</li>
+<li>第三个 destructor 是析构 getNum() 中的对象 a。</li>
+<li>第四个 move constructor 是因为 Integer a(右值)，所以调用移动构造函数。</li>
+<li>第五个 destructor 是析构 Integer a(右值) 中的右值而显示的。</li>
+</ol>
+<hr>
+<h2 id="b"><a class="markdownIt-Anchor" href="#b"></a> b</h2>
+<ol>
+<li>第一个 constructor 是 Integer temp(10000); 调用的默认构造函数。</li>
+<li>第二个 copy constructor 是 Integer b(temp); 调用的拷贝构造函数，将 temp 拷贝给 b；</li>
+</ol>
+<hr>
+<h2 id="c"><a class="markdownIt-Anchor" href="#c"></a> c</h2>
+<ol>
+<li>第一个 copy constructor 是 Integer c = b; 调用的拷贝构造函数，可以看到此处并没有调用拷贝赋值运算符，因为这是在初始化！</li>
+<li>第二个 copy assignment constructor 是 c = a 调用的才是拷贝赋值运算符。</li>
+</ol>
+<p>可以看到，初始化的时候不会调用 拷贝赋值运算符！！！</p>
+<h2 id="析构"><a class="markdownIt-Anchor" href="#析构"></a> 析构</h2>
+<p>最后的四个 destructor 是析构。根据规则，先构造的后析构，后调用的先析构。析构顺序：c = 100，b = 10000，temp = 10000，a = 100。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20221117170431_1560934576/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1307,126 +1429,6 @@ sendfile 函数可以在两个文件描述符之间传递数据（完全在内�
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20220524164812_1699034744/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/portrait.jpg">
-      <meta itemprop="name" content="caijizhuo">
-      <meta itemprop="description" content="Looks delicious">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="caijizhuo">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/20220524164812_1699034744/" class="post-title-link" itemprop="url">cpp继承详解</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-05-24 16:48:12" itemprop="dateCreated datePublished" datetime="2022-05-24T16:48:12+08:00">2022-05-24</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2026-03-23 22:18:30" itemprop="dateModified" datetime="2026-03-23T22:18:30+08:00">2026-03-23</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/cpp/" itemprop="url" rel="index"><span itemprop="name">cpp</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>1k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>4 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="继承目的"><a class="markdownIt-Anchor" href="#继承目的"></a> 继承目的</h2>
-<p>继承的本质是为了复用代码，派生类复用基类的代码，从而减少冗余的代码，使得创建和维护一个引用变得更加容易。继承代表的是 is-a 的关系。</p>
-<h2 id="继承种类"><a class="markdownIt-Anchor" href="#继承种类"></a> 继承种类</h2>
-<h3 id="公有继承"><a class="markdownIt-Anchor" href="#公有继承"></a> 公有继承</h3>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">A</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">A</span>() = <span class="keyword">default</span>;</span><br><span class="line">    <span class="built_in">A</span>(<span class="type">int</span> a, <span class="type">int</span> b, <span class="type">int</span> c) : <span class="built_in">pub</span>(a), <span class="built_in">pro</span>(b), <span class="built_in">priv</span>(c) &#123;&#125;</span><br><span class="line">    <span class="type">int</span> pub;</span><br><span class="line"><span class="keyword">protected</span>:</span><br><span class="line">    <span class="type">int</span> pro;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="type">int</span> priv;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">B</span> : <span class="keyword">public</span> A &#123; <span class="comment">// 公有继承</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">B</span>(<span class="type">int</span> a, <span class="type">int</span> b, <span class="type">int</span> c) &#123;</span><br><span class="line">        pub = a;</span><br><span class="line">        pro = b;</span><br><span class="line">        <span class="comment">// pri = c;</span></span><br><span class="line">        <span class="comment">// test.cc:20:9: error: ‘pri’ was not declared in this scope</span></span><br><span class="line">        <span class="comment">//       pri = c;</span></span><br><span class="line">        <span class="comment">//       ^~~</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="function">B <span class="title">b</span><span class="params">(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>)</span></span>;</span><br><span class="line">    cout &lt;&lt; <span class="string">&quot;b.pub:&quot;</span> &lt;&lt; b.pub &lt;&lt; endl;</span><br><span class="line">    <span class="comment">// cout &lt;&lt; &quot;b.pro:&quot; &lt;&lt; b.pro &lt;&lt; endl;</span></span><br><span class="line">    <span class="comment">// test.cc:31:27: error: ‘int A::pro’ is protected within this context</span></span><br><span class="line">    <span class="comment">//  cout &lt;&lt; &quot;b.pro:&quot; &lt;&lt; b.pro &lt;&lt; endl;</span></span><br><span class="line">    <span class="comment">//                        ^~~</span></span><br><span class="line">    <span class="comment">// cout &lt;&lt; &quot;b.priv:&quot; &lt;&lt; b.priv &lt;&lt; endl;</span></span><br><span class="line">    <span class="comment">// test.cc:32:28: error: ‘int A::priv’ is private within this context</span></span><br><span class="line">    <span class="comment">//  cout &lt;&lt; &quot;b.priv:&quot; &lt;&lt; b.priv &lt;&lt; endl;</span></span><br><span class="line">    <span class="comment">//                         ^~~~</span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # ./a.out </span><br><span class="line">b.pub:1</span><br></pre></td></tr></table></figure>
-<p>可以看到，公有继承即保留基类的成员属性，公有 =&gt; 公有，保护 =&gt; 保护，私有 =&gt; 无法访问。</p>
-<h3 id="保护继承"><a class="markdownIt-Anchor" href="#保护继承"></a> 保护继承</h3>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">A</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">A</span>() = <span class="keyword">default</span>;</span><br><span class="line">    <span class="built_in">A</span>(<span class="type">int</span> a, <span class="type">int</span> b, <span class="type">int</span> c) : <span class="built_in">pub</span>(a), <span class="built_in">pro</span>(b), <span class="built_in">priv</span>(c) &#123;&#125;</span><br><span class="line">    <span class="type">int</span> pub;</span><br><span class="line"><span class="keyword">protected</span>:</span><br><span class="line">    <span class="type">int</span> pro;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="type">int</span> priv;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">B</span> : <span class="keyword">protected</span> A &#123; <span class="comment">// 保护继承 </span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">B</span>(<span class="type">int</span> a, <span class="type">int</span> b, <span class="type">int</span> c) &#123;</span><br><span class="line">        pub = a;</span><br><span class="line">        pro = b;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="function">B <span class="title">b</span><span class="params">(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>)</span></span>;</span><br><span class="line">    cout &lt;&lt; <span class="string">&quot;b.pub:&quot;</span> &lt;&lt; b.pub &lt;&lt; endl;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # g++ test.cc </span><br><span class="line">test.cc: In function ‘int main()’:</span><br><span class="line">test.cc:25:27: error: ‘int A::pub’ is inaccessible within this context</span><br><span class="line">     cout &lt;&lt; &quot;b.pub:&quot; &lt;&lt; b.pub &lt;&lt; endl;</span><br><span class="line">                           ^~~</span><br></pre></td></tr></table></figure>
-<p>保护继承会把 公有 =&gt; 保护，保护 =&gt; 保护, 私有 =&gt; 无法访问。所以原先的公有成员也不能以公有形式访问了。</p>
-<h3 id="私有继承"><a class="markdownIt-Anchor" href="#私有继承"></a> 私有继承</h3>
-<p>私有继承结果和保护一样，公有 =&gt; 私有，保护 =&gt; 私有，私有 =&gt; 无法访问。</p>
-<h2 id="覆写规则"><a class="markdownIt-Anchor" href="#覆写规则"></a> 覆写规则</h2>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">A</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">func</span><span class="params">(<span class="type">int</span> a)</span> </span>&#123;</span><br><span class="line">        cout &lt;&lt; <span class="string">&quot;A::func(int a)&quot;</span> &lt;&lt; endl;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">B</span> : <span class="keyword">public</span> A &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">func</span><span class="params">(<span class="type">int</span> a, <span class="type">int</span> b)</span> </span>&#123;</span><br><span class="line">        cout &lt;&lt; <span class="string">&quot;B::func(int a, int b)&quot;</span> &lt;&lt; endl;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    B b;</span><br><span class="line">    b.<span class="built_in">func</span>(<span class="number">10</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">@└────&gt; # g++ test.cc </span><br><span class="line">test.cc: In function ‘int main()’:</span><br><span class="line">test.cc:20:14: error: no matching function for call to ‘B::func(int)’</span><br><span class="line">     b.func(10);</span><br><span class="line">              ^</span><br><span class="line">test.cc:13:10: note: candidate: ‘void B::func(int, int)’</span><br><span class="line">     void func(int a, int b) &#123;</span><br><span class="line">          ^~~~</span><br><span class="line">test.cc:13:10: note:   candidate expects 2 arguments, 1 provided</span><br></pre></td></tr></table></figure>
-<p>在基类中的某些函数，如果没有 virtual 关键字，函数名是 func （参数类型我们不管）。如果派生类中也声明了这个成员函数，那在派生类的作用域中，所有和这个函数同名的函数都被隐藏。</p>
-<p>如果基类中的函数和派生类中有两个名字一样的函数 func 满足下面的两个条件</p>
-<ol>
-<li>在基类中函数声明的时候有 virtual 关键字</li>
-<li>基类中的函数和派生类中的函数一模一样，包括函数名，参数，返回类型都一样。</li>
-</ol>
-<p>那么这就是叫做覆盖（override），这也就是虚函数，多态的性质。其他的情况，只要名字一样，不满足上面覆盖的条件，就是隐藏。</p>
-<p>好多人认为，基类中的函数会继承下来和派生类中的同名不同参的函数构成重载。</p>
-<blockquote>
-<p>重载（overload）：<br>
-必须在<strong>一个域</strong>中，函数名称相同但是函数参数不同。重载的作用就是同一个函数有不同的行为，因此不是在一个域中的函数是无法构成重载的。</p>
-</blockquote>
-<p>必须在一个域中，而继承是在两个类中了，所以上面的想法是不成立的。所以，相同的函数名的函数，在基类和派生类中的关系只能是覆盖或者隐藏。</p>
-<blockquote>
-<p>隐藏（hide）:<br>
-指派生类的成员函数隐藏了基类函数的成员函数。隐藏一词可以这么理解:在调用一个类的成员函数的时候，编译器会沿着类的继承链，逐级的向上查找函数的定义，如果找到了那么就停止查找。所以如果一个派生类和一个基类都有同一个同名（暂且不论参数是否相同）的函数，而编译器最终选择了在派生类中的函数，那么这个派生类的成员函数“隐藏”了基类的成员函数，阻止了编译器继续向上查找函数的定义。</p>
-</blockquote>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1498,7 +1500,7 @@ sendfile 函数可以在两个文件描述符之间传递数据（完全在内�
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">72</span>
+          <span class="site-state-item-count">73</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1511,7 +1513,7 @@ sendfile 函数可以在两个文件描述符之间传递数据（完全在内�
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-count">20</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -1560,13 +1562,13 @@ sendfile 函数可以在两个文件描述符之间传递数据（完全在内�
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">80k</span>
+    <span title="站点总字数">84k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">4:49</span>
+    <span title="站点阅读时长">5:07</span>
 </div>
 
         
