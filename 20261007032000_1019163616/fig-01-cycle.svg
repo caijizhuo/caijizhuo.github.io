@@ -1,0 +1,208 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 930" width="1080" height="930" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif">
+ <rect width="1080" height="930" fill="#ffffff"/>
+
+ <text x="36" y="42" font-size="23" font-weight="700" fill="#111827">DSpark 的完整一轮：从 anchor 到提交</text>
+ <text x="36" y="68" font-size="13.5" fill="#6b7280">在 DFlash 的「一次并行出整块」之上，插入一个串行采样小循环，并在验证前按置信度裁剪前缀</text>
+
+ <defs>
+ <marker id="f1" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+ <path d="M0,0 L9,4.5 L0,9 z" fill="#6b7280"/>
+ </marker>
+ </defs>
+
+ <!-- ===== 1 target forward ===== -->
+ <rect x="36" y="92" width="708" height="118" rx="12" fill="#fffbeb" stroke="#fcd34d" stroke-width="1.6"/>
+ <rect x="36" y="92" width="5" height="118" rx="2.5" fill="#f59e0b"/>
+ <circle cx="66" cy="118" r="13" fill="#f59e0b"/>
+ <text x="66" y="123" text-anchor="middle" font-size="13" font-weight="700" fill="#ffffff">1</text>
+ <text x="88" y="123" font-size="15" font-weight="700" fill="#92400e">target model 照常走一步 → 拿到 anchor + 上下文特征</text>
+ <text x="88" y="144" font-size="11.5" fill="#a16207">这步不加量：target model 本来就要产出下一个 token；顺手把选定层的隐状态缓存下来给 draft 用</text>
+
+ <g font-size="12">
+ <rect x="88" y="158" width="38" height="24" rx="4" fill="#fde68a" stroke="#d97706" stroke-width="1.2"/>
+ <text x="107" y="175" text-anchor="middle" fill="#78350f">A</text>
+ <rect x="132" y="158" width="38" height="24" rx="4" fill="#fde68a" stroke="#d97706" stroke-width="1.2"/>
+ <text x="151" y="175" text-anchor="middle" fill="#78350f">B</text>
+ <rect x="176" y="158" width="38" height="24" rx="4" fill="#fde68a" stroke="#d97706" stroke-width="1.2"/>
+ <text x="195" y="175" text-anchor="middle" fill="#78350f">C</text>
+ </g>
+ <path d="M226 170 L254 170" stroke="#6b7280" stroke-width="1.7" marker-end="url(#f1)"/>
+ <rect x="262" y="152" width="126" height="36" rx="8" fill="#f59e0b"/>
+ <text x="325" y="175" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">target model</text>
+ <path d="M396 170 L424 170" stroke="#6b7280" stroke-width="1.7" marker-end="url(#f1)"/>
+ <rect x="432" y="158" width="38" height="24" rx="4" fill="#4ade80" stroke="#15803d" stroke-width="1.8"/>
+ <text x="451" y="175" text-anchor="middle" font-size="12" font-weight="700" fill="#14532d">D</text>
+ <text x="478" y="175" font-size="11.5" fill="#15803d">← anchor（也是上一轮的 bonus）</text>
+ <text x="88" y="200" font-size="10.5" fill="#92400e">同时得到 H_ctx：target model 若干层隐状态拼接投影后的上下文特征（沿用 DFlash 的做法）</text>
+
+ <path d="M390 214 L390 228" stroke="#6b7280" stroke-width="1.8" marker-end="url(#f1)"/>
+
+ <!-- ===== 2 parallel backbone ===== -->
+ <rect x="36" y="232" width="708" height="152" rx="12" fill="#eef2ff" stroke="#818cf8" stroke-width="1.6"/>
+ <rect x="36" y="232" width="5" height="152" rx="2.5" fill="#4f46e5"/>
+ <circle cx="66" cy="258" r="13" fill="#4f46e5"/>
+ <text x="66" y="263" text-anchor="middle" font-size="13" font-weight="700" fill="#ffffff">2</text>
+ <text x="88" y="263" font-size="15" font-weight="700" fill="#312e81">draft model 一次前向 → 整块的 draft 分数</text>
+ <text x="88" y="284" font-size="11.5" fill="#4338ca">这一段和 DFlash 基本一致：块内双向注意力，γ 个位置的分数同时算出来，延迟与块长几乎无关</text>
+
+ <rect x="88" y="298" width="628" height="42" rx="9" fill="#c7d2fe" stroke="#4f46e5" stroke-width="1.5"/>
+ <text x="402" y="324" text-anchor="middle" font-size="12.5" font-weight="700" fill="#312e81">draft model（DFlash 那套 + 上下文特征作额外 K/V 注入每一层）</text>
+
+ <g font-size="12">
+ <rect x="88" y="348" width="38" height="24" rx="4" fill="#4ade80" stroke="#15803d" stroke-width="1.5"/>
+ <text x="107" y="365" text-anchor="middle" font-weight="700" fill="#14532d">D</text>
+ <rect x="132" y="348" width="38" height="24" rx="4" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1.2"/>
+ <text x="151" y="365" text-anchor="middle" font-size="8.5" fill="#6b7280">MASK</text>
+ <rect x="176" y="348" width="38" height="24" rx="4" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1.2"/>
+ <text x="195" y="365" text-anchor="middle" font-size="8.5" fill="#6b7280">MASK</text>
+ <rect x="220" y="348" width="38" height="24" rx="4" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1.2"/>
+ <text x="239" y="365" text-anchor="middle" font-size="8.5" fill="#6b7280">MASK</text>
+ <rect x="264" y="348" width="38" height="24" rx="4" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1.2"/>
+ <text x="283" y="365" text-anchor="middle" font-size="8.5" fill="#6b7280">MASK</text>
+ </g>
+ <text x="316" y="365" font-size="11" fill="#4338ca">输入 anchor + (γ−1) 个 mask，产出 γ 组分数</text>
+
+ <path d="M390 384 L390 398" stroke="#6b7280" stroke-width="1.8" marker-end="url(#f1)"/>
+
+ <!-- ===== 3 sequential sampling (heart) ===== -->
+ <rect x="36" y="402" width="708" height="212" rx="12" fill="#f0fdf4" stroke="#4ade80" stroke-width="2"/>
+ <rect x="36" y="402" width="5" height="212" rx="2.5" fill="#16a34a"/>
+ <circle cx="66" cy="428" r="13" fill="#16a34a"/>
+ <text x="66" y="433" text-anchor="middle" font-size="13" font-weight="700" fill="#ffffff">3</text>
+ <text x="88" y="433" font-size="15" font-weight="700" fill="#166534">串行采样小循环 → 候选 token + 每个位置的置信度</text>
+ <text x="88" y="454" font-size="11.5" fill="#15803d">这是 DSpark 相对 DFlash 的第一处新增：左→右逐位采样，每一位都以上文真正采出的 token 为条件</text>
+
+ <g font-size="12">
+ <rect x="88" y="470" width="38" height="24" rx="4" fill="#4ade80" stroke="#15803d" stroke-width="1.5"/>
+ <text x="107" y="487" text-anchor="middle" font-weight="700" fill="#14532d">D</text>
+ <rect x="132" y="470" width="38" height="24" rx="4" fill="#86efac" stroke="#16a34a" stroke-width="1.3"/>
+ <text x="151" y="487" text-anchor="middle" font-weight="700" fill="#14532d">E</text>
+ <rect x="176" y="470" width="38" height="24" rx="4" fill="#86efac" stroke="#16a34a" stroke-width="1.3"/>
+ <text x="195" y="487" text-anchor="middle" font-weight="700" fill="#14532d">F</text>
+ <rect x="220" y="470" width="38" height="24" rx="4" fill="#86efac" stroke="#16a34a" stroke-width="1.3"/>
+ <text x="239" y="487" text-anchor="middle" font-weight="700" fill="#14532d">G</text>
+ <rect x="264" y="470" width="38" height="24" rx="4" fill="#86efac" stroke="#16a34a" stroke-width="1.3"/>
+ <text x="283" y="487" text-anchor="middle" font-weight="700" fill="#14532d">H</text>
+ </g>
+ <text x="316" y="487" font-size="11" fill="#15803d">不是 γ 次 Transformer 前向，只是一个很轻的循环</text>
+
+ <path d="M151 498 C 151 520, 195 520, 195 498" fill="none" stroke="#16a34a" stroke-width="1.4" marker-end="url(#f1)"/>
+ <path d="M195 498 C 195 520, 239 520, 239 498" fill="none" stroke="#16a34a" stroke-width="1.4" marker-end="url(#f1)"/>
+ <path d="M239 498 C 239 520, 283 520, 283 498" fill="none" stroke="#16a34a" stroke-width="1.4" marker-end="url(#f1)"/>
+ <text x="322" y="518" font-size="10.5" fill="#166534">每一位采样时，用前一位已采出的 token 去修正当前位的分数</text>
+
+ <rect x="88" y="532" width="298" height="30" rx="7" fill="#dcfce7" stroke="#16a34a" stroke-width="1.3"/>
+ <text x="237" y="552" text-anchor="middle" font-size="11.5" font-weight="700" fill="#14532d">当前位分数 = draft 分数 + 串行头给的小偏置</text>
+
+ <rect x="398" y="532" width="318" height="30" rx="7" fill="#fef9c3" stroke="#facc15" stroke-width="1.3"/>
+ <text x="557" y="552" text-anchor="middle" font-size="11" fill="#854d0e">顺手拿到 c₁…c_γ：逐位的「条件存活概率」</text>
+
+ <rect x="88" y="572" width="628" height="30" rx="7" fill="#ffffff" stroke="#4ade80" stroke-width="1.2"/>
+ <text x="402" y="592" text-anchor="middle" font-size="10.5" fill="#166534">偏置只依赖前一位 token（Markov 头）—— 足够修掉「块内各位置不商量」的问题，代价几乎为零</text>
+
+ <path d="M390 618 L390 632" stroke="#6b7280" stroke-width="1.8" marker-end="url(#f1)"/>
+
+ <!-- ===== 4 scheduler ===== -->
+ <rect x="36" y="636" width="708" height="152" rx="12" fill="#fff7ed" stroke="#fdba74" stroke-width="1.6"/>
+ <rect x="36" y="636" width="5" height="152" rx="2.5" fill="#ea580c"/>
+ <circle cx="66" cy="662" r="13" fill="#ea580c"/>
+ <text x="66" y="667" text-anchor="middle" font-size="13" font-weight="700" fill="#ffffff">4</text>
+ <text x="88" y="667" font-size="15" font-weight="700" fill="#9a3412">验证前先裁剪 → 只验「还值得验」的那一段前缀</text>
+ <text x="88" y="688" font-size="11.5" fill="#c2410c">这是第二处新增。DFlash 把整块都送进target model；DSpark 在这里先做一次准入决策</text>
+
+ <g font-size="11">
+ <rect x="88" y="702" width="46" height="50" rx="5" fill="#bbf7d0" stroke="#16a34a" stroke-width="1.2"/>
+ <text x="111" y="722" text-anchor="middle" font-weight="700" fill="#14532d">E</text>
+ <text x="111" y="742" text-anchor="middle" font-size="10" fill="#15803d">0.94</text>
+ <rect x="142" y="702" width="46" height="50" rx="5" fill="#bbf7d0" stroke="#16a34a" stroke-width="1.2"/>
+ <text x="165" y="722" text-anchor="middle" font-weight="700" fill="#14532d">F</text>
+ <text x="165" y="742" text-anchor="middle" font-size="10" fill="#15803d">0.88</text>
+ <rect x="196" y="702" width="46" height="50" rx="5" fill="#dcfce7" stroke="#4ade80" stroke-width="1.2"/>
+ <text x="219" y="722" text-anchor="middle" font-weight="700" fill="#14532d">G</text>
+ <text x="219" y="742" text-anchor="middle" font-size="10" fill="#16a34a">0.71</text>
+ <rect x="250" y="702" width="46" height="50" rx="5" fill="#fef3c7" stroke="#fbbf24" stroke-width="1.2"/>
+ <text x="273" y="722" text-anchor="middle" font-weight="700" fill="#78350f">H</text>
+ <text x="273" y="742" text-anchor="middle" font-size="10" fill="#b45309">0.52</text>
+ <rect x="304" y="702" width="46" height="50" rx="5" fill="#fee2e2" stroke="#f87171" stroke-width="1.2"/>
+ <text x="327" y="722" text-anchor="middle" font-weight="700" fill="#7f1d1d">I</text>
+ <text x="327" y="742" text-anchor="middle" font-size="10" fill="#b91c1c">0.31</text>
+ </g>
+ <text x="368" y="718" font-size="11" fill="#4b5563">裁剪掉低置信的尾部</text>
+ <text x="368" y="736" font-size="11" fill="#b91c1c">→ 不去占用target model 的验证位</text>
+ <text x="368" y="752" font-size="10.5" fill="#6b7280">存活概率是连乘（后面细讲）</text>
+ <text x="88" y="776" font-size="10.5" fill="#9a3412">送进target model 的是裁剪后的前缀 E F G，而不是整块 E F G H</text>
+
+ <path d="M390 788 L390 800" stroke="#6b7280" stroke-width="1.8" marker-end="url(#f1)"/>
+
+ <!-- ===== 5 verify & commit ===== -->
+ <rect x="36" y="804" width="708" height="112" rx="12" fill="#f9fafb" stroke="#d1d5db" stroke-width="1.6"/>
+ <rect x="36" y="804" width="5" height="112" rx="2.5" fill="#6b7280"/>
+ <circle cx="66" cy="830" r="13" fill="#4b5563"/>
+ <text x="66" y="835" text-anchor="middle" font-size="13" font-weight="700" fill="#ffffff">5</text>
+ <text x="88" y="835" font-size="15" font-weight="700" fill="#374151">target model 并行验证 → 提交被接受的前缀 + 1 个纠正 token</text>
+
+ <g font-size="11">
+ <rect x="88" y="850" width="46" height="26" rx="5" fill="#86efac" stroke="#16a34a" stroke-width="1.4"/>
+ <text x="111" y="868" text-anchor="middle" font-weight="700" fill="#14532d">E</text>
+ <text x="141" y="868" font-size="12" fill="#15803d">✓</text>
+ <rect x="158" y="850" width="46" height="26" rx="5" fill="#86efac" stroke="#16a34a" stroke-width="1.4"/>
+ <text x="181" y="868" text-anchor="middle" font-weight="700" fill="#14532d">F</text>
+ <text x="211" y="868" font-size="12" fill="#15803d">✓</text>
+ <rect x="228" y="850" width="46" height="26" rx="5" fill="#fecaca" stroke="#dc2626" stroke-width="1.6"/>
+ <text x="251" y="868" text-anchor="middle" font-weight="700" fill="#7f1d1d">G</text>
+ <text x="281" y="868" font-size="12" fill="#dc2626">✗</text>
+ <rect x="298" y="850" width="46" height="26" rx="5" fill="#fcd34d" stroke="#f59e0b" stroke-width="1.6"/>
+ <text x="321" y="868" text-anchor="middle" font-weight="700" fill="#78350f">G*</text>
+ <text x="350" y="868" font-size="10.5" fill="#b45309">← 纠正 / bonus</text>
+ </g>
+ <text x="470" y="868" font-size="10.5" fill="#4b5563">接受规则与 DFlash 完全相同</text>
+ <text x="88" y="898" font-size="10.5" fill="#374151">从被拒位置起用<tspan font-weight="700">残差分布</tspan>重采一个 token；被拒 draft 的 KV 回滚。本轮实际新增 = 接受前缀 + 这 1 个 token</text>
+ <text x="88" y="914" font-size="10.5" font-weight="700" fill="#166534">→ 输出分布与逐字解码逐位置一致，DSpark 依然是无损的</text>
+
+ <!-- ===== right column: what changed vs DFlash ===== -->
+ <rect x="768" y="92" width="276" height="200" rx="12" fill="#eef2ff" stroke="#c7d2fe" stroke-width="1.7"/>
+ <text x="906" y="120" text-anchor="middle" font-size="14.5" font-weight="700" fill="#3730a3">相对 DFlash 的两处改动</text>
+ <rect x="790" y="134" width="232" height="68" rx="8" fill="#ffffff" stroke="#16a34a" stroke-width="1.4"/>
+ <text x="804" y="154" font-size="11.5" font-weight="700" fill="#166534">① 加一个串行采样小循环</text>
+ <text x="804" y="173" font-size="10.5" fill="#15803d">让块内位置互相看得见</text>
+ <text x="804" y="190" font-size="10.5" fill="#15803d">修掉块尾「各说各话」</text>
+ <rect x="790" y="212" width="232" height="68" rx="8" fill="#ffffff" stroke="#ea580c" stroke-width="1.4"/>
+ <text x="804" y="232" font-size="11.5" font-weight="700" fill="#9a3412">② 验证前按置信度裁剪前缀</text>
+ <text x="804" y="251" font-size="10.5" fill="#c2410c">不再整块送进target model</text>
+ <text x="804" y="268" font-size="10.5" fill="#c2410c">裁剪长度随负载自动伸缩</text>
+
+ <rect x="768" y="308" width="276" height="168" rx="12" fill="#f0fdf4" stroke="#4ade80" stroke-width="1.7"/>
+ <text x="906" y="336" text-anchor="middle" font-size="14.5" font-weight="700" fill="#166534">沿用 DFlash 不变的部分</text>
+ <text x="790" y="362" font-size="11" fill="#15803d">· draft model 与块内双向注意力</text>
+ <text x="790" y="384" font-size="11" fill="#15803d">· target 上下文特征注入每一层</text>
+ <text x="790" y="406" font-size="11" fill="#15803d">· 共享词嵌入与 LM head</text>
+ <text x="790" y="428" font-size="11" fill="#15803d">· 拒绝采样的接受规则</text>
+ <text x="790" y="450" font-size="11" fill="#15803d">· 被拒 draft 的 KV 回滚</text>
+ <text x="790" y="470" font-size="10.5" fill="#16a34a" font-weight="700">→ 只在 draft 与target 两端各加一层</text>
+
+ <rect x="768" y="492" width="276" height="416" rx="12" fill="#fffbeb" stroke="#fcd34d" stroke-width="1.7"/>
+ <text x="906" y="520" text-anchor="middle" font-size="14.5" font-weight="700" fill="#92400e">一轮的账</text>
+ <g font-size="11.5">
+ <text x="790" y="548" fill="#78350f">target 前向</text>
+ <text x="1022" y="548" text-anchor="end" font-weight="700" fill="#b45309">1 次</text>
+ <text x="790" y="574" fill="#78350f">draft 并行前向</text>
+ <text x="1022" y="574" text-anchor="end" font-weight="700" fill="#4f46e5">1 次</text>
+ <text x="790" y="600" fill="#78350f">串行采样循环</text>
+ <text x="1022" y="600" text-anchor="end" font-weight="700" fill="#16a34a">γ 步（极轻）</text>
+ <text x="790" y="626" fill="#78350f">验证 token 数</text>
+ <text x="1022" y="626" text-anchor="end" font-weight="700" fill="#c2410c">裁剪后 ≤ γ</text>
+ </g>
+ <line x1="790" y1="644" x2="1022" y2="644" stroke="#fcd34d" stroke-width="1.2"/>
+ <text x="790" y="668" font-size="11" fill="#92400e">逐字解码要 τ 次target 前向</text>
+ <text x="790" y="688" font-size="11" font-weight="700" fill="#b45309">现在只要 1 次就换回 τ 个 token</text>
+ <line x1="790" y1="706" x2="1022" y2="706" stroke="#fcd34d" stroke-width="1.2"/>
+ <text x="906" y="730" text-anchor="middle" font-size="12" font-weight="700" fill="#92400e">为什么两处都要加</text>
+ <text x="790" y="756" font-size="10.5" fill="#a16207">只加串行循环 → 块变准了，但长块</text>
+ <text x="790" y="773" font-size="10.5" fill="#a16207">照样整块送 target，高并发下挤占</text>
+ <text x="790" y="790" font-size="10.5" fill="#a16207">别人的 batch 容量</text>
+ <text x="790" y="816" font-size="10.5" fill="#a16207">只加裁剪 → 尾部 token 本来就猜得</text>
+ <text x="790" y="833" font-size="10.5" fill="#a16207">差，裁掉的是真有价值的长度</text>
+ <text x="790" y="862" font-size="11" font-weight="700" fill="#166534">一个负责「猜得准」，一个负责</text>
+ <text x="790" y="880" font-size="11" font-weight="700" fill="#166534">「不白花验证预算」</text>
+ <text x="790" y="904" font-size="10.5" fill="#6b7280">这两件事在 DFlash 里是解耦的</text>
+</svg>

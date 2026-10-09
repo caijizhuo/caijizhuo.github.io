@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 1020" width="1120" height="1020" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif">
+ <rect width="1120" height="1020" fill="#ffffff"/>
+
+ <text x="36" y="42" font-size="23" font-weight="700" fill="#111827">裁剪的账：期望被接受、step 速度、吞吐是怎么算出来的</text>
+ <text x="36" y="68" font-size="13.5" fill="#6b7280">沿用上一节的例子。左栏是全部输入，右栏是三个量的定义 —— 之后每一格都能手算复现</text>
+
+ <!-- ===== inputs ===== -->
+ <rect x="36" y="86" width="478" height="228" rx="12" fill="#eef2ff" stroke="#818cf8" stroke-width="1.6"/>
+ <text x="56" y="114" font-size="15" font-weight="700" fill="#312e81">输入只有两组</text>
+
+ <text x="56" y="140" font-size="11.5" font-weight="700" fill="#3730a3">① 逐位条件存活概率 c_k（串行采样顺手产出）</text>
+ <text x="56" y="162" font-size="12.5" fill="#4338ca">c₁ = 0.95　 c₂ = 0.92　 c₃ = 0.85　 c₄ = 0.30</text>
+
+ <text x="56" y="190" font-size="11.5" font-weight="700" fill="#3730a3">② 引擎 step 速度曲线 SPS(B)（初始化时 profile 得到）</text>
+ <rect x="56" y="200" width="438" height="30" rx="7" fill="#ffffff" stroke="#818cf8" stroke-width="1.3"/>
+ <text x="275" y="221" text-anchor="middle" font-size="12" font-weight="700" fill="#312e81">1000, 520, 400, 340, 280 …（steps/s）</text>
+ <text x="56" y="250" font-size="10.5" fill="#6366f1">B = 一次验证前向里的 token 数 = 1 个 anchor + 已准入的draft 位数</text>
+ <text x="56" y="268" font-size="10.5" fill="#6366f1">真实曲线是引擎实测的（数千档），这里取整数方便逐格验算</text>
+ <text x="56" y="290" font-size="10.5" font-weight="700" fill="#4338ca">它随 B 单调不增 —— 贪心能成立的前提（见 §3.4）</text>
+ <text x="56" y="308" font-size="10.5" fill="#6366f1">这一组输入的结果：<tspan font-weight="700" fill="#166534">留下 1、2、3 位，第 4 位被裁</tspan></text>
+
+ <!-- ===== formulas ===== -->
+ <rect x="530" y="86" width="554" height="228" rx="12" fill="#f0fdf4" stroke="#4ade80" stroke-width="1.6"/>
+ <text x="550" y="114" font-size="15" font-weight="700" fill="#166534">三个量各自的算法</text>
+
+ <rect x="550" y="126" width="514" height="52" rx="8" fill="#ffffff" stroke="#4ade80" stroke-width="1.3"/>
+ <text x="566" y="147" font-size="11.5" font-weight="700" fill="#14532d">① 累积存活概率 s_k —— 逐位连乘</text>
+ <text x="566" y="166" font-size="11.5" fill="#15803d">s_k = s_{k−1} × c_k　（能边采边算，不用回头）</text>
+
+ <rect x="550" y="184" width="514" height="52" rx="8" fill="#ffffff" stroke="#4ade80" stroke-width="1.3"/>
+ <text x="566" y="205" font-size="11.5" font-weight="700" fill="#14532d">② 期望被接受 E —— anchor 1 个 + 各已准入位的 s 之和</text>
+ <text x="566" y="224" font-size="11.5" fill="#15803d">E = 1 + s₁ + s₂ + …　（被验的位不一定被接受，按概率加权）</text>
+
+ <rect x="550" y="242" width="514" height="52" rx="8" fill="#ffffff" stroke="#4ade80" stroke-width="1.4"/>
+ <text x="566" y="263" font-size="11.5" font-weight="700" fill="#14532d">③ 吞吐 Θ —— 一次前向平均产出多少 token</text>
+ <text x="566" y="282" font-size="12" fill="#15803d">Θ = SPS(B) × E　（单位 tokens/s）</text>
+
+ <!-- ===== table ===== -->
+ <rect x="36" y="330" width="1048" height="386" rx="12" fill="#fffbeb" stroke="#fcd34d" stroke-width="1.6"/>
+ <text x="56" y="358" font-size="14.5" font-weight="700" fill="#92400e">逐位纳入的账本：算法遇到第一个「跌」就停</text>
+ <text x="430" y="358" font-size="11" fill="#a16207">前三位 Θ 都在涨；加到第 4 位时 Θ 掉头向下，于是 break</text>
+
+ <rect x="56" y="370" width="1008" height="30" rx="5" fill="#fef3c7" stroke="#fbbf24" stroke-width="1.2"/>
+ <text x="112" y="390" text-anchor="middle" font-size="10.5" font-weight="700" fill="#78350f">纳入到</text>
+ <text x="182" y="390" text-anchor="middle" font-size="10.5" font-weight="700" fill="#78350f">B</text>
+ <text x="336" y="390" text-anchor="middle" font-size="10.5" font-weight="700" fill="#78350f">期望被接受 E</text>
+ <text x="540" y="390" text-anchor="middle" font-size="10.5" font-weight="700" fill="#78350f">SPS(B)</text>
+ <text x="756" y="390" text-anchor="middle" font-size="10.5" font-weight="700" fill="#78350f">Θ = SPS × E</text>
+ <text x="980" y="390" text-anchor="middle" font-size="10.5" font-weight="700" fill="#78350f">算法动作</text>
+
+ <rect x="56" y="400" width="1008" height="40" fill="#ffffff" stroke="#fef3c7"/>
+ <text x="112" y="417" text-anchor="middle" font-size="10.5" fill="#78350f">只验 anchor</text>
+ <text x="112" y="432" text-anchor="middle" font-size="9.5" fill="#a16207">不验draft</text>
+ <text x="182" y="425" text-anchor="middle" font-size="11" font-weight="700" fill="#78350f">1</text>
+ <text x="336" y="425" text-anchor="middle" font-size="10.5" fill="#78350f">E₀ = 1</text>
+ <text x="540" y="425" text-anchor="middle" font-size="10.5" fill="#78350f">1000</text>
+ <text x="756" y="425" text-anchor="middle" font-size="10.5" font-weight="700" fill="#78350f">1000 × 1 = 1000</text>
+ <text x="980" y="425" text-anchor="middle" font-size="10.5" fill="#92400e">起点 best = 1000</text>
+
+ <rect x="56" y="440" width="1008" height="40" fill="#dcfce7" stroke="#4ade80" stroke-width="1.3"/>
+ <text x="112" y="457" text-anchor="middle" font-size="10.5" font-weight="700" fill="#14532d">位置 1（很）</text>
+ <text x="112" y="472" text-anchor="middle" font-size="9.5" fill="#16a34a">多赚 s₁ = 0.950</text>
+ <text x="182" y="465" text-anchor="middle" font-size="11" font-weight="700" fill="#14532d">2</text>
+ <text x="336" y="465" text-anchor="middle" font-size="10.5" fill="#14532d">E₁ = 1 + 0.950 = 1.950</text>
+ <text x="540" y="465" text-anchor="middle" font-size="10.5" fill="#14532d">520</text>
+ <text x="756" y="465" text-anchor="middle" font-size="10.5" font-weight="700" fill="#14532d">520 × 1.950 = 1014.0</text>
+ <text x="980" y="465" text-anchor="middle" font-size="10.5" font-weight="700" fill="#15803d">1014 &gt; 1000 → 留</text>
+
+ <rect x="56" y="480" width="1008" height="40" fill="#dcfce7" stroke="#4ade80" stroke-width="1.3"/>
+ <text x="112" y="497" text-anchor="middle" font-size="10.5" font-weight="700" fill="#14532d">位置 2（大）</text>
+ <text x="112" y="512" text-anchor="middle" font-size="9.5" fill="#16a34a">多赚 s₂ = 0.874</text>
+ <text x="182" y="505" text-anchor="middle" font-size="11" font-weight="700" fill="#14532d">3</text>
+ <text x="336" y="505" text-anchor="middle" font-size="10.5" fill="#14532d">E₂ = 1.950 + 0.874 = 2.824</text>
+ <text x="540" y="505" text-anchor="middle" font-size="10.5" fill="#14532d">400</text>
+ <text x="756" y="505" text-anchor="middle" font-size="10.5" font-weight="700" fill="#14532d">400 × 2.824 = 1129.6</text>
+ <text x="980" y="505" text-anchor="middle" font-size="10.5" font-weight="700" fill="#15803d">1130 &gt; 1014 → 留</text>
+
+ <rect x="56" y="520" width="1008" height="40" fill="#dcfce7" stroke="#4ade80" stroke-width="1.3"/>
+ <text x="112" y="537" text-anchor="middle" font-size="10.5" font-weight="700" fill="#14532d">位置 3（程）</text>
+ <text x="112" y="552" text-anchor="middle" font-size="9.5" fill="#16a34a">多赚 s₃ = 0.743</text>
+ <text x="182" y="545" text-anchor="middle" font-size="11" font-weight="700" fill="#14532d">4</text>
+ <text x="336" y="545" text-anchor="middle" font-size="10.5" fill="#14532d">E₃ = 2.824 + 0.743 = 3.567</text>
+ <text x="540" y="545" text-anchor="middle" font-size="10.5" fill="#14532d">340</text>
+ <text x="756" y="545" text-anchor="middle" font-size="10.5" font-weight="700" fill="#14532d">340 × 3.567 = 1212.7</text>
+ <text x="980" y="545" text-anchor="middle" font-size="10.5" font-weight="700" fill="#15803d">1213 &gt; 1130 → 留</text>
+
+ <rect x="56" y="560" width="1008" height="40" fill="#fee2e2" stroke="#dc2626" stroke-width="1.6"/>
+ <text x="112" y="577" text-anchor="middle" font-size="10.5" font-weight="700" fill="#7f1d1d">位置 4（度）</text>
+ <text x="112" y="592" text-anchor="middle" font-size="9.5" fill="#b91c1c">多赚 s₄ = 0.223</text>
+ <text x="182" y="585" text-anchor="middle" font-size="11" font-weight="700" fill="#7f1d1d">5</text>
+ <text x="336" y="585" text-anchor="middle" font-size="10.5" fill="#7f1d1d">E₄ = 3.567 + 0.223 = 3.790</text>
+ <text x="540" y="585" text-anchor="middle" font-size="10.5" fill="#7f1d1d">280</text>
+ <text x="756" y="585" text-anchor="middle" font-size="10.5" font-weight="700" fill="#7f1d1d">280 × 3.790 = 1061.1</text>
+ <text x="980" y="585" text-anchor="middle" font-size="10.5" font-weight="700" fill="#b91c1c">1061 &lt; 1213 → break</text>
+
+ <rect x="56" y="606" width="1008" height="26" rx="6" fill="#ffedd5" stroke="#fb923c" stroke-width="1.2"/>
+ <text x="72" y="624" font-size="10.5" fill="#7c2d12">s 逐位连乘：s₁ = 0.950　 s₂ = 0.950×0.92 = <tspan font-weight="700">0.874</tspan>　 s₃ = 0.874×0.85 = <tspan font-weight="700">0.743</tspan>　 s₄ = 0.743×0.30 = <tspan font-weight="700">0.223</tspan></text>
+
+ <text x="56" y="652" font-size="11.5" font-weight="700" fill="#166534">结论：这一轮验 3 位draft（很 / 大 / 程），第 4 位「度」被裁掉，不进target model。</text>
+ <text x="56" y="672" font-size="10.5" fill="#a16207">判决列只看一件事：新的 Θ 有没有比目前最好的更大。前三位都在刷新，第 4 位首次回落，算法就返回。</text>
+ <text x="56" y="692" font-size="10.5" fill="#a16207">「度」本来存活概率就只有 0.223 —— 验它要占一个验证位，却不值。</text>
+
+ <!-- ===== marginal + thresholds ===== -->
+ <rect x="36" y="730" width="1048" height="146" rx="12" fill="#fff7ed" stroke="#fdba74" stroke-width="1.6"/>
+ <text x="56" y="756" font-size="14.5" font-weight="700" fill="#9a3412">同一件事的边际视角，以及三个临界值</text>
+ <rect x="56" y="766" width="500" height="98" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.3"/>
+ <text x="72" y="785" font-size="10.5" fill="#475569">边际收益 = s_k × SPS(k+2)　／　边际代价 = E_k × (SPS(k+1) − SPS(k+2))</text>
+ <text x="72" y="806" font-size="10.5" fill="#15803d">位置 1：494.0 &gt; 480.0 ✓　　位置 2：349.6 &gt; 234.0 ✓</text>
+ <text x="72" y="824" font-size="10.5" fill="#15803d">位置 3：252.6 &gt; 169.4 ✓</text>
+ <text x="72" y="844" font-size="10.5" font-weight="700" fill="#b91c1c">位置 4：62.4 &lt; 214.0 ✗　← 这就是 break 的那一步</text>
+
+ <rect x="572" y="766" width="492" height="98" rx="8" fill="#ffffff" stroke="#fb923c" stroke-width="1.3"/>
+ <text x="588" y="785" font-size="10.5" font-weight="700" fill="#9a3412">每个位置要划算，所需的最小 c_k</text>
+ <text x="588" y="806" font-size="10.5" fill="#7c2d12">位置 1：c₁ ≥ 480/520 = <tspan font-weight="700">0.923</tspan>　（本例 0.95 ✓）</text>
+ <text x="588" y="824" font-size="10.5" fill="#7c2d12">位置 2：c₂ ≥ 234.0/380.0 = <tspan font-weight="700">0.616</tspan>　（本例 0.92 ✓）</text>
+ <text x="588" y="844" font-size="10.5" font-weight="700" fill="#b91c1c">位置 4：c₄ ≥ 1.029 → 无解，永远该裁</text></svg>

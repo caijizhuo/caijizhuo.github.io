@@ -1,0 +1,149 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 800" width="1080" height="800" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif">
+ <rect width="1080" height="800" fill="#ffffff"/>
+
+ <text x="36" y="42" font-size="23" font-weight="700" fill="#111827">一个走到底的例子：串行采样怎么把「很 大 程」采出来</text>
+ <text x="36" y="68" font-size="13.5" fill="#6b7280">同一组draft 分数，DFlash 各位置独立取 top-1；DSpark 逐位采样，每位用刚采出的前一位修正自己</text>
+
+ <defs>
+ <marker id="g2" markerWidth="10" markerHeight="10" refX="8.5" refY="5" orient="auto">
+ <path d="M0,0 L10,5 L0,10 z" fill="#16a34a"/>
+ </marker>
+ <marker id="a2" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+ <path d="M0,0 L9,4.5 L0,9 z" fill="#6b7280"/>
+ </marker>
+ </defs>
+
+ <!-- ===== header row: two approaches ===== -->
+ <rect x="36" y="88" width="492" height="34" rx="8" fill="#fff1f2" stroke="#fda4af" stroke-width="1.4"/>
+ <text x="282" y="110" text-anchor="middle" font-size="13" font-weight="700" fill="#9f1239">DFlash：每位置独立取 top-1</text>
+
+ <rect x="552" y="88" width="492" height="34" rx="8" fill="#dcfce7" stroke="#4ade80" stroke-width="1.6"/>
+ <text x="798" y="110" text-anchor="middle" font-size="13" font-weight="700" fill="#166534">DSpark：左→右逐位采样，每位用前一位修正</text>
+
+ <!-- ===== the three positions ===== -->
+ <!-- position 1 -->
+ <g>
+ <rect x="36" y="132" width="156" height="150" rx="9" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.3"/>
+ <text x="114" y="154" text-anchor="middle" font-size="11.5" font-weight="700" fill="#334155">位置 1（无前文）</text>
+ <text x="50" y="176" font-size="10.5" fill="#64748b">draft model 原始分数</text>
+ <text x="50" y="196" font-size="11" font-weight="700" fill="#0f172a">很　0.45</text>
+ <text x="50" y="214" font-size="11" fill="#94a3b8">稍　0.28</text>
+ <text x="50" y="232" font-size="11" fill="#94a3b8">十　0.17</text>
+ <line x1="50" y1="244" x2="178" y2="244" stroke="#e2e8f0" stroke-width="1.2"/>
+ <text x="50" y="264" font-size="10.5" fill="#64748b">没有前一位 → 无需修正</text>
+ </g>
+
+ <!-- position 2 -->
+ <g>
+ <rect x="204" y="132" width="156" height="150" rx="9" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.3"/>
+ <text x="282" y="154" text-anchor="middle" font-size="11.5" font-weight="700" fill="#334155">位置 2（前一位 = 很）</text>
+ <text x="218" y="176" font-size="10.5" fill="#64748b">draft model 原始分数</text>
+ <text x="218" y="196" font-size="11" fill="#94a3b8">可　0.40　大　0.31</text>
+ <text x="218" y="214" font-size="10.5" fill="#166534">偏置：抬高「大」</text>
+ <line x1="218" y1="226" x2="346" y2="226" stroke="#e2e8f0" stroke-width="1.2"/>
+ <text x="218" y="246" font-size="11" font-weight="700" fill="#14532d">大　0.62</text>
+ <text x="218" y="264" font-size="11" fill="#94a3b8">可　0.19</text>
+ </g>
+
+ <!-- position 3 -->
+ <g>
+ <rect x="372" y="132" width="156" height="150" rx="9" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.3"/>
+ <text x="450" y="154" text-anchor="middle" font-size="11.5" font-weight="700" fill="#334155">位置 3（前一位 = 大）</text>
+ <text x="386" y="176" font-size="10.5" fill="#64748b">draft model 原始分数</text>
+ <text x="386" y="196" font-size="11" fill="#94a3b8">的　0.30　程　0.27</text>
+ <text x="386" y="214" font-size="10.5" fill="#166534">偏置：抬高「程」</text>
+ <line x1="386" y1="226" x2="514" y2="226" stroke="#e2e8f0" stroke-width="1.2"/>
+ <text x="386" y="246" font-size="11" font-weight="700" fill="#14532d">程　0.88</text>
+ <text x="386" y="264" font-size="11" fill="#94a3b8">的　0.05</text>
+ </g>
+
+ <!-- right: what changed -->
+ <rect x="552" y="132" width="492" height="150" rx="9" fill="#f0fdf4" stroke="#4ade80" stroke-width="1.4"/>
+ <text x="572" y="156" font-size="12" font-weight="700" fill="#166534">两边的差别只在位置 2 的那一步</text>
+
+ <g font-size="11">
+ <rect x="572" y="170" width="200" height="46" rx="7" fill="#fff1f2" stroke="#fda4af" stroke-width="1.2"/>
+ <text x="672" y="189" text-anchor="middle" font-size="10.5" font-weight="700" fill="#9f1239">DFlash</text>
+ <text x="672" y="207" text-anchor="middle" font-size="10.5" fill="#be123c">独立取 top-1 → 「可」或「慢」</text>
+
+ <path d="M780 193 L800 193" stroke="#9ca3af" stroke-width="1.4" marker-end="url(#a2)"/>
+
+ <rect x="806" y="170" width="218" height="46" rx="7" fill="#dcfce7" stroke="#16a34a" stroke-width="1.4"/>
+ <text x="915" y="189" text-anchor="middle" font-size="10.5" font-weight="700" fill="#14532d">DSpark</text>
+ <text x="915" y="207" text-anchor="middle" font-size="10.5" fill="#15803d">条件于「很」→ 稳定采到「大」</text>
+ </g>
+
+ <text x="572" y="240" font-size="11" fill="#15803d">draft model 把「大」只给 0.31，因为它不知道位置 1 会采出什么：</text>
+ <text x="572" y="258" font-size="11" fill="#15803d">若位置 1 是「稍」，这里就该是「微」—— 两个模式被平均掉了</text>
+ <text x="572" y="276" font-size="10.5" font-weight="700" fill="#166534">串行采样把「不确定的前驱」替换成「已经采出的前驱」，平均就没了</text>
+
+ <!-- ===== arrow down ===== -->
+ <path d="M282 292 L282 308" stroke="#16a34a" stroke-width="1.8" marker-end="url(#g2)"/>
+ <text x="296" y="306" font-size="10.5" font-weight="700" fill="#15803d">采出的结果</text>
+
+ <!-- ===== token timeline ===== -->
+ <rect x="36" y="312" width="1008" height="76" rx="10" fill="#ffffff" stroke="#4ade80" stroke-width="1.5"/>
+ <g font-size="12">
+ <rect x="60" y="332" width="46" height="36" rx="6" fill="#bbf7d0" stroke="#16a34a" stroke-width="1.4"/>
+ <text x="83" y="356" text-anchor="middle" font-size="13" font-weight="700" fill="#14532d">很</text>
+ <rect x="118" y="332" width="46" height="36" rx="6" fill="#bbf7d0" stroke="#16a34a" stroke-width="1.4"/>
+ <text x="141" y="356" text-anchor="middle" font-size="13" font-weight="700" fill="#14532d">大</text>
+ <rect x="176" y="332" width="46" height="36" rx="6" fill="#bbf7d0" stroke="#16a34a" stroke-width="1.4"/>
+ <text x="199" y="356" text-anchor="middle" font-size="13" font-weight="700" fill="#14532d">程</text>
+ <rect x="234" y="332" width="46" height="36" rx="6" fill="#bbf7d0" stroke="#16a34a" stroke-width="1.4"/>
+ <text x="257" y="356" text-anchor="middle" font-size="13" font-weight="700" fill="#14532d">度</text>
+ <rect x="292" y="332" width="46" height="36" rx="6" fill="#f3f4f6" stroke="#d1d5db" stroke-width="1.2" stroke-dasharray="4 3"/>
+ <text x="315" y="356" text-anchor="middle" font-size="11" fill="#9ca3af">…</text>
+ </g>
+ <text x="360" y="356" font-size="11" fill="#166534">draft 候选（γ 个）</text>
+ <text x="60" y="382" font-size="10.5" fill="#64748b">循环结束，整块候选采出；同时拿到逐位条件存活概率</text>
+
+ <g font-size="10.5" text-anchor="middle">
+ <rect x="620" y="330" width="86" height="40" rx="6" fill="#eef2ff" stroke="#818cf8" stroke-width="1.2"/>
+ <text x="663" y="348" font-weight="700" fill="#312e81">c₁</text>
+ <text x="663" y="363" fill="#4338ca">0.95</text>
+ <rect x="714" y="330" width="86" height="40" rx="6" fill="#eef2ff" stroke="#818cf8" stroke-width="1.2"/>
+ <text x="757" y="348" font-weight="700" fill="#312e81">c₂</text>
+ <text x="757" y="363" fill="#4338ca">0.92</text>
+ <rect x="808" y="330" width="86" height="40" rx="6" fill="#eef2ff" stroke="#818cf8" stroke-width="1.2"/>
+ <text x="851" y="348" font-weight="700" fill="#312e81">c₃</text>
+ <text x="851" y="363" fill="#4338ca">0.85</text>
+ <rect x="902" y="330" width="86" height="40" rx="6" fill="#fecaca" stroke="#dc2626" stroke-width="1.4"/>
+ <text x="945" y="348" font-weight="700" fill="#7f1d1d">c₄</text>
+ <text x="945" y="363" fill="#b91c1c">0.30</text>
+ </g>
+ <text x="663" y="382" font-size="10" text-anchor="middle" fill="#6366f1">↓ 交给 §3 的裁剪（c₄ 明显偏低）</text>
+
+ <!-- ===== down to pruning ===== -->
+ <path d="M540 396 L540 412" stroke="#16a34a" stroke-width="1.8" marker-end="url(#g2)"/>
+
+ <!-- ===== pruning summary (details live in fig-03) ===== -->
+ <rect x="36" y="418" width="1008" height="200" rx="12" fill="#fff7ed" stroke="#fdba74" stroke-width="1.6"/>
+ <text x="56" y="446" font-size="15" font-weight="700" fill="#9a3412">接着裁：串行采样顺手给出的 c_k，就是裁剪的输入</text>
+ <text x="56" y="468" font-size="11.5" fill="#c2410c">位置 k 能被验到，前提是前面每位都被接受 —— 所以把 c 逐位连乘，得到「累积存活概率」</text>
+
+ <rect x="56" y="482" width="968" height="54" rx="8" fill="#ffffff" stroke="#fb923c" stroke-width="1.3"/>
+ <text x="72" y="504" font-size="12" font-weight="700" fill="#7c2d12">s₁ = c₁ = 0.950　 s₂ = 0.950×0.92 = 0.874　 s₃ = 0.874×0.85 = 0.743　 s₄ = 0.743×0.30 = 0.223</text>
+ <text x="72" y="524" font-size="10" fill="#a16207">每多验一位，多赚的就是它的 s；而验证每一位的花费是一样的 —— 这就是可裁的空间</text>
+
+ <text x="56" y="558" font-size="11.5" fill="#9a3412">要不要继续往下验，取决于「多赚的 s」能不能盖过「batch 变大导致的 step 变慢」。</text>
+ <text x="56" y="578" font-size="11.5" font-weight="700" fill="#166534">本例算下来：留下前 3 位，第 4 位（s₄ 只有 0.223）被裁掉。</text>
+ <text x="56" y="602" font-size="11" fill="#c2410c">完整的逐格算术（期望被接受、step 速度、吞吐怎么来）见下图。</text>
+
+ <!-- right: rule -->
+ <rect x="668" y="486" width="356" height="120" rx="9" fill="#ffffff" stroke="#fb923c" stroke-width="1.4"/>
+ <text x="684" y="508" font-size="12" font-weight="700" fill="#9a3412">判据就一句话</text>
+ <text x="684" y="530" font-size="11" fill="#c2410c">只有当「多赚的存活概率」超过「变慢的</text>
+ <text x="684" y="548" font-size="11" fill="#c2410c">代价」时，才继续往下验。</text>
+ <line x1="684" y1="560" x2="1008" y2="560" stroke="#fdba74" stroke-width="1.2"/>
+ <text x="684" y="580" font-size="11" font-weight="700" fill="#9a3412">一旦吞吐不再上升就停 —— 而且必须停：</text>
+ <text x="684" y="598" font-size="10.5" fill="#c2410c">回看式搜索会偷看未来的候选，破坏无损性</text>
+
+ <!-- footer boundary -->
+ <rect x="36" y="632" width="1008" height="0" fill="none"/>
+ <rect x="36" y="664" width="1008" height="106" rx="12" fill="#eef2ff" stroke="#818cf8" stroke-width="1.5"/>
+ <text x="56" y="692" font-size="13.5" font-weight="700" fill="#312e81">边界：串行头只决定「提什么」，裁剪只决定「验多长」</text>
+ <text x="56" y="716" font-size="11.5" fill="#4338ca">两者都不参与「最后输出什么」。所有候选仍要过target model 的拒绝采样，输出分布始终等于target model 的分布。</text>
+ <rect x="56" y="730" width="968" height="30" rx="7" fill="#ffffff" stroke="#818cf8" stroke-width="1.2"/>
+ <text x="540" y="750" text-anchor="middle" font-size="11" font-weight="700" fill="#3730a3">所以draft 可以随便改、验证长度可以随负载伸缩 —— 无损性由接受规则保证，不由这两个改动保证</text>
+</svg>
