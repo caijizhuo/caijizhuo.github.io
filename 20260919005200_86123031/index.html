@@ -22,19 +22,19 @@
     var CONFIG = {"hostname":"caijizhuo.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="一句话：把草稿模型从「自回归生成器」换成「块扩散填充器」—— 一次前向并行解出一整块 mask 位置；同时把目标模型的融合隐状态作为 KV 注入到草稿的每一层。输出分布与目标模型逐字解码完全一致。  归属：DFlash 出自 Z Lab &#x2F; UCSD（Chen, Liang, Liu），论文 arXiv:2602.06036，ICML 2026。  符号约定    符号 含义 备注     Mt">
+  <meta name="description" content="把草稿模型从「自回归生成器」换成「块扩散填充器」—— 一次前向并行解出一整块 mask 位置；同时把目标模型的融合隐状态作为 KV 注入到草稿的每一层。输出分布与目标模型逐字解码完全一致。  归属：DFlash 出自 Z Lab &#x2F; UCSD（Chen, Liang, Liu），论文 arXiv:2602.06036，ICML 2026。  符号约定    符号 含义 备注     MtM_tM">
 <meta property="og:type" content="article">
 <meta property="og:title" content="DFlash 投机解码：块扩散草稿与 KV 注入">
 <meta property="og:url" content="https://caijizhuo.github.io/20260919005200_86123031/index.html">
 <meta property="og:site_name" content="caijizhuo">
-<meta property="og:description" content="一句话：把草稿模型从「自回归生成器」换成「块扩散填充器」—— 一次前向并行解出一整块 mask 位置；同时把目标模型的融合隐状态作为 KV 注入到草稿的每一层。输出分布与目标模型逐字解码完全一致。  归属：DFlash 出自 Z Lab &#x2F; UCSD（Chen, Liang, Liu），论文 arXiv:2602.06036，ICML 2026。  符号约定    符号 含义 备注     Mt">
+<meta property="og:description" content="把草稿模型从「自回归生成器」换成「块扩散填充器」—— 一次前向并行解出一整块 mask 位置；同时把目标模型的融合隐状态作为 KV 注入到草稿的每一层。输出分布与目标模型逐字解码完全一致。  归属：DFlash 出自 Z Lab &#x2F; UCSD（Chen, Liang, Liu），论文 arXiv:2602.06036，ICML 2026。  符号约定    符号 含义 备注     MtM_tM">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://caijizhuo.github.io/20260919005200_86123031/fig-01-cost-model.svg">
 <meta property="og:image" content="https://caijizhuo.github.io/20260919005200_86123031/fig-02-block-diffusion.svg">
 <meta property="og:image" content="https://caijizhuo.github.io/20260919005200_86123031/fig-03-module-kv.svg">
 <meta property="og:image" content="https://caijizhuo.github.io/20260919005200_86123031/fig-04-inference-cycle.svg">
 <meta property="article:published_time" content="2026-09-18T16:52:00.000Z">
-<meta property="article:modified_time" content="2026-10-06T17:52:38.551Z">
+<meta property="article:modified_time" content="2026-10-09T18:06:05.532Z">
 <meta property="article:author" content="caijizhuo">
 <meta property="article:tag" content="AI">
 <meta property="article:tag" content="推理优化">
@@ -236,7 +236,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2026-10-07 01:52:38" itemprop="dateModified" datetime="2026-10-07T01:52:38+08:00">2026-10-07</time>
+                <time title="修改时间：2026-10-10 02:06:05" itemprop="dateModified" datetime="2026-10-10T02:06:05+08:00">2026-10-10</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -281,7 +281,7 @@
 
       
         <blockquote>
-<p><strong>一句话</strong>：把草稿模型从「自回归生成器」换成「块扩散填充器」—— 一次前向并行解出一整块 mask 位置；同时把目标模型的融合隐状态作为 KV 注入到草稿的每一层。输出分布与目标模型逐字解码完全一致。</p>
+<p>把草稿模型从「自回归生成器」换成「块扩散填充器」—— 一次前向并行解出一整块 mask 位置；同时把目标模型的融合隐状态作为 KV 注入到草稿的每一层。输出分布与目标模型逐字解码完全一致。</p>
 </blockquote>
 <p><strong>归属</strong>：DFlash 出自 Z Lab / UCSD（Chen, Liang, Liu），论文 <a target="_blank" rel="noopener" href="https://arxiv.org/abs/2602.06036">arXiv:2602.06036</a>，ICML 2026。</p>
 <h2 id="符号约定"><a class="markdownIt-Anchor" href="#符号约定"></a> 符号约定</h2>
@@ -653,7 +653,7 @@ V_c = W_c^{V} H_c,\quad V_b = W_b^{V} H_b
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">74</span>
+          <span class="site-state-item-count">75</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -666,7 +666,7 @@ V_c = W_c^{V} H_c,\quad V_b = W_b^{V} H_b
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">20</span>
+        <span class="site-state-item-count">22</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -715,13 +715,13 @@ V_c = W_c^{V} H_c,\quad V_b = W_b^{V} H_b
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">87k</span>
+    <span title="站点总字数">88k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">5:16</span>
+    <span title="站点阅读时长">5:19</span>
 </div>
 
         

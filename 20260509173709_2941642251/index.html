@@ -33,7 +33,7 @@
 <meta property="og:image" content="https://caijizhuo.github.io/20260509173709_2941642251/mhc-fig2-hc-dataflow.png">
 <meta property="og:image" content="https://caijizhuo.github.io/20260509173709_2941642251/mhc-fig3-manifold.png">
 <meta property="article:published_time" content="2026-05-09T09:37:09.000Z">
-<meta property="article:modified_time" content="2026-10-06T18:52:04.896Z">
+<meta property="article:modified_time" content="2026-10-09T18:46:32.666Z">
 <meta property="article:author" content="caijizhuo">
 <meta property="article:tag" content="AI">
 <meta name="twitter:card" content="summary">
@@ -232,7 +232,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2026-10-07 02:52:04" itemprop="dateModified" datetime="2026-10-07T02:52:04+08:00">2026-10-07</time>
+                <time title="修改时间：2026-10-10 02:46:32" itemprop="dateModified" datetime="2026-10-10T02:46:32+08:00">2026-10-10</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -257,7 +257,7 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>2.9k</span>
+              <span>3k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -288,7 +288,7 @@
 <p><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>x</mi></mrow><annotation encoding="application/x-tex">x</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.43056em;vertical-align:0em;"></span><span class="mord mathnormal">x</span></span></span></span> 这一项就是<strong>恒等映射</strong>：浅层信号不加修改地直达深层，反向梯度里也存在一条系数为 1 的通路，所以深层网络不会梯度消失。</p>
 <p>代价是：<strong>透传比例写死为 1</strong>，<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>F</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">F(x)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.13889em;">F</span><span class="mopen">(</span><span class="mord mathnormal">x</span><span class="mclose">)</span></span></span></span> 的强度无法自适应，信息通路单一。</p>
 <h3 id="12-hyper-connections残差变成矩阵"><a class="markdownIt-Anchor" href="#12-hyper-connections残差变成矩阵"></a> 1.2 Hyper-Connections：残差变成矩阵</h3>
-<p>HC 把残差从 1 路向量 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>x</mi></mrow><annotation encoding="application/x-tex">x</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.43056em;vertical-align:0em;"></span><span class="mord mathnormal">x</span></span></span></span> 拓宽成 n 路矩阵（n 称为 expansion rate），并用三个可学矩阵管理它：</p>
+<p>HC 把残差从 1 路向量 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>x</mi></mrow><annotation encoding="application/x-tex">x</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.43056em;vertical-align:0em;"></span><span class="mord mathnormal">x</span></span></span></span> 拓宽成 n 路矩阵（n 称为 expansion rate。它让网络能够根据输入和深度，<strong>自适应地混合和分配信息，从而在训练稳定性和模型表达能力之间找到更优的平衡点</strong>。它用三个可学矩阵：</p>
 <p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mtext>out</mtext><mo>=</mo><mi>H</mi><mi>r</mi><mi>e</mi><mi>s</mi><mo>⋅</mo><mi>x</mi><mo>+</mo><mi>H</mi><mi>p</mi><mi>o</mi><mi>s</mi><mi>t</mi><mo>⋅</mo><mi>F</mi><mo stretchy="false">(</mo><mi>H</mi><mi>p</mi><mi>r</mi><mi>e</mi><mo>⋅</mo><mi>x</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">\text{out} = Hres \cdot x + Hpost \cdot F(Hpre \cdot x)
 </annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.61508em;vertical-align:0em;"></span><span class="mord text"><span class="mord">out</span></span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:0.68333em;vertical-align:0em;"></span><span class="mord mathnormal" style="margin-right:0.08125em;">H</span><span class="mord mathnormal" style="margin-right:0.02778em;">r</span><span class="mord mathnormal">e</span><span class="mord mathnormal">s</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.66666em;vertical-align:-0.08333em;"></span><span class="mord mathnormal">x</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.8777699999999999em;vertical-align:-0.19444em;"></span><span class="mord mathnormal" style="margin-right:0.08125em;">H</span><span class="mord mathnormal">p</span><span class="mord mathnormal">o</span><span class="mord mathnormal">s</span><span class="mord mathnormal">t</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.13889em;">F</span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.08125em;">H</span><span class="mord mathnormal">p</span><span class="mord mathnormal" style="margin-right:0.02778em;">r</span><span class="mord mathnormal">e</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">x</span><span class="mclose">)</span></span></span></span></span></p>
 <table>
@@ -775,7 +775,7 @@ mHC 的核心创新是引入 Sinkhorn 归一化：将组合矩阵 comb 约束为
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">74</span>
+          <span class="site-state-item-count">75</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -788,7 +788,7 @@ mHC 的核心创新是引入 Sinkhorn 归一化：将组合矩阵 comb 约束为
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">20</span>
+        <span class="site-state-item-count">22</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -837,13 +837,13 @@ mHC 的核心创新是引入 Sinkhorn 归一化：将组合矩阵 comb 约束为
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">87k</span>
+    <span title="站点总字数">88k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">5:16</span>
+    <span title="站点阅读时长">5:19</span>
 </div>
 
         
