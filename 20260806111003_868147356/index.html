@@ -43,7 +43,7 @@
 <meta property="og:image" content="https://caijizhuo.github.io/20260806111003_868147356/13.png">
 <meta property="og:image" content="https://caijizhuo.github.io/20260806111003_868147356/14.png">
 <meta property="article:published_time" content="2026-08-06T03:10:03.000Z">
-<meta property="article:modified_time" content="2026-09-24T17:32:18.816Z">
+<meta property="article:modified_time" content="2026-10-19T19:18:01.404Z">
 <meta property="article:author" content="caijizhuo">
 <meta property="article:tag" content="AI">
 <meta property="article:tag" content="LLM">
@@ -243,7 +243,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2026-09-25 01:32:18" itemprop="dateModified" datetime="2026-09-25T01:32:18+08:00">2026-09-25</time>
+                <time title="修改时间：2026-10-20 03:18:01" itemprop="dateModified" datetime="2026-10-20T03:18:01+08:00">2026-10-20</time>
               </span>
 
           
@@ -259,14 +259,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>6.9k</span>
+              <span>7.9k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>25 分钟</span>
+              <span>29 分钟</span>
             </span>
 
         </div>
@@ -795,6 +795,88 @@ Zigzag Attention 是另一种解决因果掩码负载不均衡的切分策略，
 </tr>
 </tbody>
 </table>
+<h4 id="352-deepspeed-ulysses用-all-to-all-把序列并行换成head-并行"><a class="markdownIt-Anchor" href="#352-deepspeed-ulysses用-all-to-all-把序列并行换成head-并行"></a> 3.5.2 DeepSpeed-Ulysses：用 all-to-all 把「序列并行」换成「head 并行」</h4>
+<p>前面 Ring/Zigzag/Striped 和 SGLang 的 CP 都属于同一个思路：<strong>Q 按序列切分后固定不动，让 K/V 在卡之间流动</strong>。DeepSpeed-Ulysses 换了个方向——<strong>切分方式在注意力前后各切换一次</strong>：</p>
+<ul>
+<li>注意力之前：按 <strong>token</strong> 切（每张卡拿 <code>N/CP</code> 个 token），所以 QKV 投影、MLP、LayerNorm 都是「本地 token、完整权重」；</li>
+<li>注意力之中：按 <strong>head</strong> 切（每张卡拿 <code>H/CP</code> 个头，但拿<strong>完整序列</strong>的 K/V），所以每个头都能在自己的卡上做一次「本地就是全局」的普通 attention；</li>
+<li>注意力之后：再切回按 token，继续后面的算子。</li>
+</ul>
+<p>两次切换都靠 <strong>all-to-all</strong> 完成。直觉上可以把 all-to-all 看成「一次转置」：它把 <code>[N/CP, 3H·d]</code> 的本地数据重新排列成 <code>[N, 3H/CP·d]</code>。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># CP 组内每张卡：本地 token 数 Nl = N / cp_size，分到的 head 数 Hl = H / cp_size</span></span><br><span class="line">qkv = qkv_proj(x_local)                       <span class="comment"># [Nl, 3*H*d]：完整投影矩阵，本地 token 的全部头都算出来了</span></span><br><span class="line">q, k, v = split_qkv(qkv)                      <span class="comment"># 各自 [Nl, H, d]</span></span><br><span class="line">q, k, v = all_to_all(q), all_to_all(k), all_to_all(v)   <span class="comment"># [Nl, H] 按头切给不同卡 → [N, Hl]</span></span><br><span class="line">o = attention(q, k, v, causal=<span class="literal">True</span>)           <span class="comment"># 每张卡：完整序列 + 自己的 Hl 个头，本地算，无通信</span></span><br><span class="line">o = all_to_all(o)                             <span class="comment"># [N, Hl] → [Nl, H]，切回按 token</span></span><br><span class="line">o = o_proj(o)                                 <span class="comment"># [Nl, D]，后面 MLP 照常（仍是按 token 切分）</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>数据流有个好记的口诀：<strong>跟着某一张卡走完整个流程</strong>——它前后两段拿的是「一段序列的全部头」，中间 attention 那一段拿的是「全部序列的一段头」，两次 all-to-all 就是这两段之间的转置。</p>
+</blockquote>
+<p><strong>为什么通信量能做实</strong>：一层里只有两次 all-to-all——QKV 一次（聚合消息 <code>3Nh</code>）、输出一次（<code>Nh</code>）。论文给出的复杂度是每张卡 <code>4Nh/CP</code>，即 <code>O(N/CP)</code>；当序列长度和卡数同比例增长时，<strong>通信量是常数，不随序列变长而涨</strong>。这是它相对 Megatron 式序列并行的核心优势：后者的 all-gather/reduce-scatter 在 <code>P</code> 大时单链路仍是 <code>O(N)</code>，量级上比 Ulysses 大 <code>P</code> 倍。</p>
+<p><strong>它的约束和代价</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>约束</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>卡数上限 = head 数</strong></td>
+<td><code>H % CP == 0</code>，即 <code>CP ≤ H</code>。GQA/MQA 下 KV 头可能只有 8 个甚至 1 个，<code>CP</code> 就被卡在这里（需要复制 KV 头或用专门的 GQA 变体）</td>
+</tr>
+<tr>
+<td><strong>all-to-all 是「一步到位」的同步</strong></td>
+<td>两次集合通信都是全卡屏障，很难像 Ring 那样细粒度地和计算重叠；需要高 bisection 带宽（NVLink/NVSwitch 友好）</td>
+</tr>
+<tr>
+<td><strong>需要转置式重排</strong></td>
+<td><code>[N/CP, H] ↔ [N, H/CP]</code> 的数据搬运本身有显存与带宽成本，但换来的是 attention 内部<strong>零通信</strong></td>
+</tr>
+<tr>
+<td><strong>对 attention 实现友好</strong></td>
+<td>注意力前是序列并行、注意力中是标准「头并行 + 完整序列」，所以 dense/sparse/FlashAttention 都能直接用</td>
+</tr>
+</tbody>
+</table>
+<p><strong>和 Ring 的取舍</strong>（视频里的对比口径）：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Ring / Zigzag / Striped</th>
+<th>DeepSpeed-Ulysses</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>通信方式</td>
+<td>P2P 环形传 K/V（每步 <code>2Nh/CP</code>，共 <code>CP</code> 步）</td>
+<td>2 次 all-to-all（共 <code>4Nh/CP</code>）</td>
+</tr>
+<tr>
+<td>通信量随序列长</td>
+<td><code>O(N/CP)</code></td>
+<td><code>O(N/CP)</code>，但常数更小</td>
+</tr>
+<tr>
+<td>能否与计算重叠</td>
+<td>天然（算当前块时收下一块）</td>
+<td>难，两次通信都是全卡屏障</td>
+</tr>
+<tr>
+<td>对网络的要求</td>
+<td>松，适合跨机</td>
+<td>高，依赖高带宽 all-to-all</td>
+</tr>
+<tr>
+<td>卡数上限</td>
+<td>无（<code>CP</code> 只受显存限制）</td>
+<td><code>CP ≤ H</code>（KV 头数）</td>
+</tr>
+</tbody>
+</table>
+<p>所以实践里常见的组合是 <strong>USP（Unified Sequence Parallelism）：机内用 Ulysses、机间用 Ring</strong>——机内 NVLink 带宽高、适合一次大 all-to-all；跨机带宽低、用 Ring 的 P2P 更好隐藏。</p>
+<blockquote>
+<p>补充一点容易混淆的：SGLang 的 prefill CP 不是 Ulysses。它按 zigzag/interleave 切 token，然后 <strong>all-gather KV</strong> 让每个 rank 都拿到完整 K/V 再算本地 query——更像 Ring 那一路的「收齐 K/V」而不是「转 head」。Ulysses 的 all-to-all 形态主要出现在 DeepSpeed、Megatron-Core、yunchang 这类实现里。</p>
+</blockquote>
+<p>参考：<a target="_blank" rel="noopener" href="https://www.bilibili.com/video/BV1dSHE6TEJU/">视频《上下文并行 CP：Ring Attention 和 DeepSpeed-Ulysses》</a>、<a target="_blank" rel="noopener" href="https://arxiv.org/abs/2309.14509">DeepSpeed Ulysses 论文（arXiv:2309.14509）</a>。</p>
 <h2 id="4-总结"><a class="markdownIt-Anchor" href="#4-总结"></a> 4. 总结</h2>
 <h3 id="41-策略对指标的影响"><a class="markdownIt-Anchor" href="#41-策略对指标的影响"></a> 4.1 策略对指标的影响</h3>
 <p><strong>TTFT / Prefill</strong></p>
@@ -1012,7 +1094,7 @@ Zigzag Attention 是另一种解决因果掩码负载不均衡的切分策略，
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E5%B9%B6%E8%A1%8C%E5%92%8C-chunked-prefill"><span class="nav-number">1.</span> <span class="nav-text"> 1. 为什么需要并行和 Chunked Prefill</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#11-%E5%AD%98%E5%82%A8%E5%8E%8B%E5%8A%9B"><span class="nav-number">1.1.</span> <span class="nav-text"> 1.1 存储压力</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#12-%E8%AE%A1%E7%AE%97%E5%8E%8B%E5%8A%9B"><span class="nav-number">1.2.</span> <span class="nav-text"> 1.2 计算压力</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#13-%E7%AE%80%E8%A6%81%E6%80%BB%E7%BB%93"><span class="nav-number">1.3.</span> <span class="nav-text"> 1.3 简要总结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-sglang-%E5%B9%B6%E8%A1%8C%E6%8E%A8%E7%90%86%E6%A6%82%E8%A7%88"><span class="nav-number">2.</span> <span class="nav-text"> 2. SGLang 并行推理概览</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#21-sglang-%E8%AF%B7%E6%B1%82%E7%9A%84%E6%8E%A8%E7%90%86%E6%B5%81%E7%A8%8B"><span class="nav-number">2.1.</span> <span class="nav-text"> 2.1 SGLang 请求的推理流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#22-sglang-%E4%B8%AD%E7%9A%84-chunked-prefill"><span class="nav-number">2.2.</span> <span class="nav-text"> 2.2 SGLang 中的 Chunked Prefill</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#23-sglang-%E4%B8%AD%E5%B9%B6%E8%A1%8C%E6%8E%A8%E7%90%86%E7%A4%BA%E4%BE%8B"><span class="nav-number">2.3.</span> <span class="nav-text"> 2.3 SGLang 中并行推理示例</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#231-rank-%E5%B8%83%E5%B1%80"><span class="nav-number">2.3.1.</span> <span class="nav-text"> 2.3.1 Rank 布局</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#232-%E5%8F%82%E6%95%B0%E8%AE%BE%E7%BD%AE%E5%BC%80%E5%90%AF-dp-tp-cp-ep"><span class="nav-number">2.3.2.</span> <span class="nav-text"> 2.3.2 参数设置（开启 DP, TP, CP, EP）</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E5%B9%B6%E8%A1%8C%E6%8A%80%E6%9C%AF%E8%AF%A6%E7%BB%86%E4%BB%8B%E7%BB%8D"><span class="nav-number">3.</span> <span class="nav-text"> 3. 并行技术详细介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#31-tptensor-parallelism"><span class="nav-number">3.1.</span> <span class="nav-text"> 3.1 TP：Tensor Parallelism</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#32-pppipeline-parallelism"><span class="nav-number">3.2.</span> <span class="nav-text"> 3.2 PP：Pipeline Parallelism</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#33-dp-attentionmla-%E7%B3%BB%E5%88%97%E6%A8%A1%E5%9E%8B%E4%BD%BF%E7%94%A8"><span class="nav-number">3.3.</span> <span class="nav-text"> 3.3 DP Attention：MLA 系列模型使用</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#331-dp-attention-%E7%9A%84-gatherscatter"><span class="nav-number">3.3.1.</span> <span class="nav-text"> 3.3.1 DP Attention 的 gather&#x2F;scatter</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#34-epexpert-parallelism"><span class="nav-number">3.4.</span> <span class="nav-text"> 3.4 EP：Expert Parallelism</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#341-standard-%E6%A8%A1%E5%BC%8F%E6%97%A0-moe-a2a-backend"><span class="nav-number">3.4.1.</span> <span class="nav-text"> 3.4.1 Standard 模式（无 moe-a2a-backend）</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#3411-%E7%89%B9%E7%82%B9"><span class="nav-number">3.4.1.1.</span> <span class="nav-text"> 3.4.1.1 特点</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#342-deepep-%E6%A8%A1%E5%BC%8Fmoe-a2a-backend-deepep"><span class="nav-number">3.4.2.</span> <span class="nav-text"> 3.4.2 DeepEP 模式（–moe-a2a-backend deepep）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#343-%E9%80%9A%E4%BF%A1%E8%AE%A1%E7%AE%97-overlap-%E6%9C%BA%E5%88%B6"><span class="nav-number">3.4.3.</span> <span class="nav-text"> 3.4.3 通信计算 overlap 机制</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#3431-tbotwo-batch-overlap-%E5%8F%8C%E6%89%B9%E6%AC%A1%E9%87%8D%E5%8F%A0"><span class="nav-number">3.4.3.1.</span> <span class="nav-text"> 3.4.3.1 TBO（Two-Batch Overlap 双批次重叠）</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#3432-sbosingle-batch-overlap"><span class="nav-number">3.4.3.2.</span> <span class="nav-text"> 3.4.3.2 SBO（Single-Batch Overlap）</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#344-eplbexpert-parallelism-load-balancer"><span class="nav-number">3.4.4.</span> <span class="nav-text"> 3.4.4 EPLB（Expert Parallelism Load Balancer）</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#35-cpcontext-parallelism"><span class="nav-number">3.5.</span> <span class="nav-text"> 3.5 CP：Context Parallelism</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#351-%E4%B8%A4%E7%A7%8D-cp-%E6%96%B9%E5%BC%8F"><span class="nav-number">3.5.1.</span> <span class="nav-text"> 3.5.1 两种 CP 方式</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E6%80%BB%E7%BB%93"><span class="nav-number">4.</span> <span class="nav-text"> 4. 总结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#41-%E7%AD%96%E7%95%A5%E5%AF%B9%E6%8C%87%E6%A0%87%E7%9A%84%E5%BD%B1%E5%93%8D"><span class="nav-number">4.1.</span> <span class="nav-text"> 4.1 策略对指标的影响</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#42-%E9%80%89%E7%94%A8%E4%BD%95%E7%A7%8D%E5%B9%B6%E8%A1%8C%E7%BB%84%E5%90%88"><span class="nav-number">4.2.</span> <span class="nav-text"> 4.2 选用何种并行组合</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#421-dense-%E6%A8%A1%E5%9E%8B"><span class="nav-number">4.2.1.</span> <span class="nav-text"> 4.2.1 Dense 模型</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#422-moe-nsa-%E6%A8%A1%E5%9E%8B"><span class="nav-number">4.2.2.</span> <span class="nav-text"> 4.2.2 MoE + NSA 模型</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#423-%E9%99%8D%E4%BD%8E-tpot"><span class="nav-number">4.2.3.</span> <span class="nav-text"> 4.2.3 降低 TPOT</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#424-%E9%99%8D%E4%BD%8E-ttft"><span class="nav-number">4.2.4.</span> <span class="nav-text"> 4.2.4 降低 TTFT</span></a></li></ol></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E5%B9%B6%E8%A1%8C%E5%92%8C-chunked-prefill"><span class="nav-number">1.</span> <span class="nav-text"> 1. 为什么需要并行和 Chunked Prefill</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#11-%E5%AD%98%E5%82%A8%E5%8E%8B%E5%8A%9B"><span class="nav-number">1.1.</span> <span class="nav-text"> 1.1 存储压力</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#12-%E8%AE%A1%E7%AE%97%E5%8E%8B%E5%8A%9B"><span class="nav-number">1.2.</span> <span class="nav-text"> 1.2 计算压力</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#13-%E7%AE%80%E8%A6%81%E6%80%BB%E7%BB%93"><span class="nav-number">1.3.</span> <span class="nav-text"> 1.3 简要总结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-sglang-%E5%B9%B6%E8%A1%8C%E6%8E%A8%E7%90%86%E6%A6%82%E8%A7%88"><span class="nav-number">2.</span> <span class="nav-text"> 2. SGLang 并行推理概览</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#21-sglang-%E8%AF%B7%E6%B1%82%E7%9A%84%E6%8E%A8%E7%90%86%E6%B5%81%E7%A8%8B"><span class="nav-number">2.1.</span> <span class="nav-text"> 2.1 SGLang 请求的推理流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#22-sglang-%E4%B8%AD%E7%9A%84-chunked-prefill"><span class="nav-number">2.2.</span> <span class="nav-text"> 2.2 SGLang 中的 Chunked Prefill</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#23-sglang-%E4%B8%AD%E5%B9%B6%E8%A1%8C%E6%8E%A8%E7%90%86%E7%A4%BA%E4%BE%8B"><span class="nav-number">2.3.</span> <span class="nav-text"> 2.3 SGLang 中并行推理示例</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#231-rank-%E5%B8%83%E5%B1%80"><span class="nav-number">2.3.1.</span> <span class="nav-text"> 2.3.1 Rank 布局</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#232-%E5%8F%82%E6%95%B0%E8%AE%BE%E7%BD%AE%E5%BC%80%E5%90%AF-dp-tp-cp-ep"><span class="nav-number">2.3.2.</span> <span class="nav-text"> 2.3.2 参数设置（开启 DP, TP, CP, EP）</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E5%B9%B6%E8%A1%8C%E6%8A%80%E6%9C%AF%E8%AF%A6%E7%BB%86%E4%BB%8B%E7%BB%8D"><span class="nav-number">3.</span> <span class="nav-text"> 3. 并行技术详细介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#31-tptensor-parallelism"><span class="nav-number">3.1.</span> <span class="nav-text"> 3.1 TP：Tensor Parallelism</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#32-pppipeline-parallelism"><span class="nav-number">3.2.</span> <span class="nav-text"> 3.2 PP：Pipeline Parallelism</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#33-dp-attentionmla-%E7%B3%BB%E5%88%97%E6%A8%A1%E5%9E%8B%E4%BD%BF%E7%94%A8"><span class="nav-number">3.3.</span> <span class="nav-text"> 3.3 DP Attention：MLA 系列模型使用</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#331-dp-attention-%E7%9A%84-gatherscatter"><span class="nav-number">3.3.1.</span> <span class="nav-text"> 3.3.1 DP Attention 的 gather&#x2F;scatter</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#34-epexpert-parallelism"><span class="nav-number">3.4.</span> <span class="nav-text"> 3.4 EP：Expert Parallelism</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#341-standard-%E6%A8%A1%E5%BC%8F%E6%97%A0-moe-a2a-backend"><span class="nav-number">3.4.1.</span> <span class="nav-text"> 3.4.1 Standard 模式（无 moe-a2a-backend）</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#3411-%E7%89%B9%E7%82%B9"><span class="nav-number">3.4.1.1.</span> <span class="nav-text"> 3.4.1.1 特点</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#342-deepep-%E6%A8%A1%E5%BC%8Fmoe-a2a-backend-deepep"><span class="nav-number">3.4.2.</span> <span class="nav-text"> 3.4.2 DeepEP 模式（–moe-a2a-backend deepep）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#343-%E9%80%9A%E4%BF%A1%E8%AE%A1%E7%AE%97-overlap-%E6%9C%BA%E5%88%B6"><span class="nav-number">3.4.3.</span> <span class="nav-text"> 3.4.3 通信计算 overlap 机制</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#3431-tbotwo-batch-overlap-%E5%8F%8C%E6%89%B9%E6%AC%A1%E9%87%8D%E5%8F%A0"><span class="nav-number">3.4.3.1.</span> <span class="nav-text"> 3.4.3.1 TBO（Two-Batch Overlap 双批次重叠）</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#3432-sbosingle-batch-overlap"><span class="nav-number">3.4.3.2.</span> <span class="nav-text"> 3.4.3.2 SBO（Single-Batch Overlap）</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#344-eplbexpert-parallelism-load-balancer"><span class="nav-number">3.4.4.</span> <span class="nav-text"> 3.4.4 EPLB（Expert Parallelism Load Balancer）</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#35-cpcontext-parallelism"><span class="nav-number">3.5.</span> <span class="nav-text"> 3.5 CP：Context Parallelism</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#351-%E4%B8%A4%E7%A7%8D-cp-%E6%96%B9%E5%BC%8F"><span class="nav-number">3.5.1.</span> <span class="nav-text"> 3.5.1 两种 CP 方式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#352-deepspeed-ulysses%E7%94%A8-all-to-all-%E6%8A%8A%E5%BA%8F%E5%88%97%E5%B9%B6%E8%A1%8C%E6%8D%A2%E6%88%90head-%E5%B9%B6%E8%A1%8C"><span class="nav-number">3.5.2.</span> <span class="nav-text"> 3.5.2 DeepSpeed-Ulysses：用 all-to-all 把「序列并行」换成「head 并行」</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E6%80%BB%E7%BB%93"><span class="nav-number">4.</span> <span class="nav-text"> 4. 总结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#41-%E7%AD%96%E7%95%A5%E5%AF%B9%E6%8C%87%E6%A0%87%E7%9A%84%E5%BD%B1%E5%93%8D"><span class="nav-number">4.1.</span> <span class="nav-text"> 4.1 策略对指标的影响</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#42-%E9%80%89%E7%94%A8%E4%BD%95%E7%A7%8D%E5%B9%B6%E8%A1%8C%E7%BB%84%E5%90%88"><span class="nav-number">4.2.</span> <span class="nav-text"> 4.2 选用何种并行组合</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#421-dense-%E6%A8%A1%E5%9E%8B"><span class="nav-number">4.2.1.</span> <span class="nav-text"> 4.2.1 Dense 模型</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#422-moe-nsa-%E6%A8%A1%E5%9E%8B"><span class="nav-number">4.2.2.</span> <span class="nav-text"> 4.2.2 MoE + NSA 模型</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#423-%E9%99%8D%E4%BD%8E-tpot"><span class="nav-number">4.2.3.</span> <span class="nav-text"> 4.2.3 降低 TPOT</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#424-%E9%99%8D%E4%BD%8E-ttft"><span class="nav-number">4.2.4.</span> <span class="nav-text"> 4.2.4 降低 TTFT</span></a></li></ol></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -1028,7 +1110,7 @@ Zigzag Attention 是另一种解决因果掩码负载不均衡的切分策略，
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">75</span>
+          <span class="site-state-item-count">76</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1041,7 +1123,7 @@ Zigzag Attention 是另一种解决因果掩码负载不均衡的切分策略，
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">22</span>
+        <span class="site-state-item-count">24</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -1090,13 +1172,13 @@ Zigzag Attention 是另一种解决因果掩码负载不均衡的切分策略，
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">87k</span>
+    <span title="站点总字数">90k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">5:18</span>
+    <span title="站点阅读时长">5:28</span>
 </div>
 
         

@@ -195,6 +195,248 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20261020015000_1212527942/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/portrait.jpg">
+      <meta itemprop="name" content="caijizhuo">
+      <meta itemprop="description" content="Looks delicious">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="caijizhuo">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/20261020015000_1212527942/" class="post-title-link" itemprop="url">vLLM V1 相比 V0 有哪些新特性</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-10-20 01:50:00" itemprop="dateCreated datePublished" datetime="2026-10-20T01:50:00+08:00">2026-10-20</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2026-10-21 16:59:45" itemprop="dateModified" datetime="2026-10-21T16:59:45+08:00">2026-10-21</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/AI/" itemprop="url" rel="index"><span itemprop="name">AI</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.7k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>6 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一-概览"><a class="markdownIt-Anchor" href="#一-概览"></a> 一、概览</h2>
+<p>V1 不是给 V0 打补丁，而是把 <strong>scheduler / KV cache manager / worker / sampler / API server 全部重写</strong>了一遍。动机很直接：V0 时代各特性是各自独立开发的，横向堆了很多，但纵向组合起来越来越难；推理请求一多、模型一小，CPU 开销反而成了瓶颈。</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>特性</th>
+<th>V1改动</th>
+<th>V0问题</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>EngineCore 进程隔离</strong></td>
+<td>API server 与执行循环拆成两个进程</td>
+<td>GPU 只要 5ms，CPU 却来不及喂</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>统一 token 预算的 scheduler</strong></td>
+<td>不再区分 prefill / decode，统一按 token 数调度</td>
+<td>特性之间难以组合</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>零开销 prefix caching</strong></td>
+<td>命中率 0% 时吞吐也只掉 &lt;1%</td>
+<td>V0 里开了反而变慢，只好默认关</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>对称的 TP 架构</strong></td>
+<td>scheduler 与 worker 0 分进程，只传增量</td>
+<td>V0 里 scheduler 和 worker 0 必须挤在一个进程</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>Persistent Batch</strong></td>
+<td>输入张量不再每步重建，只打 diff</td>
+<td>每步重建输入的 CPU 开销</td>
+</tr>
+<tr>
+<td>6</td>
+<td><strong>torch.compile + 分段 CUDA Graph</strong></td>
+<td>自动编译 + 绕过 CUDA graph 的静态限制</td>
+<td>模型多、手写 kernel 维护不动</td>
+</tr>
+</tbody>
+</table>
+<h2 id="二-详细内容"><a class="markdownIt-Anchor" href="#二-详细内容"></a> 二、详细内容</h2>
+<h3 id="1-enginecore把调度从-api-里抠出来"><a class="markdownIt-Anchor" href="#1-enginecore把调度从-api-里抠出来"></a> 1. EngineCore：把「调度」从 API 里抠出来</h3>
+<p>V0 里 API server、调度、输入准备、detokenize、流式输出都挤在同一个异步循环里。GPU 越来越快（H100 上 Llama-8B 一次前向只要 ~5ms），这些 CPU 工作就成了新的瓶颈。V1 把 <code>EngineCore</code> 拆成<strong>独立进程</strong>，只做 scheduler + model executor，其余 CPU 密集的活（tokenize、多模态预处理、detokenize、请求流式返回）留在外面的进程重叠执行。</p>
+<p>Python 的全局解释器锁（GIL） 决定了在同一个进程内，即使开多线程，纯 Python 代码在任意时刻也只能有一个线程执行。<br>
+V0 把所有逻辑放在一个异步循环中，tokenize、调度、detokenize 等纯 Python 操作会串行争抢 GIL，CPU 无法真正并行，成为 GPU 的“拖油瓶”。<br>
+V1 将前端（API Server）和 EngineCore 置于不同的操作系统进程中。每个进程有自己独立的 GIL，因此前端的 tokenize、多模态预处理、detokenize 和流式返回等 CPU 密集型工作，可以与 EngineCore 进程中的调度和模型执行在不同 CPU 核心上真正同时运行，不再互相阻塞。</p>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20261020015000_1212527942/fig-01-server-arch.png" alt="V1 的 EngineCore 与 AsyncLLM 分进程（Process 0 / Process 1）"></p>
+<h3 id="2-scheduler从阶段变成token-预算"><a class="markdownIt-Anchor" href="#2-scheduler从阶段变成token-预算"></a> 2. Scheduler：从「阶段」变成「token 预算」</h3>
+<p>V1 的调度结果就是一个字典 <code>&#123;request_id: num_tokens&#125;</code>——这一步每个请求各跑几个 token。prompt token 和生成 token <strong>同等对待</strong>，于是 chunked prefill、prefix caching、投机解码全都能落在同一个表示上：给定 token 预算，scheduler 自己决定每个请求分多少。</p>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20261020015000_1212527942/fig-02-scheduler.png" alt="三个请求 R1/R2/R3 在 token budget=10 下的调度过程"></p>
+<h3 id="3-prefix-caching从默认关变成默认开"><a class="markdownIt-Anchor" href="#3-prefix-caching从默认关变成默认开"></a> 3. Prefix Caching：从「默认关」变成「默认开」</h3>
+<p>V0 的 hash 前缀缓存 + LRU 淘汰在命中率低时 CPU 开销很明显，所以默认关闭。V1 把淘汰做成常数时间、尽量少建 Python 对象，<strong>命中率 0% 时吞吐损失 &lt;1%</strong>，命中率高时吞吐翻几倍——于是 V1 直接把它设成默认开启。</p>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20261020015000_1212527942/fig-03-prefix-caching.png" alt="前缀缓存命中率 0/25/50/75% 时的吞吐对比"></p>
+<p><strong>为什么「常数时间」是可能的？</strong> 关键在于 V1 把 KV cache 管成<strong>固定数量的定长 block</strong>，每块带两个字段：一个 hash（可以是空），和一个双向链表指针。分配时<strong>只看空闲队列的队头</strong>，从不全局搜索 LRU：</p>
+<ol>
+<li>队头是「无 hash 的空块」→ 直接分配，O(1)；</li>
+<li>队头是「有 hash 的已缓存块」→ 它就是 LRU 候选：
+<ul>
+<li>若是<strong>最后一份</strong>：把 hash 从 <code>hash → block</code> 表里删掉、清空该块，腾出来用；</li>
+<li>若<strong>不是</strong>：只把引用计数减一，把它挪开，看下一个队头。<br>
+两种情况都是 O(1)。</li>
+</ul>
+</li>
+</ol>
+<p>需要「淘汰」这件事只在队头发生，而队头的选择是链表操作，所以没有 O(n) 的扫描。命中时把块从队列里摘出来复用，释放时再挂回队尾——同样是 O(1)。V0 的开销主要来自<strong>每个 block 每步都新建 Python 对象、做 dict/hash 操作、复制 block table</strong>；V1 把这些压成 C 层的链表/字典操作，block table 增量更新，并把 Python 对象创建降到最低，于是「没命中」也几乎不花钱。</p>
+<h3 id="4-tensor-parallel从非对称变成对称"><a class="markdownIt-Anchor" href="#4-tensor-parallel从非对称变成对称"></a> 4. Tensor Parallel：从「非对称」变成「对称」</h3>
+<p>V0 为了省一次广播，把 scheduler 和 worker 0 放在同一进程，结构天然不对称。V1 改成<strong>每个 worker 自己缓存请求状态、每步只传增量（diff）</strong>，于是 scheduler 和 worker 0 也能分进程，所有 worker 长得一样；单卡和多卡走同一套代码路径。</p>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20261020015000_1212527942/fig-04-tp-arch.png" alt="V0（左）与 V1（右）的 TP 进程结构对比"></p>
+<h3 id="5-persistent-batch输入张量只打补丁"><a class="markdownIt-Anchor" href="#5-persistent-batch输入张量只打补丁"></a> 5. Persistent Batch：输入张量只打补丁</h3>
+<p>V0 每步都重建输入张量和 metadata。V1 借鉴 LMDeploy 的 <a target="_blank" rel="noopener" href="https://github.com/InternLM/lmdeploy">Persistent Batch</a>：<strong>缓存上一轮的输入张量，每步只把变化写进去</strong>，并且大量用 Numpy 操作替代 Python 原生循环。</p>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20261020015000_1212527942/fig-05-persistent-batch.png" alt="Persistent Batch：缓存输入张量、每步只打 diff"></p>
+<h3 id="6-torchcompile-分段-cuda-graph"><a class="markdownIt-Anchor" href="#6-torchcompile-分段-cuda-graph"></a> 6. torch.compile + 分段 CUDA Graph</h3>
+<p>V1 直接吃 vLLM 的 <code>torch.compile</code> 集成来自动优化模型，减少手写 custom kernel 的负担；再用<strong>分段（piecewise）CUDA Graph</strong> 缓解 CUDA graph 对动态 shape 的限制——图里静态的部分走 graph，动态的部分（如 attention）单独执行。</p>
+<p><strong>V1 的几种「分图方式」</strong>（<code>compilation_config.cudagraph_mode</code>）：</p>
+<table>
+<thead>
+<tr>
+<th>模式</th>
+<th>捕获范围</th>
+<th>适合的场景</th>
+<th>代价</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>NONE</code></td>
+<td>完全不捕获，纯 eager</td>
+<td>调试、对 CUDA graph 不友好的自定义算子</td>
+<td>每步 kernel launch 开销全暴露</td>
+</tr>
+<tr>
+<td><code>PIECEWISE</code></td>
+<td>把模型在 attention 处切开，<strong>每个静态片段单独一张 graph</strong>，attention 留在 graph 外 eager 执行</td>
+<td>shape 变化多（prefill/decode 混跑）</td>
+<td>attention 那一段仍有 launch 开销 （Attention 算子的动态性（变长、变 batch）与 CUDA Graph 对静态形状的硬性要求存在根本冲突。）</td>
+</tr>
+<tr>
+<td><code>FULL</code></td>
+<td>整段 forward <strong>含 attention 一起</strong>捕获成一张 graph</td>
+<td>decode-only、形状稳定的热路径</td>
+<td>要求 attention backend 支持 CUDA graph（fa3）；形状一变就得换/重捕</td>
+</tr>
+<tr>
+<td><code>FULL_AND_PIECEWISE</code></td>
+<td>两套 graph 都备好，<strong>运行时按 batch descriptor 自动选</strong>：纯 decode 走 FULL，混合 batch 退回 PIECEWISE</td>
+<td>生产默认</td>
+<td>多占一份显存与预热时间</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>细节见官方设计文档 <a target="_blank" rel="noopener" href="https://docs.vllm.ai/en/latest/design/cuda_graphs/">CUDA Graphs</a>。</p>
+</blockquote>
+<h2 id="三-发展历史"><a class="markdownIt-Anchor" href="#三-发展历史"></a> 三、发展历史</h2>
+<p>V1 alpha（2025-01）时缺 log probs、pipeline parallelism、结构化输出、投机解码、Prometheus metrics、LoRA，且只支持 Ampere 及以后的 NVIDIA GPU。但这些问题后来都补上了，时间线很清楚：</p>
+<table>
+<thead>
+<tr>
+<th>时间</th>
+<th>事件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2025-01</td>
+<td>V1 alpha 发布，<code>VLLM_USE_V1=1</code> 开启，API 零改动</td>
+</tr>
+<tr>
+<td><strong>v0.8.0</strong></td>
+<td><strong>V1 成为默认引擎</strong>（见 <a target="_blank" rel="noopener" href="https://github.com/vllm-project/vllm/issues/18571">RFC #18571</a>）</td>
+</tr>
+<tr>
+<td>v0.9.0</td>
+<td>V0 代码冻结，只接受 bugfix</td>
+</tr>
+<tr>
+<td>v0.10.0</td>
+<td>正式宣布废弃，开始删 V0 代码</td>
+</tr>
+<tr>
+<td><strong>v0.11.0</strong></td>
+<td>V0 代码（<code>AsyncLLMEngine</code>、<code>LLMEngine</code>、<code>MQLLMEngine</code>、旧 attention backend 等）<strong>全部删除，V1 是唯一的引擎</strong>（<a target="_blank" rel="noopener" href="https://github.com/vllm-project/vllm/releases/tag/v0.11.0">release notes</a>）</td>
+</tr>
+</tbody>
+</table>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20261008210000_3057128461/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1235,7 +1477,7 @@ V_c = W_c^{V} H_c,\quad V_b = W_b^{V} H_b
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2026-09-25 01:32:18" itemprop="dateModified" datetime="2026-09-25T01:32:18+08:00">2026-09-25</time>
+                <time title="修改时间：2026-10-20 03:18:01" itemprop="dateModified" datetime="2026-10-20T03:18:01+08:00">2026-10-20</time>
               </span>
 
           <br>
@@ -1244,14 +1486,14 @@ V_c = W_c^{V} H_c,\quad V_b = W_b^{V} H_b
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>6.9k</span>
+              <span>7.9k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>25 分钟</span>
+              <span>29 分钟</span>
             </span>
 
         </div>
@@ -1780,6 +2022,88 @@ Zigzag Attention 是另一种解决因果掩码负载不均衡的切分策略，
 </tr>
 </tbody>
 </table>
+<h4 id="352-deepspeed-ulysses用-all-to-all-把序列并行换成head-并行"><a class="markdownIt-Anchor" href="#352-deepspeed-ulysses用-all-to-all-把序列并行换成head-并行"></a> 3.5.2 DeepSpeed-Ulysses：用 all-to-all 把「序列并行」换成「head 并行」</h4>
+<p>前面 Ring/Zigzag/Striped 和 SGLang 的 CP 都属于同一个思路：<strong>Q 按序列切分后固定不动，让 K/V 在卡之间流动</strong>。DeepSpeed-Ulysses 换了个方向——<strong>切分方式在注意力前后各切换一次</strong>：</p>
+<ul>
+<li>注意力之前：按 <strong>token</strong> 切（每张卡拿 <code>N/CP</code> 个 token），所以 QKV 投影、MLP、LayerNorm 都是「本地 token、完整权重」；</li>
+<li>注意力之中：按 <strong>head</strong> 切（每张卡拿 <code>H/CP</code> 个头，但拿<strong>完整序列</strong>的 K/V），所以每个头都能在自己的卡上做一次「本地就是全局」的普通 attention；</li>
+<li>注意力之后：再切回按 token，继续后面的算子。</li>
+</ul>
+<p>两次切换都靠 <strong>all-to-all</strong> 完成。直觉上可以把 all-to-all 看成「一次转置」：它把 <code>[N/CP, 3H·d]</code> 的本地数据重新排列成 <code>[N, 3H/CP·d]</code>。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># CP 组内每张卡：本地 token 数 Nl = N / cp_size，分到的 head 数 Hl = H / cp_size</span></span><br><span class="line">qkv = qkv_proj(x_local)                       <span class="comment"># [Nl, 3*H*d]：完整投影矩阵，本地 token 的全部头都算出来了</span></span><br><span class="line">q, k, v = split_qkv(qkv)                      <span class="comment"># 各自 [Nl, H, d]</span></span><br><span class="line">q, k, v = all_to_all(q), all_to_all(k), all_to_all(v)   <span class="comment"># [Nl, H] 按头切给不同卡 → [N, Hl]</span></span><br><span class="line">o = attention(q, k, v, causal=<span class="literal">True</span>)           <span class="comment"># 每张卡：完整序列 + 自己的 Hl 个头，本地算，无通信</span></span><br><span class="line">o = all_to_all(o)                             <span class="comment"># [N, Hl] → [Nl, H]，切回按 token</span></span><br><span class="line">o = o_proj(o)                                 <span class="comment"># [Nl, D]，后面 MLP 照常（仍是按 token 切分）</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>数据流有个好记的口诀：<strong>跟着某一张卡走完整个流程</strong>——它前后两段拿的是「一段序列的全部头」，中间 attention 那一段拿的是「全部序列的一段头」，两次 all-to-all 就是这两段之间的转置。</p>
+</blockquote>
+<p><strong>为什么通信量能做实</strong>：一层里只有两次 all-to-all——QKV 一次（聚合消息 <code>3Nh</code>）、输出一次（<code>Nh</code>）。论文给出的复杂度是每张卡 <code>4Nh/CP</code>，即 <code>O(N/CP)</code>；当序列长度和卡数同比例增长时，<strong>通信量是常数，不随序列变长而涨</strong>。这是它相对 Megatron 式序列并行的核心优势：后者的 all-gather/reduce-scatter 在 <code>P</code> 大时单链路仍是 <code>O(N)</code>，量级上比 Ulysses 大 <code>P</code> 倍。</p>
+<p><strong>它的约束和代价</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>约束</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>卡数上限 = head 数</strong></td>
+<td><code>H % CP == 0</code>，即 <code>CP ≤ H</code>。GQA/MQA 下 KV 头可能只有 8 个甚至 1 个，<code>CP</code> 就被卡在这里（需要复制 KV 头或用专门的 GQA 变体）</td>
+</tr>
+<tr>
+<td><strong>all-to-all 是「一步到位」的同步</strong></td>
+<td>两次集合通信都是全卡屏障，很难像 Ring 那样细粒度地和计算重叠；需要高 bisection 带宽（NVLink/NVSwitch 友好）</td>
+</tr>
+<tr>
+<td><strong>需要转置式重排</strong></td>
+<td><code>[N/CP, H] ↔ [N, H/CP]</code> 的数据搬运本身有显存与带宽成本，但换来的是 attention 内部<strong>零通信</strong></td>
+</tr>
+<tr>
+<td><strong>对 attention 实现友好</strong></td>
+<td>注意力前是序列并行、注意力中是标准「头并行 + 完整序列」，所以 dense/sparse/FlashAttention 都能直接用</td>
+</tr>
+</tbody>
+</table>
+<p><strong>和 Ring 的取舍</strong>（视频里的对比口径）：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Ring / Zigzag / Striped</th>
+<th>DeepSpeed-Ulysses</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>通信方式</td>
+<td>P2P 环形传 K/V（每步 <code>2Nh/CP</code>，共 <code>CP</code> 步）</td>
+<td>2 次 all-to-all（共 <code>4Nh/CP</code>）</td>
+</tr>
+<tr>
+<td>通信量随序列长</td>
+<td><code>O(N/CP)</code></td>
+<td><code>O(N/CP)</code>，但常数更小</td>
+</tr>
+<tr>
+<td>能否与计算重叠</td>
+<td>天然（算当前块时收下一块）</td>
+<td>难，两次通信都是全卡屏障</td>
+</tr>
+<tr>
+<td>对网络的要求</td>
+<td>松，适合跨机</td>
+<td>高，依赖高带宽 all-to-all</td>
+</tr>
+<tr>
+<td>卡数上限</td>
+<td>无（<code>CP</code> 只受显存限制）</td>
+<td><code>CP ≤ H</code>（KV 头数）</td>
+</tr>
+</tbody>
+</table>
+<p>所以实践里常见的组合是 <strong>USP（Unified Sequence Parallelism）：机内用 Ulysses、机间用 Ring</strong>——机内 NVLink 带宽高、适合一次大 all-to-all；跨机带宽低、用 Ring 的 P2P 更好隐藏。</p>
+<blockquote>
+<p>补充一点容易混淆的：SGLang 的 prefill CP 不是 Ulysses。它按 zigzag/interleave 切 token，然后 <strong>all-gather KV</strong> 让每个 rank 都拿到完整 K/V 再算本地 query——更像 Ring 那一路的「收齐 K/V」而不是「转 head」。Ulysses 的 all-to-all 形态主要出现在 DeepSpeed、Megatron-Core、yunchang 这类实现里。</p>
+</blockquote>
+<p>参考：<a target="_blank" rel="noopener" href="https://www.bilibili.com/video/BV1dSHE6TEJU/">视频《上下文并行 CP：Ring Attention 和 DeepSpeed-Ulysses》</a>、<a target="_blank" rel="noopener" href="https://arxiv.org/abs/2309.14509">DeepSpeed Ulysses 论文（arXiv:2309.14509）</a>。</p>
 <h2 id="4-总结"><a class="markdownIt-Anchor" href="#4-总结"></a> 4. 总结</h2>
 <h3 id="41-策略对指标的影响"><a class="markdownIt-Anchor" href="#41-策略对指标的影响"></a> 4.1 策略对指标的影响</h3>
 <p><strong>TTFT / Prefill</strong></p>
@@ -2970,101 +3294,6 @@ ubuntu可以用如下安装：</p>
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://caijizhuo.github.io/20231206110011_1014858940/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/portrait.jpg">
-      <meta itemprop="name" content="caijizhuo">
-      <meta itemprop="description" content="Looks delicious">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="caijizhuo">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/20231206110011_1014858940/" class="post-title-link" itemprop="url">Llama结构解析</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2023-12-06 11:00:11" itemprop="dateCreated datePublished" datetime="2023-12-06T11:00:11+08:00">2023-12-06</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2026-03-23 22:18:30" itemprop="dateModified" datetime="2026-03-23T22:18:30+08:00">2026-03-23</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/AI/" itemprop="url" rel="index"><span itemprop="name">AI</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>179</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="模型打印"><a class="markdownIt-Anchor" href="#模型打印"></a> 模型打印</h2>
-<p>已Llama-7B hugging face版本为例：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> transformers <span class="keyword">import</span> AutoTokenizer, AutoModelForCausalLM</span><br><span class="line">device = torch.device(<span class="string">&quot;cuda:&#123;&#125;&quot;</span>.<span class="built_in">format</span>(gpu))</span><br><span class="line">tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code = <span class="literal">True</span>)</span><br><span class="line">model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code = <span class="literal">True</span>).half().to(device)</span><br><span class="line"><span class="built_in">print</span>(model)</span><br></pre></td></tr></table></figure>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">LlamaForCausalLM(</span><br><span class="line">  (model): LlamaModel(</span><br><span class="line">    (embed_tokens): Embedding(<span class="number">32000</span>, <span class="number">4096</span>)</span><br><span class="line">    (layers): ModuleList(</span><br><span class="line">      (<span class="number">0</span>-<span class="number">31</span>): <span class="number">32</span> x LlamaDecoderLayer(</span><br><span class="line">        (self_attn): LlamaFlashAttention2(</span><br><span class="line">          (q_proj): Linear(in_features=<span class="number">4096</span>, out_features=<span class="number">4096</span>, bias=<span class="literal">False</span>)</span><br><span class="line">          (k_proj): Linear(in_features=<span class="number">4096</span>, out_features=<span class="number">4096</span>, bias=<span class="literal">False</span>)</span><br><span class="line">          (v_proj): Linear(in_features=<span class="number">4096</span>, out_features=<span class="number">4096</span>, bias=<span class="literal">False</span>)</span><br><span class="line">          (o_proj): Linear(in_features=<span class="number">4096</span>, out_features=<span class="number">4096</span>, bias=<span class="literal">False</span>)</span><br><span class="line">          (rotary_emb): LlamaRotaryEmbedding()</span><br><span class="line">        )</span><br><span class="line">        (mlp): LlamaMLP(</span><br><span class="line">          (gate_proj): Linear(in_features=<span class="number">4096</span>, out_features=<span class="number">11008</span>, bias=<span class="literal">False</span>)</span><br><span class="line">          (up_proj): Linear(in_features=<span class="number">4096</span>, out_features=<span class="number">11008</span>, bias=<span class="literal">False</span>)</span><br><span class="line">          (down_proj): Linear(in_features=<span class="number">11008</span>, out_features=<span class="number">4096</span>, bias=<span class="literal">False</span>)</span><br><span class="line">          (act_fn): SiLUActivation()</span><br><span class="line">        )</span><br><span class="line">        (input_layernorm): LlamaRMSNorm()</span><br><span class="line">        (post_attention_layernorm): LlamaRMSNorm()</span><br><span class="line">      )</span><br><span class="line">    )</span><br><span class="line">    (norm): LlamaRMSNorm()</span><br><span class="line">  )</span><br><span class="line">  (lm_head): Linear(in_features=<span class="number">4096</span>, out_features=<span class="number">32000</span>, bias=<span class="literal">False</span>)</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
-<p>从结构可以看出来，模型参数量为 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>32</mn><mo separator="true">,</mo><mn>000</mn><mo>∗</mo><mn>4</mn><mo separator="true">,</mo><mn>096</mn><mo>+</mo><mn>32</mn><mo>∗</mo><mo stretchy="false">(</mo><mn>4</mn><mo separator="true">,</mo><mn>096</mn><mo>∗</mo><mn>4</mn><mo separator="true">,</mo><mn>096</mn><mo>∗</mo><mn>4</mn><mo>+</mo><mn>4</mn><mo separator="true">,</mo><mn>096</mn><mo>∗</mo><mn>11</mn><mo separator="true">,</mo><mn>008</mn><mo>∗</mo><mn>3</mn><mo stretchy="false">)</mo><mo>+</mo><mn>4</mn><mo separator="true">,</mo><mn>096</mn><mo>∗</mo><mn>32</mn><mo separator="true">,</mo><mn>000</mn><mo>=</mo><mn>6</mn><mo separator="true">,</mo><mn>738</mn><mo separator="true">,</mo><mn>149</mn><mo separator="true">,</mo><mn>376</mn></mrow><annotation encoding="application/x-tex">32,000 * 4,096 + 32 * (4,096 * 4,096 * 4 + 4,096 * 11,008 * 3) + 4,096 * 32,000 = 6,738,149,376</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8388800000000001em;vertical-align:-0.19444em;"></span><span class="mord">3</span><span class="mord">2</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord">0</span><span class="mord">0</span><span class="mord">0</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">∗</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.8388800000000001em;vertical-align:-0.19444em;"></span><span class="mord">4</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord">0</span><span class="mord">9</span><span class="mord">6</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.64444em;vertical-align:0em;"></span><span class="mord">3</span><span class="mord">2</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">∗</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">(</span><span class="mord">4</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord">0</span><span class="mord">9</span><span class="mord">6</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">∗</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.8388800000000001em;vertical-align:-0.19444em;"></span><span class="mord">4</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord">0</span><span class="mord">9</span><span class="mord">6</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">∗</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.72777em;vertical-align:-0.08333em;"></span><span class="mord">4</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.8388800000000001em;vertical-align:-0.19444em;"></span><span class="mord">4</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord">0</span><span class="mord">9</span><span class="mord">6</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">∗</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.8388800000000001em;vertical-align:-0.19444em;"></span><span class="mord">1</span><span class="mord">1</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord">0</span><span class="mord">0</span><span class="mord">8</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">∗</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">3</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.8388800000000001em;vertical-align:-0.19444em;"></span><span class="mord">4</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord">0</span><span class="mord">9</span><span class="mord">6</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">∗</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.8388800000000001em;vertical-align:-0.19444em;"></span><span class="mord">3</span><span class="mord">2</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord">0</span><span class="mord">0</span><span class="mord">0</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:0.8388800000000001em;vertical-align:-0.19444em;"></span><span class="mord">6</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord">7</span><span class="mord">3</span><span class="mord">8</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord">1</span><span class="mord">4</span><span class="mord">9</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord">3</span><span class="mord">7</span><span class="mord">6</span></span></span></span>。所以约为<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>7</mn><mi>B</mi></mrow><annotation encoding="application/x-tex">7B</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.68333em;vertical-align:0em;"></span><span class="mord">7</span><span class="mord mathnormal" style="margin-right:0.05017em;">B</span></span></span></span>。</p>
-<h2 id="模型图解"><a class="markdownIt-Anchor" href="#模型图解"></a> 模型图解</h2>
-<p>以输入为 10 个 token 为例：<br>
-<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAMAAABOo35HAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC9UExURVlZWdPT07KysmRkZIWFhfT09JmZmWZmZm9vb39/fxkZGUxMTDMzM3p6epCQkKamppubm729venp6cjIyN7e3tbW1s/Pz8LCwnx8fLS0tFZWVoiIiI+Pj6GhoeTk5Glpabu7u93d3evr66CgoJSUlKqqqsnJyeDg4Hd3d8PDw+Xl5bi4uNHR0dvb26Ojo6urq+fn51hYWDg4OCgoKHBwcK2traenp0FBQe7u7vHx8U5OTre3t8zMzHV1df///7GrnpQAAAA/dFJOU///////////////////////////////////////////////////////////////////////////////////AI4mfBcAAAUGSURBVHja7NoJb6M4GMZxY0NCD64kve/pMZ2d3Z297+X7f6zFNmBAMUXa6URl/q9UJSWPUPzrizFWRUlNLgEBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYYIEFAVhggQUWWGBBABZYYIEFFlgQgAUWWGCBBRYEYIEFFlhggQUBWGCBBRZYYEEAFlhggQUWWBCABRZYYIEFFgRggQUWWGCBBQFYYIEFFlhgQQAWWGCBBRZYEIAFFlhggQUWBGCBBRZYn6cCIcRXgvX/h9qcIVBqDdbEM8RCxGCB9QqXYRwHYDHBgwXWl8eKZKiESHI3Ba1kWs3fKixcaJUl1YyeBm7Ocq+yLItUiVBGnXxenSHJolIKEcwHq6ikbOX1YGVzQCTN8LPmSLreghUl9sN4Uw7yajMrLC0TZ1ImzqY6FEop0+pIaEN5HaoOxVuwEqFyc4I46uSlzOLqgxlh6UaR9l3VYWl9Fdoxb1Q90KJtu41pwwFW/WHhTtW8i7TafLCqRsk6bsGw63L9qurXRmuIlbT9lDQnlXU+nBFW1Q2qnZbDprWa2tjR90LZFqx1/+Td/HpGWLlrLDvIwTcx6dQ1Vrntbig68cDms3JwbA5Y1azs1ger6sNV/bbIw1jU81MvNAGrl58RVn8ozW+btF08iGFoAlYvP3csfVur1gJBEIA1uBmue5dhZDOyO2epbmgCVi8/I6x0MMHH9pjsTfBhNzQBq5uPZoQlB0uH3DZG4EZqQ26fL3sZq5uf09Ih6qw3i/pm6BZO0qZX7rrUS68Xsbr5ZE4rePMk08pk9aUZugfqppvs6AM1Acvlo/StP+6EbW06z8hJqxbYp2BZPQUnFsLsKuhQdaHqn5ewbF7KXIn0jWO5MqOQ7RaNLPtbNMmmhimj0GUmYLl8Gs0Lq4wyPbTu1l2QKqHSouzs3OlDIslW5SQsnY/NXmFplyNvEuuLV/Tau9BzwiraDUSwXmysztYWWNtL1psXeumgIrDGaqXvBfUuvtqUYI3V2t1wk1e2msFluJJm6zDJXv/fIfjPP7DAAgsssCiwwAILLLDAosACCyywwAKLAgsssMACC6zt9fDz/v75tyOB+98PD2+ORgKffjw4OP1uJPDxl+Xy8v1I4MPF3t7VNyOB4/vF4uzdzrG+39f1kz/w66Guv/yBvw90KX/gZKkr8Qf+2dOV+gNHC12/7RxrabD2/a31bLAO/a11YbAO/K21MFhLf2s9Gqw9f2vdGqzFu11jnVusE2/gxmI9eQOnFuvYG7i0WH7uK4t15w2cWazrXWP9a7H8f/bQYvm/6IPF+sF/pVssf19Ii/WH/0K2WH/uGuvEWC39gSdj9Twy+Rqri5EZx1gt/IE7Y/XoD1wbq9vd3w1PlufnD2OBp+ebm/uxwPHF6emnscDR4vLy41jg7vHq6sNY4Pr27OyYdRaLUrDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssMCiwAILLLDAAosCCyywwAILLAossMACCyywKLDAAgsssL6u+k+AAQCR9eHtLKvLfwAAAABJRU5ErkJggg==" data-original="/20231206110011_1014858940/1.png" alt="1"></p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -3136,7 +3365,7 @@ ubuntu可以用如下安装：</p>
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">75</span>
+          <span class="site-state-item-count">76</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -3149,7 +3378,7 @@ ubuntu可以用如下安装：</p>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">22</span>
+        <span class="site-state-item-count">24</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -3198,13 +3427,13 @@ ubuntu可以用如下安装：</p>
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">87k</span>
+    <span title="站点总字数">90k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">5:18</span>
+    <span title="站点阅读时长">5:28</span>
 </div>
 
         
